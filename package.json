@@ -1,0 +1,12 @@
+{
+  "name": "raizes-kids",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check app.js && node --check auth.js && node --check server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

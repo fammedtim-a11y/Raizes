@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Raízes Kids | Acesso</title>
+    <link rel="stylesheet" href="styles.css?v=20260625" />
+  </head>
+  <body class="auth-page">
+    <main class="auth-shell">
+      <section class="auth-card">
+        <img class="auth-logo" src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
+        <div class="auth-tabs">
+          <button class="manage-tab active" type="button" data-auth-tab="login">Entrar</button>
+          <button class="manage-tab" type="button" data-auth-tab="register">Cadastrar</button>
+          <button class="manage-tab" type="button" data-auth-tab="reset">Redefinir senha</button>
+        </div>
+
+        <form id="loginForm" class="auth-form active" data-auth-panel="login">
+          <h1>Entrar no sistema</h1>
+          <label>
+            <span>Usuário/CPF</span>
+            <input name="username" inputmode="numeric" autocomplete="username" required />
+          </label>
+          <label>
+            <span>Senha</span>
+            <input name="password" type="password" autocomplete="current-password" required />
+          </label>
+          <button class="icon-button primary" type="submit">Entrar</button>
+        </form>
+
+        <form id="registerForm" class="auth-form" data-auth-panel="register">
+          <h1>Criar cadastro</h1>
+          <label><span>Nome completo</span><input name="name" required /></label>
+          <label><span>CPF</span><input name="cpf" inputmode="numeric" required /></label>
+          <label><span>Email</span><input name="email" type="email" required /></label>
+          <label><span>Endereço</span><input name="address" required /></label>
+          <label><span>Igreja que pertence</span><input name="church" required /></label>
+          <label><span>Senha de 6 dígitos</span><input name="password" type="password" inputmode="numeric" minlength="6" maxlength="6" required /></label>
+          <label><span>Confirmar senha</span><input name="confirmPassword" type="password" inputmode="numeric" minlength="6" maxlength="6" required /></label>
+          <button class="icon-button primary" type="submit">Enviar para aprovação</button>
+        </form>
+
+        <form id="resetForm" class="auth-form" data-auth-panel="reset">
+          <h1>Redefinir senha</h1>
+          <p>Informe seu usuário/CPF. O administrador verá o pedido e poderá definir uma nova senha.</p>
+          <label>
+            <span>Usuário/CPF</span>
+            <input name="username" inputmode="numeric" required />
+          </label>
+          <button class="icon-button accent" type="submit">Solicitar redefinição</button>
+        </form>
+
+        <p id="authMessage" class="auth-message" role="status"></p>
+        <a class="auth-back" href="index.html">Voltar para o site</a>
+      </section>
+    </main>
+    <script src="auth.js?v=20260625"></script>
+  </body>
+</html>
