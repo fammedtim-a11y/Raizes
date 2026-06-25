@@ -1,0 +1,176 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Raízes | Catálogo de Lições Bíblicas</title>
+    <link rel="stylesheet" href="styles.css?v=20260625" />
+  </head>
+  <body>
+    <canvas id="skyCanvas" aria-hidden="true"></canvas>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <img class="brand-logo" src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
+          <div>
+            <h1>Catálogo de Lições Bíblicas</h1>
+            <p>Raízes Kids | ensino cristão por faixa etária</p>
+          </div>
+        </div>
+        <nav class="tabs" aria-label="Modos do catálogo">
+          <button class="tab active" data-tab="home" type="button">Home</button>
+          <button class="tab" data-tab="study" type="button">Lições</button>
+          <button class="tab" data-tab="trails" type="button">Trilhas</button>
+          <a class="tab admin-link admin-only" href="gerenciamento.html">Gerenciamento</a>
+          <span class="auth-slot"></span>
+        </nav>
+      </header>
+
+      <main>
+        <section id="filterToolbar" class="toolbar" aria-label="Filtros do catálogo">
+          <label>
+            <span>Buscar</span>
+            <input id="searchInput" type="search" placeholder="Tema, categoria, versículo..." />
+          </label>
+          <label>
+            <span>Categoria</span>
+            <select id="categoryFilter"></select>
+          </label>
+          <label>
+            <span>Idade</span>
+            <select id="ageFilter"></select>
+          </label>
+          <label>
+            <span>Testamento</span>
+            <select id="testamentFilter">
+              <option value="Todos">Todos</option>
+              <option value="Antigo Testamento">Antigo Testamento</option>
+              <option value="Novo Testamento">Novo Testamento</option>
+            </select>
+          </label>
+          <label>
+            <span>Datas especiais</span>
+            <select id="specialFilter">
+              <option value="Todas">Todas</option>
+              <option value="Natal">Natal</option>
+              <option value="Pascoa">Páscoa</option>
+              <option value="Missoes">Missões</option>
+              <option value="Gratidao">Gratidão</option>
+              <option value="Dia das Criancas">Dia das Crianças</option>
+            </select>
+          </label>
+        </section>
+
+        <section id="homeView" class="view active home-view" aria-label="Home Raízes Kids">
+          <section class="home-hero">
+            <div class="home-copy">
+              <span class="home-kicker">🌱 Ministério Infantil Raízes Kids</span>
+              <h2>Ensinando a Palavra de Deus de forma divertida e organizada</h2>
+              <p>Um ambiente infantil cristão moderno para estudar lições, assistir trilhas e preparar aulas por faixa etária.</p>
+              <div class="home-actions">
+                <button class="icon-button primary" type="button" data-jump-tab="study">✅ Conhecer Catálogo</button>
+                <a class="icon-button accent" href="#ageCards">✅ Escolher Faixa Etária</a>
+              </div>
+            </div>
+            <div class="home-illustration" aria-hidden="true">
+              <img src="assets/logo-raizes-kids.png" alt="" />
+              <div class="kid-scene">
+                <span>📖</span><span>🌳</span><span>☁️</span><span>🎨</span><span>🧒</span>
+              </div>
+            </div>
+          </section>
+          <section id="ageCards" class="age-section" aria-label="Faixas etárias">
+            <div class="section-heading">
+              <span class="home-kicker">Faixas etárias</span>
+              <h2>Escolha a turma e comece a preparar a aula</h2>
+            </div>
+            <div class="age-grid">
+              <button class="age-card yellow" type="button" data-age-select="1 e 2"><span>👶</span><strong>Berçário</strong><em>0 a 2 anos</em></button>
+              <button class="age-card green" type="button" data-age-select="3 e 4"><span>🌿</span><strong>Maternal</strong><em>3 a 4 anos</em></button>
+              <button class="age-card blue" type="button" data-age-select="5 e 6"><span>📘</span><strong>Jardim</strong><em>5 a 6 anos</em></button>
+              <button class="age-card purple" type="button" data-age-select="7 a 10"><span>✨</span><strong>Primários</strong><em>7 a 8 anos</em></button>
+              <button class="age-card red" type="button" data-age-select="7 a 10"><span>🔥</span><strong>Juniores</strong><em>9 a 11 anos</em></button>
+            </div>
+          </section>
+        </section>
+
+        <section id="studyView" class="view" aria-label="Exibição das lições">
+          <aside class="lesson-list" aria-label="Lista de lições">
+            <div class="list-heading">
+              <strong>Lições</strong>
+              <span id="lessonCount"></span>
+            </div>
+            <div id="lessonList"></div>
+          </aside>
+
+          <article class="lesson-reader" id="lessonReader">
+            <div class="reader-empty">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 19.5V5.8A2.8 2.8 0 0 1 6.8 3H20v15H7a3 3 0 0 0-3 3Z" />
+                <path d="M8 7h8M8 11h6" />
+              </svg>
+              <h2>Selecione uma lição</h2>
+              <p>O conteúdo aparecerá em formato de estudo, com seções organizadas para aula e PDF.</p>
+            </div>
+          </article>
+        </section>
+
+        <section id="trailsView" class="view trails-layout" aria-label="Trilhas com vídeos">
+          <header class="trails-header">
+            <div>
+              <span class="reader-kicker">Streaming de lições</span>
+              <h2>Assista, organize e ensine com vídeos bíblicos</h2>
+              <p>Uma plataforma visual com player integrado, destaques, playlists, temporadas por idade e categorias.</p>
+            </div>
+            <span id="trailCount" class="trail-count"></span>
+          </header>
+          <section id="streamPlayer" class="stream-player" aria-label="Player integrado"></section>
+          <section id="streamHero" class="stream-hero" aria-label="Destaque principal"></section>
+          <nav id="streamQuickNav" class="stream-quick-nav" aria-label="Atalhos das trilhas"></nav>
+          <div id="trailGrid" class="trail-grid"></div>
+        </section>
+
+      </main>
+      <footer class="site-footer">
+        <div>
+          <img src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
+          <p>"Ensina a criança no caminho em que deve andar." (Provérbios 22:6)</p>
+        </div>
+        <nav aria-label="Rodapé">
+          <a href="#sobre">Sobre o Ministério</a>
+          <a href="#contato">Contato</a>
+          <a href="#whatsapp">WhatsApp</a>
+          <a href="#instagram">Instagram</a>
+          <a href="#privacidade">Política de Privacidade</a>
+        </nav>
+      </footer>
+    </div>
+    <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
+
+    <template id="readerTemplate">
+      <div class="print-watermark">Raízes Kids</div>
+      <div class="print-footer">Raízes Kids • Catálogo de Lições Bíblicas</div>
+      <header class="reader-hero">
+        <div class="reader-glow" aria-hidden="true"></div>
+        <div class="reader-title-block">
+          <span class="reader-kicker"></span>
+          <h2></h2>
+          <div class="reader-meta">
+            <span class="reader-chip reader-category"></span>
+            <span class="reader-chip reader-age"></span>
+          </div>
+          <p class="reader-verse"><span>Versículo</span><strong></strong></p>
+        </div>
+        <button id="printPdfBtn" class="icon-button light no-print" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z" /></svg>
+          Exportar PDF
+        </button>
+      </header>
+      <div class="section-timeline"></div>
+    </template>
+
+    <script src="lessons-data.js?v=20260625"></script>
+    <script src="app.js?v=20260625"></script>
+    <script src="auth.js?v=20260625"></script>
+  </body>
+</html>
