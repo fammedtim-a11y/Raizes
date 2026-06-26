@@ -1470,18 +1470,18 @@ textarea:focus {
 
 .lesson-inline-video {
   display: block;
-  max-width: 680px;
-  margin: 10px 0 14px;
-  padding: 10px;
+  width: min(100%, 230px);
+  margin: 8px 0 12px;
+  padding: 6px;
   border: 1px solid rgba(45, 156, 255, 0.16);
-  border-radius: 12px;
+  border-radius: 10px;
   background: rgba(235, 250, 255, 0.72);
 }
 
 .lesson-inline-video-frame {
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #15456d;
 }
 
@@ -3124,9 +3124,10 @@ body.is-authenticated .visitor-only {
   }
 
   .lesson-inline-video {
-    margin: 10px 0 14px;
-    padding: 12px;
-    border-radius: 14px;
+    width: min(100%, 230px);
+    margin: 8px 0 12px;
+    padding: 6px;
+    border-radius: 10px;
   }
 
   .reader-hero {
