@@ -1469,10 +1469,7 @@ textarea:focus {
 }
 
 .lesson-inline-video {
-  display: grid;
-  grid-template-columns: minmax(190px, 320px) minmax(150px, 1fr);
-  gap: 12px;
-  align-items: center;
+  display: block;
   max-width: 680px;
   margin: 10px 0 14px;
   padding: 10px;
@@ -1494,21 +1491,7 @@ textarea:focus {
   border: 0;
 }
 
-.lesson-inline-video-actions {
-  display: grid;
-  gap: 8px;
-}
-
-.lesson-inline-video-actions span {
-  color: #15456d;
-  font-size: 0.86rem;
-  font-weight: 900;
-}
-
 .lesson-inline-video:fullscreen {
-  grid-template-columns: 1fr;
-  align-content: center;
-  justify-items: center;
   max-width: none;
   width: 100vw;
   height: 100vh;
@@ -1521,14 +1504,6 @@ textarea:focus {
 
 .lesson-inline-video:fullscreen .lesson-inline-video-frame {
   width: min(100%, 150vh);
-}
-
-.lesson-inline-video:fullscreen .lesson-inline-video-actions {
-  justify-items: center;
-}
-
-.lesson-inline-video:fullscreen .lesson-inline-video-actions span {
-  color: #fff;
 }
 
 @media print {
@@ -3149,8 +3124,6 @@ body.is-authenticated .visitor-only {
   }
 
   .lesson-inline-video {
-    grid-template-columns: 1fr;
-    gap: 12px;
     margin: 10px 0 14px;
     padding: 12px;
     border-radius: 14px;

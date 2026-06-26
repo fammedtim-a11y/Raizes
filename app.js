@@ -391,9 +391,6 @@ function renderReader() {
   els.reader.innerHTML = "";
   els.reader.append(template);
   $("#printPdfBtn").addEventListener("click", printCurrentLesson);
-  document.querySelectorAll("[data-lesson-video-fullscreen]").forEach((button) => {
-    button.addEventListener("click", openInlineLessonVideoFullscreen);
-  });
 }
 
 function renderLessonTextWithPlayers(text) {
@@ -431,23 +428,8 @@ function buildInlineLessonVideo(youtubeId) {
           allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowfullscreen></iframe>
       </div>
-      <div class="lesson-inline-video-actions">
-        <span>Vídeo vinculado ao texto</span>
-        <button class="icon-button accent" data-lesson-video-fullscreen type="button">Preencher tela</button>
-      </div>
     </div>
   `;
-}
-
-function openInlineLessonVideoFullscreen(event) {
-  const player = event.currentTarget.closest(".lesson-inline-video");
-  if (!player) return;
-  if (player.requestFullscreen) {
-    player.requestFullscreen();
-    return;
-  }
-  const iframe = player.querySelector("iframe");
-  iframe?.requestFullscreen?.();
 }
 
 function trimTrailingUrlPunctuation(url) {
