@@ -73,6 +73,7 @@ const els = {
   ageFilter: $("#ageFilter"),
   testamentFilter: $("#testamentFilter"),
   specialFilter: $("#specialFilter"),
+  createdMonthFilter: $("#createdMonthFilter"),
   lessonList: $("#lessonList"),
   lessonCount: $("#lessonCount"),
   reader: $("#lessonReader"),
@@ -151,16 +152,27 @@ function loadLessons() {
   const savedVersion = localStorage.getItem("raizes-lessons-version");
   const saved = localStorage.getItem("raizes-lessons");
   if (!saved || savedVersion !== DATA_VERSION) {
-    localStorage.setItem("raizes-lessons", JSON.stringify(DEFAULT_LESSONS));
+    const lessons = normalizeLessonDates(DEFAULT_LESSONS);
+    localStorage.setItem("raizes-lessons", JSON.stringify(lessons));
     localStorage.setItem("raizes-lessons-version", DATA_VERSION);
-    return DEFAULT_LESSONS;
+    return lessons;
   }
   try {
     const parsed = JSON.parse(saved);
-    return Array.isArray(parsed) ? parsed : DEFAULT_LESSONS;
+    const lessons = Array.isArray(parsed) ? normalizeLessonDates(parsed) : normalizeLessonDates(DEFAULT_LESSONS);
+    localStorage.setItem("raizes-lessons", JSON.stringify(lessons));
+    return lessons;
   } catch {
-    return DEFAULT_LESSONS;
+    return normalizeLessonDates(DEFAULT_LESSONS);
   }
+}
+
+function normalizeLessonDates(lessons) {
+  const fallbackDate = "2026-06-01T00:00:00.000Z";
+  return lessons.map((lesson) => ({
+    ...lesson,
+    createdAt: lesson.createdAt || lesson.includedAt || lesson.updatedAt || fallbackDate
+  }));
 }
 
 function saveLessons() {
@@ -206,7 +218,7 @@ function bindEvents() {
     button.addEventListener("click", () => setManageTab(button.dataset.manageTab));
   });
 
-  [els.search, els.categoryFilter, els.ageFilter, els.testamentFilter, els.specialFilter].filter(Boolean).forEach((el) => {
+  [els.search, els.categoryFilter, els.ageFilter, els.testamentFilter, els.specialFilter, els.createdMonthFilter].filter(Boolean).forEach((el) => {
     const refreshFilteredViews = () => {
       renderList();
       renderLessonAdminList();
@@ -477,6 +489,7 @@ function filteredLessons() {
   const age = els.ageFilter?.value || "Todas";
   const testament = els.testamentFilter?.value || "Todos";
   const special = els.specialFilter?.value || "Todas";
+  const createdMonth = els.createdMonthFilter?.value || "";
 
   return state.lessons.filter((lesson) => {
     const content = normalize([
@@ -492,8 +505,16 @@ function filteredLessons() {
     const matchesAge = age === "Todas" || lesson.age === age;
     const matchesTestament = testament === "Todos" || inferTestament(content) === testament;
     const matchesSpecial = special === "Todas" || content.includes(normalize(special));
-    return matchesTerm && matchesCategory && matchesAge && matchesTestament && matchesSpecial;
+    const matchesCreatedMonth = !createdMonth || lessonMonthKey(lesson.createdAt) === createdMonth;
+    return matchesTerm && matchesCategory && matchesAge && matchesTestament && matchesSpecial && matchesCreatedMonth;
   });
+}
+
+function lessonMonthKey(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
 // Visitantes enxergam o tamanho do acervo, mas nao acessam o conteudo interno.
@@ -541,8 +562,10 @@ function inferTestament(content) {
 function saveFromForm(event) {
   event.preventDefault();
   const id = els.lessonId.value || crypto.randomUUID();
+  const existingLesson = state.lessons.find((item) => item.id === id);
   const lesson = {
     id,
+    createdAt: existingLesson?.createdAt || new Date().toISOString(),
     title: els.title.value.trim(),
     category: els.category.value.trim(),
     age: els.age.value,
@@ -769,6 +792,7 @@ function renderLessonAdminList() {
       <span class="admin-item-body">
         <strong>${escapeHtml(lesson.title)}</strong>
         <small>${escapeHtml(lesson.category || "Sem categoria")} · ${escapeHtml(lesson.age || "Todas")} anos</small>
+        <small>Inclusão: ${escapeHtml(formatMonthYear(lesson.createdAt))}</small>
         <em>${escapeHtml(lesson.verse || "Sem versículo informado")}</em>
       </span>
       <span class="admin-item-action">Editar</span>
@@ -884,7 +908,7 @@ async function importJson(event) {
   try {
     const parsed = JSON.parse(text);
     if (!Array.isArray(parsed)) throw new Error("Formato invalido");
-    state.lessons = parsed;
+    state.lessons = normalizeLessonDates(parsed);
     state.activeId = state.lessons[0]?.id || null;
     saveLessons();
     clearForm();
@@ -983,6 +1007,12 @@ function renderTrails() {
       rail.scrollBy({ left: direction * Math.round(rail.clientWidth * 0.82), behavior: "smooth" });
     });
   });
+}
+
+function formatMonthYear(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "sem data";
+  return date.toLocaleDateString("pt-BR", { month: "2-digit", year: "numeric" });
 }
 
 function renderTrailCard(video) {

@@ -4,11 +4,16 @@ document.addEventListener("DOMContentLoaded", () => {
   bindAuthTabs();
   bindAuthForms();
   refreshSession();
+  window.setInterval(refreshSession, 60000);
 });
 
 async function refreshSession() {
   const data = await apiGet("/api/session");
   authState.user = data.user;
+  if (data.message && !authState.user) {
+    showNotice(data.message, true);
+    await apiPost("/api/logout", {});
+  }
   document.body.classList.toggle("is-authenticated", Boolean(authState.user));
   document.body.classList.toggle("is-visitor", !authState.user);
   renderAuthSlots();
@@ -202,11 +207,15 @@ function showStoredNotice() {
   const message = sessionStorage.getItem("raizes-auth-notice");
   if (!message) return;
   sessionStorage.removeItem("raizes-auth-notice");
+  showNotice(message);
+}
+
+function showNotice(message, error = false) {
   const notice = document.createElement("div");
-  notice.className = "session-notice";
+  notice.className = `session-notice${error ? " error" : ""}`;
   notice.textContent = message;
   document.body.prepend(notice);
-  window.setTimeout(() => notice.remove(), 7000);
+  window.setTimeout(() => notice.remove(), error ? 11000 : 7000);
 }
 
 function authEscapeHtml(value) {

@@ -2990,6 +2990,12 @@ body.is-authenticated .visitor-only {
   text-align: center;
 }
 
+.session-notice.error {
+  border-color: rgba(155, 36, 48, 0.32);
+  background: #fff5f5;
+  color: #9b2430;
+}
+
 .user-admin-card.inactive {
   border-color: rgba(155, 36, 48, 0.34);
   background: rgba(255, 245, 245, 0.96);
@@ -2997,6 +3003,34 @@ body.is-authenticated .visitor-only {
 
 .user-admin-card.inactive strong {
   color: #9b2430;
+}
+
+/* Lista horizontal de licoes: fica abaixo dos filtros e facilita navegar no celular. */
+#studyView {
+  grid-template-columns: 1fr;
+}
+
+#studyView .lesson-list {
+  position: static;
+  max-height: none;
+  overflow: visible;
+}
+
+#studyView #lessonList {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(220px, 280px);
+  gap: 12px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding-bottom: 8px;
+  scroll-snap-type: x proximity;
+}
+
+#studyView .lesson-card {
+  min-height: 100%;
+  margin-bottom: 0;
+  scroll-snap-align: start;
 }
 
 @media (max-width: 720px) {

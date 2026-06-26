@@ -8,6 +8,7 @@ const ROOT = __dirname;
 const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, "data");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const sessions = new Map();
+const revokedSessions = new Map();
 const loginAttempts = new Map();
 
 const initialUsers = [
@@ -96,8 +97,8 @@ function ensureData() {
 
 async function handleApi(req, res, url) {
   if (req.method === "GET" && url.pathname === "/api/session") {
-    const user = getSessionUser(req);
-    sendJson(res, 200, { user: publicUser(user) });
+    const session = getSessionState(req);
+    sendJson(res, 200, { user: publicUser(session.user), message: session.message || "" });
     return;
   }
 
@@ -226,6 +227,7 @@ async function login(req, res) {
   }
 
   registerAttempt(ip, true);
+  const removedSessions = revokeUserSessions(user.id);
   const approvalMessage = user.approvalNotice ? "Seu cadastro foi aprovado. Bem-vindo ao Raizes Kids!" : "";
   if (user.approvalNotice) {
     const users = readUsers();
@@ -239,7 +241,10 @@ async function login(req, res) {
   const sessionId = crypto.randomBytes(32).toString("hex");
   sessions.set(sessionId, { userId: user.id, expiresAt: Date.now() + 1000 * 60 * 60 * 12 });
   res.setHeader("Set-Cookie", sessionCookie(sessionId));
-  sendJson(res, 200, { user: publicUser(user), message: approvalMessage });
+  const sharedPasswordMessage = removedSessions
+    ? "Sua senha foi usada em outro dispositivo. Por seguranca, a sessao anterior foi encerrada."
+    : "";
+  sendJson(res, 200, { user: publicUser(user), message: [approvalMessage, sharedPasswordMessage].filter(Boolean).join(" ") });
 }
 
 function logout(req, res) {
@@ -363,19 +368,38 @@ function requireAdmin(req, res) {
 }
 
 function getSessionUser(req) {
+  return getSessionState(req).user;
+}
+
+function getSessionState(req) {
   const sessionId = getCookie(req, "rk_session");
   const session = sessionId ? sessions.get(sessionId) : null;
-  if (!session) return null;
+  if (!session) {
+    const message = sessionId ? revokedSessions.get(sessionId) || "Sua sessao foi encerrada. Entre novamente para continuar." : "";
+    if (sessionId) revokedSessions.delete(sessionId);
+    return { user: null, message };
+  }
   if (session.expiresAt < Date.now()) {
     sessions.delete(sessionId);
-    return null;
+    return { user: null, message: "Sua sessao expirou. Entre novamente para continuar." };
   }
   const user = readUsers().find((item) => item.id === session.userId) || null;
   if (user?.active === false) {
     sessions.delete(sessionId);
-    return null;
+    return { user: null, message: "Seu acesso foi desativado. Fale com o administrador." };
   }
-  return user;
+  return { user, message: "" };
+}
+
+function revokeUserSessions(userId) {
+  let removed = 0;
+  for (const [sessionId, session] of sessions.entries()) {
+    if (session.userId !== userId) continue;
+    sessions.delete(sessionId);
+    revokedSessions.set(sessionId, "Sua senha foi usada em outro dispositivo. Esta sessao foi encerrada por seguranca.");
+    removed += 1;
+  }
+  return removed;
 }
 
 function readUsers() {
