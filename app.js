@@ -1193,7 +1193,7 @@ function cleanVideoTitle(value) {
     .trim();
 }
 
-function printEbook() {
+async function printEbook() {
   const lessons = filteredLessons();
   if (!lessons.length) {
     window.alert("Nenhuma lição ativa nos filtros para exportar.");
@@ -1202,6 +1202,9 @@ function printEbook() {
 
   els.ebookPrintArea.innerHTML = buildEbookHtml(lessons);
   document.body.classList.add("ebook-printing");
+  // Aguarda o navegador aplicar o HTML/CSS do livro antes de abrir a impressão.
+  // Sem esta pausa curta, alguns navegadores montam o PDF com medidas antigas da tela.
+  await waitForEbookLayout();
   const cleanup = () => {
     document.body.classList.remove("ebook-printing");
     els.ebookPrintArea.innerHTML = "";
@@ -1209,6 +1212,21 @@ function printEbook() {
   };
   window.addEventListener("afterprint", cleanup);
   window.print();
+}
+
+function waitForEbookLayout() {
+  const images = [...els.ebookPrintArea.querySelectorAll("img")];
+  const loadedImages = images.map((image) => {
+    if (image.complete) return Promise.resolve();
+    return new Promise((resolve) => {
+      image.addEventListener("load", resolve, { once: true });
+      image.addEventListener("error", resolve, { once: true });
+    });
+  });
+
+  return Promise.all(loadedImages).then(() => new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  }));
 }
 
 function buildEbookHtml(lessons) {

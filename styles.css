@@ -2661,6 +2661,195 @@ textarea,
   object-fit: contain;
 }
 
+/* Layout definitivo da exportacao do livro.
+   Este bloco fica depois dos estilos antigos para impedir que regras da tela desalinem o PDF. */
+@media print {
+  body.ebook-printing {
+    width: auto !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+    color: #1f2b3d !important;
+  }
+
+  body.ebook-printing #skyCanvas,
+  body.ebook-printing .app-shell,
+  body.ebook-printing .print-watermark,
+  body.ebook-printing .print-footer {
+    display: none !important;
+  }
+
+  body.ebook-printing .ebook-print-area {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  body.ebook-printing .ebook,
+  body.ebook-printing .ebook * {
+    box-sizing: border-box;
+  }
+
+  body.ebook-printing .ebook {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #1f2b3d !important;
+    font-family: "Segoe UI", Arial, sans-serif !important;
+    background: #fff !important;
+  }
+
+  body.ebook-printing .ebook-cover,
+  body.ebook-printing .ebook-toc,
+  body.ebook-printing .ebook-lesson {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+
+  body.ebook-printing .ebook-cover {
+    display: grid !important;
+    min-height: 250mm !important;
+    align-content: center !important;
+    justify-items: center !important;
+    padding: 26mm 16mm !important;
+    border: 0.9mm solid rgba(216, 167, 47, 0.72) !important;
+    text-align: center !important;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  body.ebook-printing .ebook-cover p,
+  body.ebook-printing .ebook-cover h1,
+  body.ebook-printing .ebook-cover span,
+  body.ebook-printing .ebook-cover small,
+  body.ebook-printing .ebook-cover-line {
+    background: transparent !important;
+  }
+
+  body.ebook-printing .ebook-cover h1 {
+    max-width: 155mm !important;
+    font-size: 32pt !important;
+    line-height: 1.08 !important;
+  }
+
+  body.ebook-printing .ebook-toc {
+    padding: 0 !important;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  body.ebook-printing .ebook-toc-row {
+    display: grid !important;
+    grid-template-columns: 12mm minmax(0, 1fr) 38mm !important;
+    gap: 4mm !important;
+    align-items: start !important;
+    width: 100% !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  body.ebook-printing .ebook-toc-row span,
+  body.ebook-printing .ebook-toc-row em,
+  body.ebook-printing .ebook-section p,
+  body.ebook-printing .ebook-lesson-header h2,
+  body.ebook-printing .ebook-lesson-header strong {
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  body.ebook-printing .ebook-lesson {
+    display: block !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    break-before: page;
+    page-break-before: always;
+  }
+
+  body.ebook-printing .ebook-toc + .ebook-lesson {
+    break-before: auto;
+    page-break-before: auto;
+  }
+
+  body.ebook-printing .ebook-lesson::before {
+    display: none !important;
+  }
+
+  body.ebook-printing .ebook-lesson-header {
+    display: grid !important;
+    grid-template-columns: 14mm minmax(0, 1fr) !important;
+    gap: 4mm !important;
+    align-items: start !important;
+    width: 100% !important;
+    margin: 0 0 6mm !important;
+    padding: 0 0 4mm !important;
+    border-bottom: 0.55mm solid var(--theme, #1f4d75) !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  body.ebook-printing .ebook-lesson-header > span {
+    width: 11mm !important;
+    height: 11mm !important;
+    font-size: 9pt !important;
+  }
+
+  body.ebook-printing .ebook-lesson-header h2 {
+    margin: 1.5mm 0 0 !important;
+    font-size: 20pt !important;
+    line-height: 1.12 !important;
+  }
+
+  body.ebook-printing .ebook-sections {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body.ebook-printing .ebook-section {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 0 4mm !important;
+    padding: 3.5mm 4mm !important;
+    border: 0.3mm solid rgba(31, 77, 117, 0.13) !important;
+    border-left: 1.05mm solid var(--theme, #1f4d75) !important;
+    border-radius: 1.5mm !important;
+    background: #fff !important;
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  body.ebook-printing .ebook-section h3 {
+    margin: 0 0 2mm !important;
+    font-size: 10.5pt !important;
+    line-height: 1.25 !important;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  body.ebook-printing .ebook-section p {
+    margin: 0 !important;
+    font-size: 9.2pt !important;
+    line-height: 1.46 !important;
+    white-space: pre-line !important;
+  }
+
+  body.ebook-printing .ebook-activity-image {
+    max-width: 100% !important;
+    max-height: 150mm !important;
+    margin: 3mm auto 0 !important;
+  }
+}
+
 /* Access and mobile polish */
 body:not(.is-authenticated) .member-only,
 body.is-authenticated .visitor-only {
