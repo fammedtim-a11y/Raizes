@@ -307,7 +307,7 @@ function renderList() {
   els.lessonCount.textContent = locked ? `${lessons.length} item(ns) bloqueado(s)` : `${lessons.length} item(ns)`;
   els.lessonList.innerHTML = lessons.map((lesson) => `
     <button class="lesson-card ${lesson.id === state.activeId ? "active" : ""} ${locked ? "locked" : ""}" type="button" data-id="${lesson.id}">
-      <span class="lesson-cover">${lesson.activityImage ? `<img src="${escapeHtml(lesson.activityImage)}" alt="" />` : coverEmoji(lesson.category)}</span>
+      <span class="lesson-cover">${coverEmoji(lesson.category)}</span>
       <strong>${escapeHtml(lesson.title)}</strong>
       <span>${escapeHtml(lesson.verse || "Sem versículo informado")}</span>
       <span class="lesson-meta">
@@ -361,6 +361,7 @@ function renderReader() {
   template.querySelector(".reader-age").textContent = `👧 ${lesson.age} anos`;
   template.querySelector(".reader-verse strong").textContent = lesson.verse || "Versículo não informado";
   const timeline = template.querySelector(".section-timeline");
+  const linkedVideo = extractLessonVideos(lesson)[0];
 
   timeline.innerHTML = SECTIONS.map(([key, label, icon, emoji]) => {
     const text = lesson.sections?.[key]?.trim();
@@ -388,9 +389,47 @@ function renderReader() {
     `);
   }
 
+  // Player compacto da licao: usa o primeiro link do YouTube encontrado no roteiro.
+  // O botao de tela cheia ajuda quem esta acompanhando a aula a ver o video sem sair da pagina.
+  if (linkedVideo) {
+    template.querySelector(".reader-hero").insertAdjacentHTML("afterend", buildLessonVideoPlayer(linkedVideo));
+  }
+
   els.reader.innerHTML = "";
   els.reader.append(template);
   $("#printPdfBtn").addEventListener("click", printCurrentLesson);
+  $("#lessonVideoFullscreenBtn")?.addEventListener("click", openLessonVideoFullscreen);
+}
+
+function buildLessonVideoPlayer(video) {
+  return `
+    <section class="lesson-video-player" id="lessonVideoPlayer" aria-label="Vídeo vinculado à lição">
+      <div class="lesson-video-frame">
+        <iframe
+          src="https://www.youtube-nocookie.com/embed/${escapeHtml(video.youtubeId)}?rel=0&modestbranding=1"
+          title="${escapeHtml(video.title)}"
+          allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen></iframe>
+      </div>
+      <div class="lesson-video-info">
+        <span class="reader-kicker">Vídeo vinculado</span>
+        <h3>${escapeHtml(video.title)}</h3>
+        <p>${escapeHtml(video.description || "Vídeo de apoio para acompanhar esta lição.")}</p>
+        <button class="icon-button accent" id="lessonVideoFullscreenBtn" type="button">Preencher tela</button>
+      </div>
+    </section>
+  `;
+}
+
+function openLessonVideoFullscreen() {
+  const player = $("#lessonVideoPlayer");
+  if (!player) return;
+  if (player.requestFullscreen) {
+    player.requestFullscreen();
+    return;
+  }
+  const iframe = player.querySelector("iframe");
+  iframe?.requestFullscreen?.();
 }
 
 // Mantem o acervo visivel para visitantes, mas protege o conteudo completo.
