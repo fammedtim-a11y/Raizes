@@ -1470,7 +1470,7 @@ textarea:focus {
 
 .lesson-inline-video {
   display: block;
-  width: min(100%, 230px);
+  width: min(100%, 460px);
   margin: 8px 0 12px;
   padding: 6px;
   border: 1px solid rgba(45, 156, 255, 0.16);
@@ -3124,7 +3124,7 @@ body.is-authenticated .visitor-only {
   }
 
   .lesson-inline-video {
-    width: min(100%, 230px);
+    width: min(100%, 460px);
     margin: 8px 0 12px;
     padding: 6px;
     border-radius: 10px;
