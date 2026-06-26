@@ -302,15 +302,18 @@ function renderSectionFields() {
 function renderList() {
   if (!els.lessonList || !els.lessonCount) return;
   const lessons = filteredLessons();
-  els.lessonCount.textContent = catalogIsLimited() ? `${lessons.length} amostra(s)` : `${lessons.length} item(ns)`;
+  const locked = catalogIsLimited();
+  // Visitante ve todos os cards, mas cada item recebe estado visual de bloqueio.
+  els.lessonCount.textContent = locked ? `${lessons.length} item(ns) bloqueado(s)` : `${lessons.length} item(ns)`;
   els.lessonList.innerHTML = lessons.map((lesson) => `
-    <button class="lesson-card ${lesson.id === state.activeId ? "active" : ""}" type="button" data-id="${lesson.id}">
+    <button class="lesson-card ${lesson.id === state.activeId ? "active" : ""} ${locked ? "locked" : ""}" type="button" data-id="${lesson.id}">
       <span class="lesson-cover">${lesson.activityImage ? `<img src="${escapeHtml(lesson.activityImage)}" alt="" />` : coverEmoji(lesson.category)}</span>
       <strong>${escapeHtml(lesson.title)}</strong>
       <span>${escapeHtml(lesson.verse || "Sem versículo informado")}</span>
       <span class="lesson-meta">
         <span class="pill">${escapeHtml(lesson.category)}</span>
         <span class="pill">${escapeHtml(lesson.age)} anos</span>
+        ${locked ? '<span class="pill lock-pill">🔒 Bloqueado</span>' : ""}
       </span>
     </button>
   `).join("");
@@ -320,7 +323,7 @@ function renderList() {
       state.activeId = card.dataset.id;
       renderList();
       renderReader();
-      loadIntoForm(getActiveLesson());
+      if (!catalogIsLimited()) loadIntoForm(getActiveLesson());
     });
   });
 
@@ -338,6 +341,11 @@ function renderReader() {
   const lesson = getActiveLesson();
   if (!lesson) {
     els.reader.innerHTML = "";
+    return;
+  }
+
+  if (catalogIsLimited()) {
+    renderLockedReader(lesson);
     return;
   }
 
@@ -385,6 +393,31 @@ function renderReader() {
   $("#printPdfBtn").addEventListener("click", printCurrentLesson);
 }
 
+// Mantem o acervo visivel para visitantes, mas protege o conteudo completo.
+// Assim a pessoa percebe o valor do sistema antes de entrar ou cadastrar.
+function renderLockedReader(lesson) {
+  const theme = categoryTheme(lesson.category);
+  els.reader.style.setProperty("--theme", theme.primary);
+  els.reader.style.setProperty("--theme-soft", theme.soft);
+  els.reader.innerHTML = `
+    <section class="locked-reader">
+      <span class="locked-icon">🔒</span>
+      <span class="reader-kicker">Conteúdo exclusivo</span>
+      <h2>${escapeHtml(lesson.title)}</h2>
+      <p>Esta lição já está disponível no catálogo, mas o plano completo é liberado apenas para usuários com acesso ativo.</p>
+      <div class="lesson-meta">
+        <span class="pill">${escapeHtml(lesson.category || "Lição")}</span>
+        <span class="pill">${escapeHtml(lesson.age || "Todas")} anos</span>
+        <span class="pill lock-pill">Bloqueado</span>
+      </div>
+      <div class="home-login-actions">
+        <a class="icon-button primary" href="login.html">Entrar</a>
+        <a class="icon-button accent" href="login.html">Cadastrar</a>
+      </div>
+    </section>
+  `;
+}
+
 function printCurrentLesson() {
   document.body.classList.remove("ebook-printing");
   if (els.ebookPrintArea) els.ebookPrintArea.innerHTML = "";
@@ -398,7 +431,7 @@ function filteredLessons() {
   const testament = els.testamentFilter?.value || "Todos";
   const special = els.specialFilter?.value || "Todas";
 
-  const lessons = state.lessons.filter((lesson) => {
+  return state.lessons.filter((lesson) => {
     const content = normalize([
       lesson.title,
       lesson.category,
@@ -414,29 +447,12 @@ function filteredLessons() {
     const matchesSpecial = special === "Todas" || content.includes(normalize(special));
     return matchesTerm && matchesCategory && matchesAge && matchesTestament && matchesSpecial;
   });
-
-  return catalogIsLimited() ? limitOneLessonPerAge(lessons) : lessons;
 }
 
+// Visitantes enxergam o tamanho do acervo, mas nao acessam o conteudo interno.
+// O administrador e usuarios logados continuam com acesso normal.
 function catalogIsLimited() {
   return !isAdminPage && !state.authUser;
-}
-
-function limitOneLessonPerAge(lessons) {
-  const byAge = new Map();
-  lessons.forEach((lesson) => {
-    if (!byAge.has(lesson.age)) byAge.set(lesson.age, lesson);
-  });
-  return AGE_GROUPS.map((age) => byAge.get(age)).filter(Boolean);
-}
-
-function limitOneVideoPerType(videos) {
-  const byType = new Map();
-  videos.forEach((video) => {
-    const type = video.category || video.playlist || video.season || "Trilha";
-    if (!byType.has(type)) byType.set(type, video);
-  });
-  return [...byType.values()];
 }
 
 function renderLimitedNotice() {
@@ -449,8 +465,8 @@ function renderLimitedNotice() {
   if (!parent || parent.querySelector(".limited-notice")) return;
   parent.insertAdjacentHTML("afterbegin", `
     <div class="limited-notice">
-      <strong>Amostra liberada</strong>
-      <span>Faça login para ver todas as lições, trilhas e materiais.</span>
+      <strong>Catálogo visível, acesso protegido</strong>
+      <span>Você está vendo tudo que existe. Entre para abrir lições, trilhas, devocionais e EBF completa.</span>
       <a href="login.html">Entrar</a>
     </div>
   `);
@@ -836,7 +852,9 @@ async function importJson(event) {
 function renderTrails() {
   if (!els.trailGrid) return;
   const videos = filteredVideos();
-  if (els.trailCount) els.trailCount.textContent = catalogIsLimited() ? `${videos.length} amostra(s)` : `${videos.length} vídeo(s)`;
+  const locked = catalogIsLimited();
+  // Nas trilhas, visitantes tambem veem o acervo completo com cadeado.
+  if (els.trailCount) els.trailCount.textContent = locked ? `${videos.length} trilha(s) bloqueada(s)` : `${videos.length} vídeo(s)`;
   renderLimitedNotice();
 
   if (!videos.length) {
@@ -857,7 +875,11 @@ function renderTrails() {
   }
 
   const activeVideo = videos.find((video) => video.id === state.activeVideoId) || videos[0];
-  renderStreamPlayer(activeVideo);
+  if (locked) {
+    renderLockedStreamPlayer(activeVideo);
+  } else {
+    renderStreamPlayer(activeVideo);
+  }
   renderStreamHero(pickFeaturedVideo(videos));
   const grouped = groupVideosByShelf(videos);
   renderStreamQuickNav(grouped);
@@ -892,7 +914,13 @@ function renderTrails() {
 
   document.querySelectorAll("[data-play-video]").forEach((button) => {
     button.addEventListener("click", () => {
-      state.activeVideoId = button.dataset.playVideo;
+      const selectedVideo = videos.find((video) => video.id === button.dataset.playVideo) || activeVideo;
+      if (catalogIsLimited()) {
+        renderLockedStreamPlayer(selectedVideo);
+        els.streamPlayer?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      state.activeVideoId = selectedVideo.id;
       renderTrails();
       els.streamPlayer?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -911,22 +939,27 @@ function renderTrails() {
 }
 
 function renderTrailCard(video) {
+  const locked = catalogIsLimited();
+  const watchActions = locked
+    ? '<a class="icon-button accent" href="login.html">Entrar para assistir</a>'
+    : `<a class="icon-button" href="${escapeHtml(video.url)}" target="_blank" rel="noreferrer">YouTube</a>`;
   return `
-    <article class="trail-card ${video.id === state.activeVideoId ? "active" : ""}">
+    <article class="trail-card ${video.id === state.activeVideoId ? "active" : ""} ${locked ? "locked" : ""}">
       <button class="trail-thumb" type="button" data-play-video="${escapeHtml(video.id)}" aria-label="Reproduzir vídeo ${escapeHtml(video.title)}">
         <img src="https://img.youtube.com/vi/${escapeHtml(video.youtubeId)}/hqdefault.jpg" alt="" loading="lazy" onerror="this.remove()" />
-        <span>▶</span>
+        <span>${locked ? "🔒" : "▶"}</span>
       </button>
       <div class="trail-content">
         <div class="lesson-meta">
           <span class="pill">${escapeHtml(video.category || "Trilha")}</span>
           <span class="pill">${escapeHtml(video.age || "Todas")} anos</span>
+          ${locked ? '<span class="pill lock-pill">Bloqueado</span>' : ""}
         </div>
         <h3>${escapeHtml(video.title)}</h3>
         <p>${escapeHtml(video.description || video.lessonTitle || "Vídeo de apoio para a lição.")}</p>
         <div class="trail-actions">
-          <button class="icon-button" type="button" data-play-video="${escapeHtml(video.id)}">Assistir</button>
-          <a class="icon-button" href="${escapeHtml(video.url)}" target="_blank" rel="noreferrer">YouTube</a>
+          <button class="icon-button" type="button" data-play-video="${escapeHtml(video.id)}">${locked ? "Ver bloqueio" : "Assistir"}</button>
+          ${watchActions}
           ${video.source === "manual" ? `<button class="icon-button" type="button" data-edit-video="${escapeHtml(video.id)}">Editar</button>` : ""}
         </div>
       </div>
@@ -955,12 +988,13 @@ function groupVideosByShelf(videos) {
 }
 
 function renderStreamPlayer(video) {
+  // Nao adicionar autoplay aqui: o video deve iniciar somente quando o usuario decidir.
   els.streamPlayer.innerHTML = `
     <div class="stream-player-frame">
       <iframe
-        src="https://www.youtube-nocookie.com/embed/${escapeHtml(video.youtubeId)}?autoplay=1&rel=0&modestbranding=1"
+        src="https://www.youtube-nocookie.com/embed/${escapeHtml(video.youtubeId)}?rel=0&modestbranding=1"
         title="${escapeHtml(video.title)}"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowfullscreen></iframe>
     </div>
     <div class="stream-player-info">
@@ -980,20 +1014,42 @@ function renderStreamPlayer(video) {
   `;
 }
 
+// O player nao usa autoplay: o lider escolhe quando iniciar o video.
+function renderLockedStreamPlayer(video) {
+  els.streamPlayer.innerHTML = `
+    <div class="locked-reader stream-lock">
+      <span class="locked-icon">🔒</span>
+      <span class="reader-kicker">Trilha exclusiva</span>
+      <h2>${escapeHtml(video.title)}</h2>
+      <p>Esta trilha está no acervo, mas o vídeo completo é liberado apenas para usuários com acesso ativo.</p>
+      <div class="lesson-meta">
+        <span class="pill">${escapeHtml(video.category || "Trilha")}</span>
+        <span class="pill">${escapeHtml(video.age || "Todas")} anos</span>
+        <span class="pill lock-pill">Bloqueado</span>
+      </div>
+      <div class="home-login-actions">
+        <a class="icon-button primary" href="login.html">Entrar</a>
+        <a class="icon-button accent" href="login.html">Cadastrar</a>
+      </div>
+    </div>
+  `;
+}
+
 function renderStreamHero(video) {
+  const locked = catalogIsLimited();
   els.streamHero.innerHTML = `
     <div class="stream-hero-copy">
       <span class="reader-kicker">Destaque inteligente</span>
       <h2>${escapeHtml(video.title)}</h2>
       <p>${escapeHtml(video.description || video.lessonTitle || "Conteúdo em destaque para sua aula.")}</p>
       <div class="trail-actions">
-        <button class="icon-button accent" type="button" data-play-video="${escapeHtml(video.id)}">▶ Assistir agora</button>
-        <a class="icon-button" href="${escapeHtml(watchUrl(video))}" target="_blank" rel="noreferrer">Abrir no YouTube</a>
+        <button class="icon-button accent" type="button" data-play-video="${escapeHtml(video.id)}">${locked ? "🔒 Ver bloqueio" : "▶ Assistir agora"}</button>
+        ${locked ? '<a class="icon-button" href="login.html">Entrar para liberar</a>' : `<a class="icon-button" href="${escapeHtml(watchUrl(video))}" target="_blank" rel="noreferrer">Abrir no YouTube</a>`}
       </div>
     </div>
     <button class="stream-hero-thumb" type="button" data-play-video="${escapeHtml(video.id)}">
       <img src="https://img.youtube.com/vi/${escapeHtml(video.youtubeId)}/maxresdefault.jpg" alt="" onerror="this.src='https://img.youtube.com/vi/${escapeHtml(video.youtubeId)}/hqdefault.jpg'" />
-      <span>▶</span>
+      <span>${locked ? "🔒" : "▶"}</span>
     </button>
   `;
 }
@@ -1062,7 +1118,7 @@ function filteredVideos() {
     return linkedMatch && matchesTerm && matchesCategory && matchesAge;
   });
 
-  return catalogIsLimited() ? limitOneVideoPerType(videos) : videos;
+  return videos;
 }
 
 function allVideos() {

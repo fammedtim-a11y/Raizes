@@ -1285,6 +1285,32 @@ textarea:focus {
   margin-top: 22px;
 }
 
+/* Cards de valor da Home: mantem a promessa do sistema visivel logo no primeiro acesso. */
+.home-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.home-feature-grid span {
+  display: grid;
+  gap: 3px;
+  padding: 12px;
+  border: 1px solid rgba(45, 156, 255, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.home-feature-grid strong {
+  color: #15456d;
+}
+
+.home-feature-grid small {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
 .home-illustration {
   display: grid;
   gap: 16px;
@@ -1822,6 +1848,89 @@ textarea,
 .lesson-card.active {
   border-color: rgba(216, 167, 47, 0.58);
   background: #fff;
+}
+
+.lesson-card.locked,
+.trail-card.locked {
+  position: relative;
+}
+
+.lesson-card.locked::after,
+.trail-card.locked::after {
+  content: "🔒";
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(21, 69, 109, 0.9);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(31, 77, 117, 0.18);
+}
+
+.lock-pill {
+  color: #15456d;
+  border-color: rgba(21, 69, 109, 0.2);
+  background: rgba(45, 156, 255, 0.12);
+}
+
+/* Estado bloqueado para visitantes: mostra o acervo, mas conduz para login/cadastro. */
+.locked-reader {
+  display: grid;
+  gap: 14px;
+  align-content: center;
+  min-height: 520px;
+  padding: clamp(24px, 5vw, 54px);
+  color: #15456d;
+  background:
+    radial-gradient(circle at 16% 18%, rgba(255, 217, 61, 0.28), transparent 30%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(235, 250, 255, 0.9));
+  text-align: center;
+}
+
+.locked-reader .reader-kicker {
+  justify-self: center;
+  color: #135f9c;
+  border-color: rgba(45, 156, 255, 0.22);
+  background: rgba(45, 156, 255, 0.1);
+}
+
+.locked-reader h2 {
+  font-size: clamp(1.8rem, 4vw, 3.2rem);
+  line-height: 1.02;
+}
+
+.locked-reader p {
+  max-width: 620px;
+  justify-self: center;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.locked-reader .lesson-meta,
+.locked-reader .home-login-actions {
+  justify-content: center;
+}
+
+.locked-icon {
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 22px;
+  background: #15456d;
+  color: #fff;
+  font-size: 2rem;
+  box-shadow: 0 18px 36px rgba(31, 77, 117, 0.18);
+}
+
+.stream-lock {
+  min-height: 100%;
+  border-radius: 8px;
 }
 
 .lesson-reader {
@@ -2723,6 +2832,7 @@ body.is-authenticated .visitor-only {
   }
 
   .home-actions,
+  .home-feature-grid,
   .home-login-actions,
   .trail-actions {
     display: grid;
