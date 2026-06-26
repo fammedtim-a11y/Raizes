@@ -16,6 +16,7 @@ const initialUsers = [
     username: "08047232657",
     role: "admin",
     approved: true,
+    active: true,
     name: "Administrador",
     email: "",
     address: "",
@@ -28,6 +29,7 @@ const initialUsers = [
     username: "1453505",
     role: "user",
     approved: true,
+    active: true,
     name: "Usuário de uso 1",
     email: "",
     address: "",
@@ -40,6 +42,7 @@ const initialUsers = [
     username: "08692663654",
     role: "user",
     approved: true,
+    active: true,
     name: "Usuário de uso 2",
     email: "",
     address: "",
@@ -132,9 +135,15 @@ async function handleApi(req, res, url) {
     return;
   }
 
-  const rejectMatch = url.pathname.match(/^\/api\/admin\/users\/([^/]+)\/reject$/);
-  if (req.method === "POST" && rejectMatch) {
-    updateUserApproval(res, rejectMatch[1], false);
+  const deactivateMatch = url.pathname.match(/^\/api\/admin\/users\/([^/]+)\/deactivate$/);
+  if (req.method === "POST" && deactivateMatch) {
+    updateUserActive(res, deactivateMatch[1], false);
+    return;
+  }
+
+  const activateMatch = url.pathname.match(/^\/api\/admin\/users\/([^/]+)\/activate$/);
+  if (req.method === "POST" && activateMatch) {
+    updateUserActive(res, activateMatch[1], true);
     return;
   }
 
@@ -211,11 +220,26 @@ async function login(req, res) {
     return;
   }
 
+  if (user.active === false) {
+    sendJson(res, 403, { error: "Seu acesso esta desativado. Fale com o administrador." });
+    return;
+  }
+
   registerAttempt(ip, true);
+  const approvalMessage = user.approvalNotice ? "Seu cadastro foi aprovado. Bem-vindo ao Raizes Kids!" : "";
+  if (user.approvalNotice) {
+    const users = readUsers();
+    const savedUser = users.find((item) => item.id === user.id);
+    if (savedUser) {
+      savedUser.approvalNotice = false;
+      savedUser.updatedAt = new Date().toISOString();
+      writeUsers(users);
+    }
+  }
   const sessionId = crypto.randomBytes(32).toString("hex");
   sessions.set(sessionId, { userId: user.id, expiresAt: Date.now() + 1000 * 60 * 60 * 12 });
   res.setHeader("Set-Cookie", sessionCookie(sessionId));
-  sendJson(res, 200, { user: publicUser(user) });
+  sendJson(res, 200, { user: publicUser(user), message: approvalMessage });
 }
 
 function logout(req, res) {
@@ -251,6 +275,7 @@ async function register(req, res) {
     username,
     role: "user",
     approved: false,
+    active: true,
     name: cleanText(body.name),
     email: cleanText(body.email),
     address: cleanText(body.address),
@@ -284,6 +309,25 @@ function updateUserApproval(res, id, approved) {
     return;
   }
   user.approved = approved;
+  if (approved) {
+    user.active = true;
+    user.approvalNotice = true;
+    user.approvedAt = new Date().toISOString();
+  }
+  user.updatedAt = new Date().toISOString();
+  writeUsers(users);
+  sendJson(res, 200, { user: publicAdminUser(user) });
+}
+
+function updateUserActive(res, id, active) {
+  const users = readUsers();
+  const user = users.find((item) => item.id === id);
+  if (!user || user.role === "admin") {
+    sendJson(res, 404, { error: "UsuÃ¡rio nÃ£o encontrado." });
+    return;
+  }
+  user.active = active;
+  if (active) user.approved = true;
   user.updatedAt = new Date().toISOString();
   writeUsers(users);
   sendJson(res, 200, { user: publicAdminUser(user) });
@@ -326,7 +370,12 @@ function getSessionUser(req) {
     sessions.delete(sessionId);
     return null;
   }
-  return readUsers().find((user) => user.id === session.userId) || null;
+  const user = readUsers().find((item) => item.id === session.userId) || null;
+  if (user?.active === false) {
+    sessions.delete(sessionId);
+    return null;
+  }
+  return user;
 }
 
 function readUsers() {
@@ -373,7 +422,7 @@ function readBody(req) {
 
 function publicUser(user) {
   if (!user) return null;
-  return { username: user.username, role: user.role, approved: user.approved, name: user.name };
+  return { username: user.username, role: user.role, approved: user.approved, active: user.active !== false, name: user.name };
 }
 
 function publicAdminUser(user) {
@@ -382,6 +431,7 @@ function publicAdminUser(user) {
     username: user.username,
     role: user.role,
     approved: user.approved,
+    active: user.active !== false,
     name: user.name,
     email: user.email,
     address: user.address,

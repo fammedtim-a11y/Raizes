@@ -54,7 +54,8 @@ const state = {
   activeVideoId: null,
   tab: "home",
   manageTab: "lessons",
-  trailsRendered: false
+  trailsRendered: false,
+  authUser: null
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -114,10 +115,20 @@ const els = {
   clearVideo: $("#clearVideoBtn"),
   deleteVideo: $("#deleteVideoBtn"),
   videoActionMessage: $("#videoActionMessage"),
+  lessonAdminList: $("#lessonAdminList"),
+  trailAdminList: $("#trailAdminList"),
   videoAdminList: $("#videoAdminList")
 };
 
 init();
+
+window.onRaizesAuthChange = (user) => {
+  state.authUser = user || null;
+  renderLimitedNotice();
+  renderList();
+  renderReader();
+  if (state.trailsRendered) renderTrails();
+};
 
 function init() {
   if (els.sectionFields) renderSectionFields();
@@ -133,6 +144,7 @@ function init() {
     setTab(initialTab);
   }
   drawSky();
+  renderLimitedNotice();
 }
 
 function loadLessons() {
@@ -197,6 +209,8 @@ function bindEvents() {
   [els.search, els.categoryFilter, els.ageFilter, els.testamentFilter, els.specialFilter].filter(Boolean).forEach((el) => {
     const refreshFilteredViews = () => {
       renderList();
+      renderLessonAdminList();
+      renderTrailAdminList();
       if (state.trailsRendered) renderTrails();
     };
     el.addEventListener("input", refreshFilteredViews);
@@ -254,6 +268,8 @@ function render() {
   fillVideoLessonOptions();
   renderList();
   renderReader();
+  renderLessonAdminList();
+  renderTrailAdminList();
   renderVideoAdminList();
 }
 
@@ -286,7 +302,7 @@ function renderSectionFields() {
 function renderList() {
   if (!els.lessonList || !els.lessonCount) return;
   const lessons = filteredLessons();
-  els.lessonCount.textContent = `${lessons.length} item(ns)`;
+  els.lessonCount.textContent = catalogIsLimited() ? `${lessons.length} amostra(s)` : `${lessons.length} item(ns)`;
   els.lessonList.innerHTML = lessons.map((lesson) => `
     <button class="lesson-card ${lesson.id === state.activeId ? "active" : ""}" type="button" data-id="${lesson.id}">
       <span class="lesson-cover">${lesson.activityImage ? `<img src="${escapeHtml(lesson.activityImage)}" alt="" />` : coverEmoji(lesson.category)}</span>
@@ -313,12 +329,17 @@ function renderList() {
     renderList();
     renderReader();
   }
+
+  renderLimitedNotice();
 }
 
 function renderReader() {
   if (!els.reader) return;
   const lesson = getActiveLesson();
-  if (!lesson) return;
+  if (!lesson) {
+    els.reader.innerHTML = "";
+    return;
+  }
 
   const template = $("#readerTemplate").content.cloneNode(true);
   const theme = categoryTheme(lesson.category);
@@ -377,7 +398,7 @@ function filteredLessons() {
   const testament = els.testamentFilter?.value || "Todos";
   const special = els.specialFilter?.value || "Todas";
 
-  return state.lessons.filter((lesson) => {
+  const lessons = state.lessons.filter((lesson) => {
     const content = normalize([
       lesson.title,
       lesson.category,
@@ -393,6 +414,46 @@ function filteredLessons() {
     const matchesSpecial = special === "Todas" || content.includes(normalize(special));
     return matchesTerm && matchesCategory && matchesAge && matchesTestament && matchesSpecial;
   });
+
+  return catalogIsLimited() ? limitOneLessonPerAge(lessons) : lessons;
+}
+
+function catalogIsLimited() {
+  return !isAdminPage && !state.authUser;
+}
+
+function limitOneLessonPerAge(lessons) {
+  const byAge = new Map();
+  lessons.forEach((lesson) => {
+    if (!byAge.has(lesson.age)) byAge.set(lesson.age, lesson);
+  });
+  return AGE_GROUPS.map((age) => byAge.get(age)).filter(Boolean);
+}
+
+function limitOneVideoPerType(videos) {
+  const byType = new Map();
+  videos.forEach((video) => {
+    const type = video.category || video.playlist || video.season || "Trilha";
+    if (!byType.has(type)) byType.set(type, video);
+  });
+  return [...byType.values()];
+}
+
+function renderLimitedNotice() {
+  const target = state.tab === "trails" ? els.trailGrid : els.lessonList;
+  if (!target || !catalogIsLimited()) {
+    document.querySelectorAll(".limited-notice").forEach((notice) => notice.remove());
+    return;
+  }
+  const parent = target.parentElement;
+  if (!parent || parent.querySelector(".limited-notice")) return;
+  parent.insertAdjacentHTML("afterbegin", `
+    <div class="limited-notice">
+      <strong>Amostra liberada</strong>
+      <span>Faça login para ver todas as lições, trilhas e materiais.</span>
+      <a href="login.html">Entrar</a>
+    </div>
+  `);
 }
 
 function inferTestament(content) {
@@ -571,6 +632,7 @@ function saveVideoFromForm(event) {
   clearVideoForm();
   state.trailsRendered = true;
   renderTrails();
+  renderTrailAdminList();
   renderVideoAdminList();
   showActionMessage("video", `Vídeo "${video.title}" salvo com sucesso.`);
   if (els.trailsView) {
@@ -625,8 +687,97 @@ function deleteCurrentVideo() {
   clearVideoForm();
   state.trailsRendered = true;
   renderTrails();
+  renderTrailAdminList();
   renderVideoAdminList();
   showActionMessage("video", `Vídeo "${video.title}" excluído com sucesso.`);
+}
+
+function renderLessonAdminList() {
+  if (!els.lessonAdminList) return;
+  const lessons = filteredLessons();
+  if (!lessons.length) {
+    els.lessonAdminList.innerHTML = '<p class="muted-line">Nenhuma lição encontrada com os filtros atuais.</p>';
+    return;
+  }
+
+  els.lessonAdminList.innerHTML = lessons.map((lesson) => `
+    <button class="admin-item-card ${lesson.id === state.activeId ? "active" : ""}" type="button" data-admin-lesson-id="${escapeHtml(lesson.id)}">
+      <span class="admin-item-icon">${lesson.activityImage ? `<img src="${escapeHtml(lesson.activityImage)}" alt="" />` : coverEmoji(lesson.category)}</span>
+      <span class="admin-item-body">
+        <strong>${escapeHtml(lesson.title)}</strong>
+        <small>${escapeHtml(lesson.category || "Sem categoria")} · ${escapeHtml(lesson.age || "Todas")} anos</small>
+        <em>${escapeHtml(lesson.verse || "Sem versículo informado")}</em>
+      </span>
+      <span class="admin-item-action">Editar</span>
+    </button>
+  `).join("");
+
+  els.lessonAdminList.querySelectorAll("[data-admin-lesson-id]").forEach((card) => {
+    card.addEventListener("click", () => {
+      const lesson = state.lessons.find((item) => item.id === card.dataset.adminLessonId);
+      if (!lesson) return;
+      state.activeId = lesson.id;
+      loadIntoForm(lesson);
+      renderList();
+      renderReader();
+      renderLessonAdminList();
+      els.form?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+}
+
+function renderTrailAdminList() {
+  if (!els.trailAdminList) return;
+  const videos = filteredVideos();
+  if (!videos.length) {
+    els.trailAdminList.innerHTML = `
+      <div class="manager-subheading">
+        <h3>Trilhas existentes</h3>
+        <p>Nenhuma trilha encontrada com os filtros atuais.</p>
+      </div>
+    `;
+    return;
+  }
+
+  els.trailAdminList.innerHTML = `
+    <div class="manager-subheading">
+      <h3>Trilhas existentes</h3>
+      <p>Edite vídeos manuais ou abra a lição que gerou uma trilha automática.</p>
+    </div>
+    ${videos.map((video) => `
+      <button class="admin-item-card" type="button" data-admin-trail-id="${escapeHtml(video.id)}">
+        <span class="admin-item-icon video-icon">▶</span>
+        <span class="admin-item-body">
+          <strong>${escapeHtml(video.title)}</strong>
+          <small>${escapeHtml(video.category || "Trilha")} · ${escapeHtml(video.age || "Todas as idades")}</small>
+          <em>${video.source === "manual" ? "Vídeo manual" : `Gerado pela lição: ${escapeHtml(video.lessonTitle || "sem título")}`}</em>
+        </span>
+        <span class="admin-item-action">${video.source === "manual" ? "Editar vídeo" : "Editar lição"}</span>
+      </button>
+    `).join("")}
+  `;
+
+  els.trailAdminList.querySelectorAll("[data-admin-trail-id]").forEach((card) => {
+    card.addEventListener("click", () => {
+      const video = allVideos().find((item) => item.id === card.dataset.adminTrailId);
+      if (!video) return;
+      if (video.source === "manual") {
+        loadVideoIntoForm(video);
+        els.videoForm?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      const lesson = state.lessons.find((item) => item.id === video.lessonId);
+      if (lesson) {
+        state.activeId = lesson.id;
+        loadIntoForm(lesson);
+        setManageTab("lessons");
+        renderList();
+        renderReader();
+        renderLessonAdminList();
+        els.form?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  });
 }
 
 function renderVideoAdminList() {
@@ -685,7 +836,8 @@ async function importJson(event) {
 function renderTrails() {
   if (!els.trailGrid) return;
   const videos = filteredVideos();
-  if (els.trailCount) els.trailCount.textContent = `${videos.length} vídeo(s)`;
+  if (els.trailCount) els.trailCount.textContent = catalogIsLimited() ? `${videos.length} amostra(s)` : `${videos.length} vídeo(s)`;
+  renderLimitedNotice();
 
   if (!videos.length) {
     if (els.streamPlayer) els.streamPlayer.innerHTML = "";
@@ -901,7 +1053,7 @@ function filteredVideos() {
   const category = els.categoryFilter.value;
   const age = els.ageFilter.value;
 
-  return allVideos().filter((video) => {
+  const videos = allVideos().filter((video) => {
     const linkedMatch = video.lessonId ? filteredLessonIds.has(video.lessonId) : true;
     const content = normalize([video.title, video.category, video.age, video.description, video.lessonTitle].join(" "));
     const matchesTerm = !term || content.includes(term);
@@ -909,6 +1061,8 @@ function filteredVideos() {
     const matchesAge = age === "Todas" || !video.age || video.age === age;
     return linkedMatch && matchesTerm && matchesCategory && matchesAge;
   });
+
+  return catalogIsLimited() ? limitOneVideoPerType(videos) : videos;
 }
 
 function allVideos() {

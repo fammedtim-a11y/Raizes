@@ -69,6 +69,14 @@
           </div>
 
           <div id="lessonManagePanel" class="manage-panel active">
+            <div class="manager-heading">
+              <div>
+                <h2>Lições cadastradas</h2>
+                <p>Selecione uma lição existente para editar no formulário abaixo.</p>
+              </div>
+            </div>
+            <div id="lessonAdminList" class="admin-item-list"></div>
+
             <form id="lessonForm" class="editor">
               <input type="hidden" id="lessonId" />
               <div class="form-grid">
@@ -217,6 +225,7 @@
               </div>
               <p id="videoActionMessage" class="action-message" role="status"></p>
             </form>
+            <div id="trailAdminList" class="admin-item-list"></div>
             <div id="videoAdminList" class="video-admin-list"></div>
           </section>
 
