@@ -218,6 +218,14 @@ function bindEvents() {
     button.addEventListener("click", () => setManageTab(button.dataset.manageTab));
   });
 
+  document.querySelectorAll("[data-lesson-rail-prev], [data-lesson-rail-next]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!els.lessonList) return;
+      const direction = button.dataset.lessonRailPrev !== undefined ? -1 : 1;
+      els.lessonList.scrollBy({ left: direction * Math.round(els.lessonList.clientWidth * 0.9), behavior: "smooth" });
+    });
+  });
+
   [els.search, els.categoryFilter, els.ageFilter, els.testamentFilter, els.specialFilter, els.createdMonthFilter].filter(Boolean).forEach((el) => {
     const refreshFilteredViews = () => {
       renderList();

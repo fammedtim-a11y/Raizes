@@ -446,6 +446,12 @@ textarea:focus {
   margin-bottom: 10px;
 }
 
+.lesson-row-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 #lessonCount {
   color: var(--muted);
   font-size: 0.86rem;
@@ -3019,18 +3025,26 @@ body.is-authenticated .visitor-only {
 #studyView #lessonList {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(220px, 280px);
+  grid-auto-columns: calc((100% - 36px) / 4);
   gap: 12px;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
-  padding-bottom: 8px;
+  padding-bottom: 12px;
   scroll-snap-type: x proximity;
+  scrollbar-color: rgba(21, 69, 109, 0.42) rgba(21, 69, 109, 0.08);
+  scrollbar-width: thin;
 }
 
 #studyView .lesson-card {
   min-height: 100%;
   margin-bottom: 0;
   scroll-snap-align: start;
+}
+
+.lesson-rail-arrow {
+  color: #15456d;
+  border-color: rgba(45, 156, 255, 0.22);
+  background: rgba(255, 255, 255, 0.86);
 }
 
 @media (max-width: 720px) {
@@ -3131,6 +3145,19 @@ body.is-authenticated .visitor-only {
   .lesson-list {
     padding: 12px;
     border-radius: 16px;
+  }
+
+  #studyView #lessonList {
+    grid-auto-columns: minmax(78vw, 1fr);
+  }
+
+  .list-heading {
+    display: grid;
+    gap: 8px;
+  }
+
+  .lesson-row-controls {
+    justify-content: space-between;
   }
 
   .lesson-card {
