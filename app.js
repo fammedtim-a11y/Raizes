@@ -361,7 +361,6 @@ function renderReader() {
   template.querySelector(".reader-age").textContent = `👧 ${lesson.age} anos`;
   template.querySelector(".reader-verse strong").textContent = lesson.verse || "Versículo não informado";
   const timeline = template.querySelector(".section-timeline");
-  const linkedVideo = extractLessonVideos(lesson)[0];
 
   timeline.innerHTML = SECTIONS.map(([key, label, icon, emoji]) => {
     const text = lesson.sections?.[key]?.trim();
@@ -371,7 +370,7 @@ function renderReader() {
         <span class="section-icon" aria-hidden="true"><span>${emoji}</span><svg viewBox="0 0 24 24">${ICONS[icon]}</svg></span>
         <div class="section-body">
           <h3><span>${emoji}</span>${label}</h3>
-          <p>${linkify(escapeHtml(text))}</p>
+          ${renderLessonTextWithPlayers(text)}
         </div>
       </section>
     `;
@@ -389,40 +388,59 @@ function renderReader() {
     `);
   }
 
-  // Player compacto da licao: usa o primeiro link do YouTube encontrado no roteiro.
-  // O botao de tela cheia ajuda quem esta acompanhando a aula a ver o video sem sair da pagina.
-  if (linkedVideo) {
-    template.querySelector(".reader-hero").insertAdjacentHTML("afterend", buildLessonVideoPlayer(linkedVideo));
-  }
-
   els.reader.innerHTML = "";
   els.reader.append(template);
   $("#printPdfBtn").addEventListener("click", printCurrentLesson);
-  $("#lessonVideoFullscreenBtn")?.addEventListener("click", openLessonVideoFullscreen);
+  document.querySelectorAll("[data-lesson-video-fullscreen]").forEach((button) => {
+    button.addEventListener("click", openInlineLessonVideoFullscreen);
+  });
 }
 
-function buildLessonVideoPlayer(video) {
+function renderLessonTextWithPlayers(text) {
+  const urlPattern = /(https?:\/\/[^\s<]+)/g;
+  let html = "";
+  let cursor = 0;
+  let match;
+
+  // Cada link do YouTube ganha um player logo abaixo do proprio link na licao.
+  // A funcao linkify continua separada para o PDF/e-book, que nao deve imprimir players.
+  while ((match = urlPattern.exec(text))) {
+    const rawUrl = match[0];
+    const url = trimTrailingUrlPunctuation(rawUrl);
+    const trailing = rawUrl.slice(url.length);
+    const youtubeId = getYouTubeId(url);
+
+    html += formatLessonTextFragment(text.slice(cursor, match.index));
+    html += `<a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(url)}</a>`;
+    if (youtubeId) html += buildInlineLessonVideo(youtubeId);
+    html += formatLessonTextFragment(trailing);
+    cursor = match.index + rawUrl.length;
+  }
+
+  html += formatLessonTextFragment(text.slice(cursor));
+  return `<div class="lesson-section-copy">${html}</div>`;
+}
+
+function buildInlineLessonVideo(youtubeId) {
   return `
-    <section class="lesson-video-player" id="lessonVideoPlayer" aria-label="Vídeo vinculado à lição">
-      <div class="lesson-video-frame">
+    <div class="lesson-inline-video" aria-label="Player do vídeo citado na lição">
+      <div class="lesson-inline-video-frame">
         <iframe
-          src="https://www.youtube-nocookie.com/embed/${escapeHtml(video.youtubeId)}?rel=0&modestbranding=1"
-          title="${escapeHtml(video.title)}"
+          src="https://www.youtube-nocookie.com/embed/${escapeHtml(youtubeId)}?rel=0&modestbranding=1"
+          title="Vídeo de apoio da lição"
           allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowfullscreen></iframe>
       </div>
-      <div class="lesson-video-info">
-        <span class="reader-kicker">Vídeo vinculado</span>
-        <h3>${escapeHtml(video.title)}</h3>
-        <p>${escapeHtml(video.description || "Vídeo de apoio para acompanhar esta lição.")}</p>
-        <button class="icon-button accent" id="lessonVideoFullscreenBtn" type="button">Preencher tela</button>
+      <div class="lesson-inline-video-actions">
+        <span>Vídeo vinculado ao texto</span>
+        <button class="icon-button accent" data-lesson-video-fullscreen type="button">Preencher tela</button>
       </div>
-    </section>
+    </div>
   `;
 }
 
-function openLessonVideoFullscreen() {
-  const player = $("#lessonVideoPlayer");
+function openInlineLessonVideoFullscreen(event) {
+  const player = event.currentTarget.closest(".lesson-inline-video");
   if (!player) return;
   if (player.requestFullscreen) {
     player.requestFullscreen();
@@ -430,6 +448,14 @@ function openLessonVideoFullscreen() {
   }
   const iframe = player.querySelector("iframe");
   iframe?.requestFullscreen?.();
+}
+
+function trimTrailingUrlPunctuation(url) {
+  return url.replace(/[),.;!?]+$/g, "");
+}
+
+function formatLessonTextFragment(value) {
+  return escapeHtml(value).replace(/\n/g, "<br>");
 }
 
 // Mantem o acervo visivel para visitantes, mas protege o conteudo completo.
