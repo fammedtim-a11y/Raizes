@@ -300,24 +300,40 @@ h1 {
 .tabs {
   display: inline-flex;
   gap: 4px;
-  padding: 4px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.58);
+  padding: 6px;
+  border: 1px solid rgba(45, 156, 255, 0.18);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(246, 252, 255, 0.68)),
+    rgba(255, 255, 255, 0.58);
 }
 
 .tab {
+  --tab-accent: var(--blue-deep);
   min-height: 38px;
   padding: 0 14px;
-  border: 0;
-  border-radius: 6px;
-  color: var(--muted);
-  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: #41506a;
+  background: rgba(255, 255, 255, 0.68);
+  font-weight: 900;
+}
+
+.tab:nth-child(1) { --tab-accent: #2f7da4; }
+.tab:nth-child(2) { --tab-accent: #4f8f73; }
+.tab:nth-child(3) { --tab-accent: #a56d16; }
+.tab:nth-child(4) { --tab-accent: #7b4f9d; }
+.tab:nth-child(5) { --tab-accent: #b84f6a; }
+.tab.admin-link { --tab-accent: #244c79; }
+
+.tab:hover {
+  border-color: color-mix(in srgb, var(--tab-accent) 34%, white);
+  color: var(--tab-accent);
 }
 
 .tab.active {
   color: #fff;
-  background: var(--blue-deep);
+  background: linear-gradient(135deg, var(--tab-accent), color-mix(in srgb, var(--tab-accent) 72%, #29c7c9));
 }
 
 .toolbar {
@@ -485,17 +501,39 @@ textarea:focus {
   border-radius: 8px;
   text-align: left;
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.72);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.68)),
+    linear-gradient(135deg, var(--lesson-soft, #eef5fb), rgba(255, 255, 255, 0.62));
 }
 
 .lesson-card.active {
   border-color: rgba(55, 119, 168, 0.55);
+  border-color: color-mix(in srgb, var(--lesson-primary, #3777a8) 58%, white);
   background: #ffffff;
   box-shadow: 0 10px 28px rgba(36, 76, 121, 0.12);
 }
 
 .lesson-card strong {
   font-size: 1rem;
+}
+
+.lesson-card-topic {
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--lesson-primary, #15456d);
+  background: color-mix(in srgb, var(--lesson-soft, #eef5fb) 78%, white);
+  font-size: 0.72rem;
+  font-weight: 1000;
+  line-height: 1;
+}
+
+.lesson-card-verse {
+  color: #526176;
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.25;
 }
 
 .lesson-meta {
@@ -1318,16 +1356,28 @@ textarea:focus {
 }
 
 .home-feature-grid span {
+  --feature-accent: #2f7da4;
   display: grid;
   gap: 3px;
   padding: 12px;
-  border: 1px solid rgba(45, 156, 255, 0.16);
+  border: 1px solid color-mix(in srgb, var(--feature-accent) 24%, white);
+  border-left: 6px solid var(--feature-accent);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.78);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--feature-accent) 10%, white), rgba(255, 255, 255, 0.82));
+}
+
+.home-feature-grid span:nth-child(2) { --feature-accent: #4f8f73; }
+.home-feature-grid span:nth-child(3) { --feature-accent: #a56d16; }
+.home-feature-grid span:nth-child(4) { --feature-accent: #7b4f9d; }
+
+.home-feature-grid span:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(31, 77, 117, 0.12);
 }
 
 .home-feature-grid strong {
-  color: #15456d;
+  color: var(--feature-accent);
 }
 
 .home-feature-grid small {
@@ -1418,9 +1468,30 @@ textarea:focus {
   overflow: hidden;
   border-radius: 16px;
   background:
-    radial-gradient(circle at 20% 20%, rgba(255, 217, 61, 0.45), transparent 32%),
-    linear-gradient(135deg, rgba(45, 156, 255, 0.16), rgba(41, 199, 201, 0.18));
+    radial-gradient(circle at 18% 18%, color-mix(in srgb, var(--lesson-accent, #ffd93d) 68%, transparent), transparent 34%),
+    linear-gradient(135deg, color-mix(in srgb, var(--lesson-soft, #eef5fb) 86%, white), color-mix(in srgb, var(--lesson-primary, #15456d) 20%, white));
+  color: var(--lesson-primary, #15456d);
   font-size: 2.8rem;
+}
+
+.lesson-cover-symbol {
+  line-height: 1;
+}
+
+.lesson-cover-ref {
+  align-self: end;
+  max-width: calc(100% - 10px);
+  margin-bottom: 6px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  color: #15456d;
+  background: rgba(255, 255, 255, 0.74);
+  font-size: 0.72rem;
+  font-weight: 1000;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .lesson-cover img {
@@ -1899,7 +1970,7 @@ textarea,
 
 .tab.active,
 .icon-button.primary {
-  background: linear-gradient(135deg, var(--blue-deep), #376f87);
+  background: linear-gradient(135deg, var(--tab-accent, var(--blue-deep)), #376f87);
   box-shadow: 0 12px 22px rgba(31, 77, 117, 0.22);
 }
 
@@ -1913,7 +1984,9 @@ textarea,
 .lesson-card {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(255, 250, 236, 0.72));
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.68)),
+    linear-gradient(135deg, var(--lesson-soft, #eef5fb), rgba(255, 255, 255, 0.62));
 }
 
 .lesson-card::before {
@@ -1921,7 +1994,7 @@ textarea,
   position: absolute;
   inset: 0 auto 0 0;
   width: 4px;
-  background: linear-gradient(180deg, var(--gold), var(--green));
+  background: linear-gradient(180deg, var(--lesson-accent, var(--gold)), var(--lesson-primary, var(--green)));
   opacity: 0.82;
 }
 
@@ -3032,9 +3105,10 @@ body.is-authenticated .visitor-only {
 .sales-page {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 16% 16%, rgba(255, 217, 61, 0.42), transparent 28%),
-    radial-gradient(circle at 86% 12%, rgba(45, 156, 255, 0.28), transparent 30%),
-    linear-gradient(145deg, #eaf6ff, #fff9ea 52%, #eff8f3);
+    radial-gradient(circle at 16% 16%, rgba(255, 217, 61, 0.48), transparent 28%),
+    radial-gradient(circle at 86% 12%, rgba(45, 156, 255, 0.32), transparent 30%),
+    radial-gradient(circle at 78% 86%, rgba(107, 203, 61, 0.24), transparent 28%),
+    linear-gradient(145deg, #eaf6ff, #fff9ea 50%, #eff8f3);
 }
 
 .sales-shell {
@@ -3062,6 +3136,7 @@ body.is-authenticated .visitor-only {
   display: grid;
   gap: 18px;
   padding: clamp(24px, 5vw, 52px);
+  border-top: 7px solid #2f7da4;
 }
 
 .sales-logo {
@@ -3087,9 +3162,12 @@ body.is-authenticated .visitor-only {
   gap: 7px;
   max-width: 560px;
   padding: 18px;
-  border: 1px solid rgba(216, 167, 47, 0.34);
+  border: 2px solid rgba(216, 167, 47, 0.5);
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(255, 247, 220, 0.96), rgba(235, 250, 255, 0.9));
+  background:
+    linear-gradient(135deg, rgba(255, 247, 220, 0.98), rgba(235, 250, 255, 0.92)),
+    #fff;
+  box-shadow: 0 18px 36px rgba(165, 109, 22, 0.13);
 }
 
 .sales-price-card small,
@@ -3106,7 +3184,7 @@ body.is-authenticated .visitor-only {
 }
 
 .sales-price-card strong {
-  color: #15456d;
+  color: #1f6b45;
   font-size: clamp(1.4rem, 4vw, 2.3rem);
   line-height: 1.05;
 }
@@ -3122,6 +3200,7 @@ body.is-authenticated .visitor-only {
   align-content: center;
   gap: 18px;
   padding: clamp(22px, 4vw, 36px);
+  border-top: 7px solid #4f8f73;
 }
 
 .sales-benefits h2 {
@@ -3137,6 +3216,10 @@ body.is-authenticated .visitor-only {
   color: #526176;
   line-height: 1.5;
   font-weight: 800;
+}
+
+.sales-benefits li::marker {
+  color: #4f8f73;
 }
 
 /* Lista horizontal de licoes: fica abaixo dos filtros e facilita navegar no celular. */
@@ -3188,7 +3271,16 @@ body.is-authenticated .visitor-only {
   line-height: 1.12;
 }
 
-#studyView .lesson-card > span:not(.lesson-cover):not(.lesson-meta),
+#studyView .lesson-card-topic {
+  max-width: 100%;
+  padding: 3px 5px;
+  font-size: 0.56rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#studyView .lesson-card-verse,
 #studyView .lesson-meta {
   display: none;
 }

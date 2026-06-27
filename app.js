@@ -366,18 +366,7 @@ function renderList() {
   const locked = catalogIsLimited();
   // Visitante ve todos os cards, mas cada item recebe estado visual de bloqueio.
   els.lessonCount.textContent = locked ? `${lessons.length} item(ns) bloqueado(s)` : `${lessons.length} item(ns)`;
-  els.lessonList.innerHTML = lessons.map((lesson) => `
-    <button class="lesson-card ${lesson.id === state.activeId ? "active" : ""} ${locked ? "locked" : ""}" type="button" data-id="${lesson.id}">
-      <span class="lesson-cover">${coverEmoji(lesson.category)}</span>
-      <strong>${escapeHtml(lesson.title)}</strong>
-      <span>${escapeHtml(lesson.verse || "Sem versículo informado")}</span>
-      <span class="lesson-meta">
-        <span class="pill">${escapeHtml(lesson.category)}</span>
-        <span class="pill">${escapeHtml(lesson.age)} anos</span>
-        ${locked ? '<span class="pill lock-pill">🔒 Bloqueado</span>' : ""}
-      </span>
-    </button>
-  `).join("");
+  els.lessonList.innerHTML = lessons.map((lesson) => renderLessonCard(lesson, locked)).join("");
 
   document.querySelectorAll(".lesson-card").forEach((card) => {
     card.addEventListener("click", () => {
@@ -395,6 +384,30 @@ function renderList() {
   }
 
   renderLimitedNotice();
+}
+
+function renderLessonCard(lesson, locked) {
+  const visual = lessonVisual(lesson);
+  return `
+    <button
+      class="lesson-card ${lesson.id === state.activeId ? "active" : ""} ${locked ? "locked" : ""}"
+      style="--lesson-primary:${visual.primary};--lesson-soft:${visual.soft};--lesson-accent:${visual.accent}"
+      type="button"
+      data-id="${escapeHtml(lesson.id)}">
+      <span class="lesson-cover">
+        <span class="lesson-cover-symbol">${visual.emoji}</span>
+        <span class="lesson-cover-ref">${escapeHtml(visual.reference)}</span>
+      </span>
+      <span class="lesson-card-topic">${escapeHtml(visual.label)}</span>
+      <strong>${escapeHtml(lesson.title)}</strong>
+      <span class="lesson-card-verse">${escapeHtml(lesson.verse || "Sem versículo informado")}</span>
+      <span class="lesson-meta">
+        <span class="pill">${escapeHtml(lesson.category)}</span>
+        <span class="pill">${escapeHtml(lesson.age)} anos</span>
+        ${locked ? '<span class="pill lock-pill">🔒 Bloqueado</span>' : ""}
+      </span>
+    </button>
+  `;
 }
 
 function renderReader() {
@@ -1460,6 +1473,47 @@ function showActionMessage(scope, message, isError = false) {
 
 function coverEmoji(category) {
   return categoryTheme(category).emoji || "📖";
+}
+
+// Define a identidade visual do card usando palavras-chave do tema, objetivo e versiculo.
+function lessonVisual(lesson) {
+  const content = normalize([
+    lesson.title,
+    lesson.category,
+    lesson.verse,
+    lesson.sections?.objectives,
+    lesson.sections?.memoryVerse
+  ].join(" "));
+  const reference = extractBibleReference(lesson.verse) || lesson.category || "Lição";
+  const options = [
+    { terms: ["genesis", "criacao", "criou", "criada", "eden"], emoji: "🌍", label: "Criação", primary: "#2f7da4", soft: "#e7f6ff", accent: "#ffd93d" },
+    { terms: ["jesus", "cristo", "salvador", "deus filho", "cruz"], emoji: "✝️", label: "Jesus", primary: "#7b4f9d", soft: "#f4ecff", accent: "#ffd0e2" },
+    { terms: ["amor", "coracao", "joao 3", "amou"], emoji: "❤️", label: "Amor de Deus", primary: "#b84f6a", soft: "#fff0f4", accent: "#ffc4d2" },
+    { terms: ["fe", "hebreus", "confiar", "crer"], emoji: "🕊️", label: "Fé", primary: "#4f8f73", soft: "#edf8f0", accent: "#b4f084" },
+    { terms: ["pecado", "perdao", "arrepend", "salvacao"], emoji: "💧", label: "Perdão", primary: "#356d8e", soft: "#edf7ff", accent: "#bfe4ff" },
+    { terms: ["promessa", "alianca", "arco", "noe"], emoji: "🌈", label: "Promessa", primary: "#a56d16", soft: "#fff7dc", accent: "#ffd93d" },
+    { terms: ["obediencia", "obedecer", "mandamento"], emoji: "👣", label: "Obediência", primary: "#4f7f69", soft: "#eff8f3", accent: "#b4f084" },
+    { terms: ["gratidao", "grato", "bencao", "salmos"], emoji: "🌾", label: "Gratidão", primary: "#6f7f32", soft: "#f7f8e8", accent: "#d7e88a" },
+    { terms: ["mission", "ide", "mundo", "nacoes"], emoji: "🌎", label: "Missões", primary: "#356d8e", soft: "#edf7ff", accent: "#29c7c9" },
+    { terms: ["oracao", "orar", "pray"], emoji: "🙏", label: "Oração", primary: "#7758a6", soft: "#f3eeff", accent: "#d8d0ff" }
+  ];
+  const match = options.find((item) => item.terms.some((term) => content.includes(normalize(term))));
+  if (match) return { ...match, reference };
+  const theme = categoryTheme(lesson.category);
+  return {
+    emoji: theme.emoji || "📖",
+    label: lesson.category || "Lição bíblica",
+    primary: theme.primary || "#244c79",
+    soft: theme.soft || "#eef5fb",
+    accent: "#ffd93d",
+    reference
+  };
+}
+
+function extractBibleReference(value) {
+  const text = String(value || "").trim();
+  const match = text.match(/(?:[1-3]\s*)?[A-Za-zÀ-ÿ]+\.?\s+\d{1,3}\s*[:.]\s*\d{1,3}(?:-\d{1,3})?/);
+  return match ? match[0].replace(/\s+/g, " ") : "";
 }
 
 function categoryTheme(category) {
