@@ -19,8 +19,9 @@
         </div>
         <nav class="tabs" aria-label="Modos do catálogo">
           <button class="tab active" data-tab="home" type="button">Home</button>
-          <button class="tab" data-tab="study" type="button">Lições</button>
-          <button class="tab" data-tab="trails" type="button">Trilhas</button>
+          <button class="tab" data-tab="devotional" data-min-access="simple" type="button">Devocional</button>
+          <button class="tab" data-tab="study" data-min-access="leader" type="button">Lições</button>
+          <button class="tab" data-tab="trails" data-min-access="leader" type="button">Trilhas</button>
           <a class="tab admin-link admin-only" href="gerenciamento.html">Gerenciamento</a>
           <span class="auth-slot"></span>
         </nav>
@@ -134,6 +135,17 @@
               <p>O conteúdo aparecerá em formato de estudo, com seções organizadas para aula e PDF.</p>
             </div>
           </article>
+        </section>
+
+        <section id="devotionalView" class="view devotional-view" aria-label="Devocional">
+          <div class="reader-empty">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 3h12v18l-6-4-6 4V3Z" />
+              <path d="M9 8h6M9 12h4" />
+            </svg>
+            <h2>Devocional da família</h2>
+            <p>Esta área será construída para acompanhar pais, líderes e crianças durante a semana.</p>
+          </div>
         </section>
 
         <section id="trailsView" class="view trails-layout" aria-label="Trilhas com vídeos">

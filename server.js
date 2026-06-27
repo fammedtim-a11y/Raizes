@@ -16,6 +16,7 @@ const initialUsers = [
     id: crypto.randomUUID(),
     username: "08047232657",
     role: "admin",
+    accessLevel: "prime",
     approved: true,
     active: true,
     name: "Administrador",
@@ -29,6 +30,7 @@ const initialUsers = [
     id: crypto.randomUUID(),
     username: "1453505",
     role: "user",
+    accessLevel: "prime",
     approved: true,
     active: true,
     name: "Usuário de uso 1",
@@ -42,6 +44,7 @@ const initialUsers = [
     id: crypto.randomUUID(),
     username: "08692663654",
     role: "user",
+    accessLevel: "prime",
     approved: true,
     active: true,
     name: "Usuário de uso 2",
@@ -151,6 +154,12 @@ async function handleApi(req, res, url) {
   const resetMatch = url.pathname.match(/^\/api\/admin\/users\/([^/]+)\/password$/);
   if (req.method === "POST" && resetMatch) {
     await adminResetPassword(req, res, resetMatch[1]);
+    return;
+  }
+
+  const accessMatch = url.pathname.match(/^\/api\/admin\/users\/([^/]+)\/access$/);
+  if (req.method === "POST" && accessMatch) {
+    await updateUserAccess(req, res, accessMatch[1]);
     return;
   }
 
@@ -279,6 +288,7 @@ async function register(req, res) {
     id: crypto.randomUUID(),
     username,
     role: "user",
+    accessLevel: "simple",
     approved: false,
     active: true,
     name: cleanText(body.name),
@@ -358,6 +368,26 @@ async function adminResetPassword(req, res, id) {
   sendJson(res, 200, { user: publicAdminUser(user) });
 }
 
+async function updateUserAccess(req, res, id) {
+  const body = await readBody(req);
+  const accessLevel = String(body.accessLevel || "");
+  if (!["simple", "leader", "prime"].includes(accessLevel)) {
+    sendJson(res, 400, { error: "Categoria de usuario invalida." });
+    return;
+  }
+  const users = readUsers();
+  const user = users.find((item) => item.id === id);
+  if (!user || user.role === "admin") {
+    sendJson(res, 404, { error: "Usuario nao encontrado." });
+    return;
+  }
+  user.accessLevel = accessLevel;
+  user.updatedAt = new Date().toISOString();
+  writeUsers(users);
+  revokeUserSessions(user.id);
+  sendJson(res, 200, { user: publicAdminUser(user) });
+}
+
 function requireAdmin(req, res) {
   const user = getSessionUser(req);
   if (!user || user.role !== "admin") {
@@ -403,11 +433,18 @@ function revokeUserSessions(userId) {
 }
 
 function readUsers() {
-  return JSON.parse(fs.readFileSync(USERS_FILE, "utf8"));
+  return JSON.parse(fs.readFileSync(USERS_FILE, "utf8")).map(normalizeUser);
 }
 
 function writeUsers(users) {
   fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf8");
+}
+
+function normalizeUser(user) {
+  return {
+    ...user,
+    accessLevel: user.role === "admin" ? "prime" : user.accessLevel || "prime"
+  };
 }
 
 function hashPassword(password) {
@@ -446,7 +483,7 @@ function readBody(req) {
 
 function publicUser(user) {
   if (!user) return null;
-  return { username: user.username, role: user.role, approved: user.approved, active: user.active !== false, name: user.name };
+  return { username: user.username, role: user.role, accessLevel: user.accessLevel || "prime", approved: user.approved, active: user.active !== false, name: user.name };
 }
 
 function publicAdminUser(user) {
@@ -454,6 +491,7 @@ function publicAdminUser(user) {
     id: user.id,
     username: user.username,
     role: user.role,
+    accessLevel: user.accessLevel || "prime",
     approved: user.approved,
     active: user.active !== false,
     name: user.name,

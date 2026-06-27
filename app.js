@@ -65,6 +65,7 @@ const els = {
   tabs: document.querySelectorAll("[data-tab]"),
   filterToolbar: $("#filterToolbar"),
   homeView: $("#homeView"),
+  devotionalView: $("#devotionalView"),
   studyView: $("#studyView"),
   trailsView: $("#trailsView"),
   manageView: $("#manageView"),
@@ -125,6 +126,7 @@ init();
 
 window.onRaizesAuthChange = (user) => {
   state.authUser = user || null;
+  applyAccessVisibility();
   renderLimitedNotice();
   renderList();
   renderReader();
@@ -135,6 +137,7 @@ function init() {
   if (els.sectionFields) renderSectionFields();
   fillFilters();
   bindEvents();
+  applyAccessVisibility();
   state.activeId = state.lessons[0]?.id || null;
   render();
   if (isAdminPage) {
@@ -259,9 +262,11 @@ function bindEvents() {
 }
 
 function setTab(tabName) {
+  if (!canAccessTab(tabName)) tabName = state.authUser ? "devotional" : "home";
   state.tab = tabName;
   els.tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.tab === tabName));
   els.homeView?.classList.toggle("active", tabName === "home");
+  els.devotionalView?.classList.toggle("active", tabName === "devotional");
   els.studyView?.classList.toggle("active", tabName === "study");
   els.trailsView?.classList.toggle("active", tabName === "trails");
   els.manageView?.classList.toggle("active", tabName === "manage");
@@ -282,6 +287,33 @@ function setManageTab(tabName) {
   $("#lessonManagePanel")?.classList.toggle("active", tabName === "lessons");
   $("#trailManagePanel")?.classList.toggle("active", tabName === "trails");
   $("#userManagePanel")?.classList.toggle("active", tabName === "users");
+}
+
+function applyAccessVisibility() {
+  document.querySelectorAll("[data-tab='home']").forEach((el) => {
+    const visible = !state.authUser || canAccessLevel("prime");
+    el.classList.toggle("hidden", !visible);
+  });
+  document.querySelectorAll("[data-min-access]").forEach((el) => {
+    const visible = !state.authUser || canAccessLevel(el.dataset.minAccess);
+    el.classList.toggle("hidden", !visible);
+  });
+  if (state.authUser && !canAccessTab(state.tab)) setTab("devotional");
+}
+
+function canAccessTab(tabName) {
+  if (!state.authUser || state.authUser.role === "admin") return true;
+  if (tabName === "home") return canAccessLevel("prime");
+  if (tabName === "devotional") return true;
+  if (["study", "trails"].includes(tabName)) return canAccessLevel("leader");
+  return canAccessLevel("prime");
+}
+
+function canAccessLevel(required) {
+  if (!state.authUser || state.authUser.role === "admin") return true;
+  const order = { simple: 1, leader: 2, prime: 3 };
+  const current = order[state.authUser.accessLevel || "prime"] || 1;
+  return current >= (order[required] || 1);
 }
 
 function scrollToLessonRail() {

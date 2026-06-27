@@ -1,4 +1,4 @@
-const authState = { user: null };
+const authState = { user: null, initialized: false };
 
 document.addEventListener("DOMContentLoaded", () => {
   bindAuthTabs();
@@ -9,24 +9,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function refreshSession() {
   const data = await apiGet("/api/session");
+  const previousSignature = userSignature(authState.user);
   authState.user = data.user;
+  const currentSignature = userSignature(authState.user);
+  const userChanged = !authState.initialized || previousSignature !== currentSignature;
   if (data.message && !authState.user) {
     showNotice(data.message, true);
     await apiPost("/api/logout", {});
   }
   document.body.classList.toggle("is-authenticated", Boolean(authState.user));
   document.body.classList.toggle("is-visitor", !authState.user);
-  renderAuthSlots();
+  document.body.dataset.accessLevel = authState.user?.accessLevel || "";
+  if (userChanged) renderAuthSlots();
   showStoredNotice();
-  window.onRaizesAuthChange?.(authState.user);
+  if (userChanged) window.onRaizesAuthChange?.(authState.user);
+  authState.initialized = true;
 
   if (document.body.dataset.page === "admin") {
     if (!authState.user || authState.user.role !== "admin") {
       window.location.href = "login.html?next=gerenciamento.html";
       return;
     }
-    loadAdminUsers();
+    if (userChanged) loadAdminUsers();
   }
+}
+
+function userSignature(user) {
+  if (!user) return "";
+  return [user.username, user.role, user.accessLevel, user.approved, user.active].join("|");
 }
 
 function renderAuthSlots() {
@@ -81,7 +91,11 @@ function bindAuthForms() {
     event.preventDefault();
     const result = await apiPost("/api/register", formData(registerForm));
     setAuthMessage(result.error || result.message || "Cadastro enviado.", Boolean(result.error));
-    if (!result.error) registerForm.reset();
+    if (!result.error) {
+      registerForm.reset();
+      sessionStorage.setItem("raizes-auth-notice", result.message || "Cadastro enviado para aprovacao.");
+      window.location.href = "vendas.html";
+    }
   });
 
   resetForm?.addEventListener("submit", async (event) => {
@@ -137,9 +151,17 @@ async function loadAdminUsers() {
       await adminAction(`/api/admin/users/${button.dataset.reset}/password`, { password });
     });
   });
+
+  list.querySelectorAll("[data-access-level]").forEach((select) => {
+    select.addEventListener("change", () => {
+      adminAction(`/api/admin/users/${select.dataset.accessLevel}/access`, { accessLevel: select.value });
+    });
+  });
 }
 
 function renderAdminUserCard(user) {
+  const accessLevel = user.accessLevel || "prime";
+  const accessLabel = accessLevel === "simple" ? "Simples" : accessLevel === "leader" ? "Lideres" : "Prime";
   const status = user.role === "admin"
     ? "Administrador"
     : user.active === false
@@ -148,7 +170,18 @@ function renderAdminUserCard(user) {
         ? "Ativo"
         : "Aguardando aprovacao";
   const stateClass = user.active === false ? "inactive" : user.approved ? "approved" : "pending";
+  const accessControl = user.role === "admin" ? "" : `
+    <label class="user-access-control">
+      <span>Categoria</span>
+      <select data-access-level="${authEscapeHtml(user.id)}">
+        <option value="simple" ${accessLevel === "simple" ? "selected" : ""}>Simples</option>
+        <option value="leader" ${accessLevel === "leader" ? "selected" : ""}>Lideres</option>
+        <option value="prime" ${accessLevel === "prime" ? "selected" : ""}>Prime</option>
+      </select>
+    </label>
+  `;
   const actionButtons = user.role === "admin" ? '<span class="pill">Administrador</span>' : `
+    ${accessControl}
     ${!user.approved ? `<button class="icon-button primary" type="button" data-approve="${authEscapeHtml(user.id)}">Aprovar</button>` : ""}
     ${user.active === false
       ? `<button class="icon-button primary" type="button" data-activate="${authEscapeHtml(user.id)}">Reativar</button>`
@@ -162,7 +195,7 @@ function renderAdminUserCard(user) {
         <strong>${authEscapeHtml(user.name || user.username)}</strong>
         <span>${authEscapeHtml(user.username)} - ${authEscapeHtml(user.email || "Sem email")}</span>
         <small>${authEscapeHtml(user.church || "Igreja nao informada")} - ${authEscapeHtml(user.address || "Endereco nao informado")}</small>
-        <small>Status: ${status}</small>
+        <small>Status: ${status} - Categoria: ${accessLabel}</small>
         ${user.resetRequested ? "<em>Solicitou redefinicao de senha</em>" : ""}
       </div>
       <div class="user-actions">${actionButtons}</div>
