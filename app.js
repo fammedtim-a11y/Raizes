@@ -211,6 +211,7 @@ function bindEvents() {
       renderList();
       if (state.trailsRendered) renderTrails();
       setTab("study");
+      scrollToLessonRail();
     });
   });
 
@@ -281,6 +282,14 @@ function setManageTab(tabName) {
   $("#lessonManagePanel")?.classList.toggle("active", tabName === "lessons");
   $("#trailManagePanel")?.classList.toggle("active", tabName === "trails");
   $("#userManagePanel")?.classList.toggle("active", tabName === "users");
+}
+
+function scrollToLessonRail() {
+  const target = els.filterToolbar || els.studyView;
+  window.requestAnimationFrame(() => {
+    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (els.lessonList) els.lessonList.scrollLeft = 0;
+  });
 }
 
 function render() {
