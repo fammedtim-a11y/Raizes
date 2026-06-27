@@ -3025,8 +3025,8 @@ body.is-authenticated .visitor-only {
 #studyView #lessonList {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: calc((100% - 36px) / 4);
-  gap: 12px;
+  grid-auto-columns: calc((100% - 18px) / 4);
+  gap: 6px;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
   padding-bottom: 12px;
@@ -3036,9 +3036,33 @@ body.is-authenticated .visitor-only {
 }
 
 #studyView .lesson-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5px;
+  min-width: 0;
   min-height: 100%;
+  padding: 8px;
   margin-bottom: 0;
   scroll-snap-align: start;
+}
+
+#studyView .lesson-cover {
+  grid-row: auto;
+  aspect-ratio: 1;
+  margin: 0;
+  border-radius: 10px;
+  font-size: 1.35rem;
+}
+
+#studyView .lesson-card strong {
+  min-width: 0;
+  font-size: 0.72rem;
+  line-height: 1.12;
+}
+
+#studyView .lesson-card > span:not(.lesson-cover):not(.lesson-meta),
+#studyView .lesson-meta {
+  display: none;
 }
 
 .lesson-rail-arrow {
@@ -3147,11 +3171,6 @@ body.is-authenticated .visitor-only {
     border-radius: 16px;
   }
 
-  #studyView #lessonList {
-    grid-auto-columns: calc((100% - 18px) / 4);
-    gap: 6px;
-  }
-
   .list-heading {
     display: grid;
     gap: 8px;
@@ -3159,36 +3178,6 @@ body.is-authenticated .visitor-only {
 
   .lesson-row-controls {
     justify-content: space-between;
-  }
-
-  #studyView .lesson-card {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 5px;
-    min-width: 0;
-    padding: 8px;
-  }
-
-  #studyView .lesson-cover {
-    grid-row: auto;
-    aspect-ratio: 1;
-    margin: 0;
-    border-radius: 10px;
-    font-size: 1.35rem;
-  }
-
-  #studyView .lesson-card strong {
-    min-width: 0;
-    font-size: 0.72rem;
-    line-height: 1.12;
-  }
-
-  #studyView .lesson-card > span:not(.lesson-cover):not(.lesson-meta) {
-    display: none;
-  }
-
-  #studyView .lesson-meta {
-    display: none;
   }
 
   .lesson-reader {
