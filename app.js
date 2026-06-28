@@ -163,14 +163,13 @@ function loadLessons() {
   const saved = localStorage.getItem("raizes-lessons");
   if (!saved || savedVersion !== DATA_VERSION) {
     const lessons = normalizeLessonDates(DEFAULT_LESSONS);
-    localStorage.setItem("raizes-lessons", JSON.stringify(lessons));
-    localStorage.setItem("raizes-lessons-version", DATA_VERSION);
+    saveLessonsCache(lessons);
     return lessons;
   }
   try {
     const parsed = JSON.parse(saved);
     const lessons = Array.isArray(parsed) ? normalizeLessonDates(parsed) : normalizeLessonDates(DEFAULT_LESSONS);
-    localStorage.setItem("raizes-lessons", JSON.stringify(lessons));
+    saveLessonsCache(lessons);
     return lessons;
   } catch {
     return normalizeLessonDates(DEFAULT_LESSONS);
@@ -186,8 +185,27 @@ function normalizeLessonDates(lessons) {
 }
 
 function saveLessons() {
-  localStorage.setItem("raizes-lessons", JSON.stringify(state.lessons));
-  localStorage.setItem("raizes-lessons-version", DATA_VERSION);
+  saveLessonsCache(state.lessons);
+}
+
+function saveLessonsCache(lessons) {
+  const lightweightLessons = lessons.map((lesson) => ({
+    ...lesson,
+    cardImage: "",
+    activityImage: ""
+  }));
+  try {
+    localStorage.setItem("raizes-lessons", JSON.stringify(lightweightLessons));
+    localStorage.setItem("raizes-lessons-version", DATA_VERSION);
+  } catch {
+    localStorage.removeItem("raizes-lessons");
+    try {
+      localStorage.setItem("raizes-lessons", JSON.stringify(lightweightLessons));
+      localStorage.setItem("raizes-lessons-version", DATA_VERSION);
+    } catch {
+      // O catálogo completo vem do servidor; o cache local é apenas uma conveniência.
+    }
+  }
 }
 
 async function syncLessonsFromServer() {
