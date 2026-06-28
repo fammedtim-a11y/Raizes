@@ -1460,38 +1460,117 @@ textarea:focus {
 .age-card.red { background: #FFC4C4; }
 
 .lesson-cover {
+  position: relative;
   display: grid;
   place-items: center;
   width: 100%;
-  aspect-ratio: 16 / 8;
+  aspect-ratio: 16 / 9;
   margin-bottom: 6px;
   overflow: hidden;
   border-radius: 16px;
   background:
-    radial-gradient(circle at 18% 18%, color-mix(in srgb, var(--lesson-accent, #ffd93d) 68%, transparent), transparent 34%),
-    linear-gradient(135deg, color-mix(in srgb, var(--lesson-soft, #eef5fb) 86%, white), color-mix(in srgb, var(--lesson-primary, #15456d) 20%, white));
+    radial-gradient(circle at 88% 88%, rgba(255, 255, 255, 0.9), transparent 13%),
+    radial-gradient(circle at 18% 18%, color-mix(in srgb, var(--lesson-accent, #ffd93d) 44%, transparent), transparent 28%),
+    linear-gradient(135deg, color-mix(in srgb, var(--lesson-soft, #eef5fb) 88%, white), color-mix(in srgb, var(--lesson-primary, #15456d) 16%, white) 58%, #fff0df);
   color: var(--lesson-primary, #15456d);
-  font-size: 2.8rem;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72);
 }
 
-.lesson-cover-symbol {
-  line-height: 1;
+.lesson-cover-book,
+.lesson-cover-principle,
+.lesson-cover-ref,
+.lesson-cover-mark {
+  position: relative;
+  z-index: 2;
+}
+
+.lesson-cover-book {
+  max-width: calc(100% - 22px);
+  color: #10233a;
+  font-family: "Baloo 2", Fredoka, Nunito, "Segoe UI", Arial, sans-serif;
+  font-size: clamp(1.75rem, 5vw, 3.9rem);
+  font-weight: 1000;
+  line-height: 0.82;
+  letter-spacing: 0;
+  text-align: center;
+  text-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.72),
+    0 10px 20px rgba(21, 69, 109, 0.16);
+  text-transform: uppercase;
+}
+
+.lesson-cover-principle {
+  max-width: calc(100% - 26px);
+  margin-top: -8px;
+  color: #10233a;
+  font-size: clamp(0.72rem, 1.7vw, 1.02rem);
+  font-weight: 1000;
+  line-height: 1.05;
+  text-align: center;
+  text-transform: uppercase;
 }
 
 .lesson-cover-ref {
-  align-self: end;
-  max-width: calc(100% - 10px);
-  margin-bottom: 6px;
-  padding: 3px 6px;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  max-width: calc(100% - 16px);
+  padding: 4px 7px;
   border-radius: 999px;
-  color: #15456d;
-  background: rgba(255, 255, 255, 0.74);
-  font-size: 0.72rem;
+  color: var(--lesson-primary, #15456d);
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 0.68rem;
   font-weight: 1000;
   line-height: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.lesson-cover-mark {
+  position: absolute;
+  left: 10px;
+  bottom: 9px;
+  color: color-mix(in srgb, var(--lesson-primary, #15456d) 54%, white);
+  font-size: 1.45rem;
+  filter: drop-shadow(0 8px 10px rgba(21, 69, 109, 0.13));
+}
+
+.lesson-cover-shine,
+.lesson-cover-piece {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.lesson-cover-shine {
+  right: 9%;
+  bottom: 9%;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.26) 35%, transparent 68%);
+}
+
+.lesson-cover-piece {
+  width: 14px;
+  height: 14px;
+  background: linear-gradient(135deg, var(--lesson-accent, #ffd93d), rgba(255, 255, 255, 0.62));
+  clip-path: polygon(50% 0, 100% 100%, 0 72%);
+  opacity: 0.78;
+}
+
+.lesson-cover-piece.piece-a {
+  right: 12%;
+  top: 42%;
+  transform: rotate(28deg);
+}
+
+.lesson-cover-piece.piece-b {
+  left: 10%;
+  top: 56%;
+  transform: rotate(-16deg);
 }
 
 .lesson-cover img {
@@ -2008,7 +2087,24 @@ textarea,
   position: relative;
 }
 
-.lesson-card.locked::after,
+.lesson-card.locked::after {
+  content: "🔒";
+  position: absolute;
+  top: auto;
+  right: 8px;
+  bottom: 8px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(21, 69, 109, 0.9);
+  color: #fff;
+  font-size: 0.72rem;
+  box-shadow: 0 10px 22px rgba(31, 77, 117, 0.18);
+}
+
 .trail-card.locked::after {
   content: "🔒";
   position: absolute;
@@ -3249,35 +3345,64 @@ body.is-authenticated .visitor-only {
 #studyView .lesson-card {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 5px;
+  gap: 6px;
   min-width: 0;
   min-height: 100%;
-  padding: 8px;
+  padding: 6px;
   margin-bottom: 0;
   scroll-snap-align: start;
 }
 
 #studyView .lesson-cover {
   grid-row: auto;
-  aspect-ratio: 1;
+  aspect-ratio: 16 / 10;
   margin: 0;
   border-radius: 10px;
-  font-size: clamp(1.9rem, 6vw, 2.55rem);
+}
+
+#studyView .lesson-cover-ref {
+  top: 5px;
+  right: 5px;
+  max-width: calc(100% - 10px);
+  padding: 3px 5px;
+  font-size: 0.5rem;
+}
+
+#studyView .lesson-cover-book {
+  max-width: calc(100% - 12px);
+  font-size: clamp(1.05rem, 3.1vw, 2.35rem);
+  line-height: 0.84;
+}
+
+#studyView .lesson-cover-principle {
+  max-width: calc(100% - 16px);
+  margin-top: -4px;
+  font-size: clamp(0.5rem, 1.25vw, 0.78rem);
+}
+
+#studyView .lesson-cover-mark {
+  left: 6px;
+  bottom: 5px;
+  font-size: clamp(0.78rem, 2vw, 1.1rem);
 }
 
 #studyView .lesson-card strong {
   min-width: 0;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   line-height: 1.12;
 }
 
 #studyView .lesson-card-topic {
-  max-width: 100%;
-  padding: 3px 5px;
-  font-size: 0.56rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: none;
+}
+
+#studyView .lesson-card.locked::after {
+  top: auto;
+  right: 8px;
+  bottom: 8px;
+  width: 22px;
+  height: 22px;
+  font-size: 0.72rem;
 }
 
 #studyView .lesson-card-verse,

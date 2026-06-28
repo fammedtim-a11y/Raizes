@@ -395,8 +395,13 @@ function renderLessonCard(lesson, locked) {
       type="button"
       data-id="${escapeHtml(lesson.id)}">
       <span class="lesson-cover">
-        <span class="lesson-cover-symbol">${visual.emoji}</span>
         <span class="lesson-cover-ref">${escapeHtml(visual.reference)}</span>
+        <span class="lesson-cover-book">${escapeHtml(visual.book)}</span>
+        <span class="lesson-cover-principle">${escapeHtml(visual.principle)}</span>
+        <span class="lesson-cover-mark">${visual.emoji}</span>
+        <span class="lesson-cover-shine"></span>
+        <span class="lesson-cover-piece piece-a"></span>
+        <span class="lesson-cover-piece piece-b"></span>
       </span>
       <span class="lesson-card-topic">${escapeHtml(visual.label)}</span>
       <strong>${escapeHtml(lesson.title)}</strong>
@@ -1484,28 +1489,37 @@ function lessonVisual(lesson) {
     lesson.sections?.objectives,
     lesson.sections?.memoryVerse
   ].join(" "));
-  const reference = extractBibleReference(lesson.verse) || lesson.category || "Lição";
+  const reference = extractBibleReference(lesson.verse) || extractBibleReference(lesson.sections?.memoryVerse) || lesson.category || "Lição";
   const options = [
-    { terms: ["genesis", "criacao", "criou", "criada", "eden"], emoji: "🌍", label: "Criação", primary: "#2f7da4", soft: "#e7f6ff", accent: "#ffd93d" },
-    { terms: ["jesus", "cristo", "salvador", "deus filho", "cruz"], emoji: "✝️", label: "Jesus", primary: "#7b4f9d", soft: "#f4ecff", accent: "#ffd0e2" },
-    { terms: ["amor", "coracao", "joao 3", "amou"], emoji: "❤️", label: "Amor de Deus", primary: "#b84f6a", soft: "#fff0f4", accent: "#ffc4d2" },
-    { terms: ["fe", "hebreus", "confiar", "crer"], emoji: "🕊️", label: "Fé", primary: "#4f8f73", soft: "#edf8f0", accent: "#b4f084" },
+    { terms: ["genesis", "criacao", "criou", "criada", "eden"], emoji: "🌍", label: "Criação", book: "Gênesis", primary: "#2f7da4", soft: "#e7f6ff", accent: "#ffd93d" },
+    { terms: ["jesus", "cristo", "salvador", "deus filho", "cruz"], emoji: "✝️", label: "Jesus", book: "João", primary: "#7b4f9d", soft: "#f4ecff", accent: "#ffd0e2" },
+    { terms: ["amor", "coracao", "joao 3", "amou"], emoji: "❤️", label: "Amor de Deus", book: "João", primary: "#b84f6a", soft: "#fff0f4", accent: "#ffc4d2" },
+    { terms: ["fe", "hebreus", "confiar", "crer"], emoji: "🕊️", label: "Fé", book: "Hebreus", primary: "#4f8f73", soft: "#edf8f0", accent: "#b4f084" },
     { terms: ["pecado", "perdao", "arrepend", "salvacao"], emoji: "💧", label: "Perdão", primary: "#356d8e", soft: "#edf7ff", accent: "#bfe4ff" },
-    { terms: ["promessa", "alianca", "arco", "noe"], emoji: "🌈", label: "Promessa", primary: "#a56d16", soft: "#fff7dc", accent: "#ffd93d" },
-    { terms: ["obediencia", "obedecer", "mandamento"], emoji: "👣", label: "Obediência", primary: "#4f7f69", soft: "#eff8f3", accent: "#b4f084" },
-    { terms: ["gratidao", "grato", "bencao", "salmos"], emoji: "🌾", label: "Gratidão", primary: "#6f7f32", soft: "#f7f8e8", accent: "#d7e88a" },
-    { terms: ["mission", "ide", "mundo", "nacoes"], emoji: "🌎", label: "Missões", primary: "#356d8e", soft: "#edf7ff", accent: "#29c7c9" },
-    { terms: ["oracao", "orar", "pray"], emoji: "🙏", label: "Oração", primary: "#7758a6", soft: "#f3eeff", accent: "#d8d0ff" }
+    { terms: ["promessa", "alianca", "arco", "noe"], emoji: "🌈", label: "Promessa", book: "Gênesis", primary: "#a56d16", soft: "#fff7dc", accent: "#ffd93d" },
+    { terms: ["obediencia", "obedecer", "mandamento"], emoji: "👣", label: "Obediência", book: "Êxodo", primary: "#4f7f69", soft: "#eff8f3", accent: "#b4f084" },
+    { terms: ["gratidao", "grato", "bencao", "salmos"], emoji: "🌾", label: "Gratidão", book: "Salmos", primary: "#6f7f32", soft: "#f7f8e8", accent: "#d7e88a" },
+    { terms: ["mission", "ide", "mundo", "nacoes"], emoji: "🌎", label: "Missões", book: "Mateus", primary: "#356d8e", soft: "#edf7ff", accent: "#29c7c9" },
+    { terms: ["oracao", "orar", "pray"], emoji: "🙏", label: "Oração", book: "Mateus", primary: "#7758a6", soft: "#f3eeff", accent: "#d8d0ff" }
   ];
   const match = options.find((item) => item.terms.some((term) => content.includes(normalize(term))));
-  if (match) return { ...match, reference };
+  if (match) return buildLessonVisual(match, lesson, reference);
   const theme = categoryTheme(lesson.category);
-  return {
+  return buildLessonVisual({
     emoji: theme.emoji || "📖",
     label: lesson.category || "Lição bíblica",
     primary: theme.primary || "#244c79",
     soft: theme.soft || "#eef5fb",
-    accent: "#ffd93d",
+    accent: "#ffd93d"
+  }, lesson, reference);
+}
+
+function buildLessonVisual(visual, lesson, reference) {
+  const book = visual.book || extractBibleBook(reference) || inferBibleBook(`${lesson.title} ${lesson.verse} ${lesson.sections?.memoryVerse}`) || "Lição";
+  return {
+    ...visual,
+    book: book.toUpperCase(),
+    principle: visual.label || lesson.category || "Princípio bíblico",
     reference
   };
 }
@@ -1514,6 +1528,33 @@ function extractBibleReference(value) {
   const text = String(value || "").trim();
   const match = text.match(/(?:[1-3]\s*)?[A-Za-zÀ-ÿ]+\.?\s+\d{1,3}\s*[:.]\s*\d{1,3}(?:-\d{1,3})?/);
   return match ? match[0].replace(/\s+/g, " ") : "";
+}
+
+function extractBibleBook(value) {
+  const text = String(value || "").trim();
+  const match = text.match(/^((?:[1-3]\s*)?[A-Za-zÀ-ÿ]+)\.?\s+\d{1,3}\s*[:.]\s*\d{1,3}/);
+  return match ? match[1].replace(/\s+/g, " ") : "";
+}
+
+function inferBibleBook(value) {
+  const text = normalize(value);
+  const books = [
+    ["genesis", "Gênesis"],
+    ["exodo", "Êxodo"],
+    ["levitico", "Levítico"],
+    ["numeros", "Números"],
+    ["deuteronomio", "Deuteronômio"],
+    ["salmos", "Salmos"],
+    ["proverbios", "Provérbios"],
+    ["mateus", "Mateus"],
+    ["marcos", "Marcos"],
+    ["lucas", "Lucas"],
+    ["joao", "João"],
+    ["atos", "Atos"],
+    ["romanos", "Romanos"],
+    ["hebreus", "Hebreus"]
+  ];
+  return books.find(([key]) => text.includes(key))?.[1] || "";
 }
 
 function categoryTheme(category) {
