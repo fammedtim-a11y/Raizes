@@ -1644,6 +1644,25 @@ textarea:focus {
   object-fit: cover;
 }
 
+.lesson-cover.custom-cover {
+  display: block;
+  background: #fff;
+}
+
+.lesson-cover.custom-cover img {
+  display: block;
+}
+
+.lesson-cover.custom-cover .lesson-cover-ref {
+  z-index: 3;
+  box-shadow: 0 8px 18px rgba(21, 69, 109, 0.13);
+}
+
+.card-image-preview img {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
 .manage-tabs {
   grid-column: 1 / -1;
   display: flex;

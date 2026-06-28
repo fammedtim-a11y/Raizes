@@ -84,6 +84,8 @@ const els = {
   category: $("#categoryInput"),
   age: $("#ageInput"),
   verse: $("#verseInput"),
+  cardImage: $("#cardImageInput"),
+  cardImagePreview: $("#cardImagePreview"),
   activityImage: $("#activityImageInput"),
   activityImagePreview: $("#activityImagePreview"),
   sectionFields: $("#sectionFields"),
@@ -258,6 +260,7 @@ function bindEvents() {
   els.form?.addEventListener("submit", saveFromForm);
   els.savePrevLesson?.addEventListener("click", () => saveLessonAndMove(-1));
   els.saveNextLesson?.addEventListener("click", () => saveLessonAndMove(1));
+  els.cardImage?.addEventListener("change", handleCardImage);
   els.activityImage?.addEventListener("change", handleActivityImage);
   els.videoForm?.addEventListener("submit", saveVideoFromForm);
   els.clearVideo?.addEventListener("click", () => clearVideoForm({ confirm: true }));
@@ -402,15 +405,7 @@ function renderLessonCard(lesson, locked) {
       style="--lesson-primary:${visual.primary};--lesson-soft:${visual.soft};--lesson-accent:${visual.accent}"
       type="button"
       data-id="${escapeHtml(lesson.id)}">
-      <span class="lesson-cover">
-        <span class="lesson-cover-ref">${escapeHtml(visual.reference)}</span>
-        <span class="lesson-cover-book">${escapeHtml(visual.book)}</span>
-        <span class="lesson-cover-principle">${escapeHtml(visual.principle)}</span>
-        <span class="lesson-cover-mark">${visual.emoji}</span>
-        <span class="lesson-cover-shine"></span>
-        <span class="lesson-cover-piece piece-a"></span>
-        <span class="lesson-cover-piece piece-b"></span>
-      </span>
+      ${renderLessonCover(lesson, visual)}
       <span class="lesson-card-topic">${escapeHtml(visual.label)}</span>
       <strong>${escapeHtml(lesson.title)}</strong>
       <span class="lesson-card-verse">${escapeHtml(lesson.verse || "Sem versículo informado")}</span>
@@ -420,6 +415,28 @@ function renderLessonCard(lesson, locked) {
         ${locked ? '<span class="pill lock-pill">🔒 Bloqueado</span>' : ""}
       </span>
     </button>
+  `;
+}
+
+function renderLessonCover(lesson, visual) {
+  if (lesson.cardImage) {
+    return `
+      <span class="lesson-cover custom-cover">
+        <img src="${escapeHtml(lesson.cardImage)}" alt="Capa da lição ${escapeHtml(lesson.title)}" />
+        <span class="lesson-cover-ref">${escapeHtml(visual.reference)}</span>
+      </span>
+    `;
+  }
+  return `
+    <span class="lesson-cover">
+      <span class="lesson-cover-ref">${escapeHtml(visual.reference)}</span>
+      <span class="lesson-cover-book">${escapeHtml(visual.book)}</span>
+      <span class="lesson-cover-principle">${escapeHtml(visual.principle)}</span>
+      <span class="lesson-cover-mark">${visual.emoji}</span>
+      <span class="lesson-cover-shine"></span>
+      <span class="lesson-cover-piece piece-a"></span>
+      <span class="lesson-cover-piece piece-b"></span>
+    </span>
   `;
 }
 
@@ -657,6 +674,7 @@ function persistLessonFromForm() {
     category: els.category.value.trim(),
     age: els.age.value,
     verse: els.verse.value.trim(),
+    cardImage: els.cardImagePreview.dataset.image || "",
     activityImage: els.activityImagePreview.dataset.image || "",
     sections: {}
   };
@@ -711,6 +729,7 @@ function loadIntoForm(lesson) {
   els.category.value = lesson.category || "";
   els.age.value = lesson.age || AGE_GROUPS[0];
   els.verse.value = lesson.verse || "";
+  setCardImagePreview(lesson.cardImage || "");
   setActivityImagePreview(lesson.activityImage || "");
   SECTIONS.forEach(([key]) => {
     $(`#section-${key}`).value = lesson.sections?.[key] || "";
@@ -725,11 +744,36 @@ function clearForm(options = {}) {
   els.form.reset();
   els.lessonId.value = "";
   els.age.value = AGE_GROUPS[0];
+  setCardImagePreview("");
   setActivityImagePreview("");
   SECTIONS.forEach(([key]) => {
     $(`#section-${key}`).value = "";
   });
   if (options.confirm) showActionMessage("lesson", "Formulário de lição limpo.");
+}
+
+function handleCardImage(event) {
+  if (!els.cardImagePreview) return;
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => setCardImagePreview(String(reader.result || ""));
+  reader.readAsDataURL(file);
+}
+
+function setCardImagePreview(src) {
+  if (!els.cardImagePreview) return;
+  els.cardImagePreview.dataset.image = src || "";
+  els.cardImagePreview.innerHTML = src
+    ? `<img src="${escapeHtml(src)}" alt="Imagem do card da lição" /><button class="icon-button danger" type="button" id="removeCardImageBtn">Remover capa</button>`
+    : '<p class="muted-line">Nenhuma imagem de card cadastrada. O sistema usará a capa automática.</p>';
+  const removeButton = $("#removeCardImageBtn");
+  if (removeButton) {
+    removeButton.addEventListener("click", () => {
+      if (els.cardImage) els.cardImage.value = "";
+      setCardImagePreview("");
+    });
+  }
 }
 
 function handleActivityImage(event) {
@@ -948,15 +992,7 @@ function renderLessonAdminCard(lesson) {
       style="--lesson-primary:${visual.primary};--lesson-soft:${visual.soft};--lesson-accent:${visual.accent}"
       type="button"
       data-admin-lesson-id="${escapeHtml(lesson.id)}">
-      <span class="lesson-cover">
-        <span class="lesson-cover-ref">${escapeHtml(visual.reference)}</span>
-        <span class="lesson-cover-book">${escapeHtml(visual.book)}</span>
-        <span class="lesson-cover-principle">${escapeHtml(visual.principle)}</span>
-        <span class="lesson-cover-mark">${visual.emoji}</span>
-        <span class="lesson-cover-shine"></span>
-        <span class="lesson-cover-piece piece-a"></span>
-        <span class="lesson-cover-piece piece-b"></span>
-      </span>
+      ${renderLessonCover(lesson, visual)}
       <strong>${escapeHtml(lesson.title)}</strong>
       <span class="lesson-card-verse">${escapeHtml(lesson.verse || "Sem versículo informado")}</span>
       <span class="lesson-meta">

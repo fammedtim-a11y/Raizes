@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20260627-card2" />
+    <link rel="stylesheet" href="styles.css?v=20260628-card-image" />
   </head>
   <body data-page="admin">
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -107,6 +107,13 @@
                   <input id="verseInput" placeholder="Ex.: Genesis 1:31" />
                 </label>
               </div>
+              <label class="image-field">
+                <span>Imagem do card da lição</span>
+                <input id="cardImageInput" type="file" accept="image/png,image/jpeg,image/webp" />
+                <small>Opcional. Esta imagem será usada como capa do card na lista de lições e no gerenciamento.</small>
+              </label>
+              <div id="cardImagePreview" class="activity-image-preview card-image-preview"></div>
+
               <label class="image-field">
                 <span>Imagem da atividade de colorir</span>
                 <input id="activityImageInput" type="file" accept="image/png,image/jpeg,image/webp" />
@@ -257,7 +264,7 @@
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
     <script src="lessons-data.js?v=20260625"></script>
-    <script src="app.js?v=20260627-card2"></script>
+    <script src="app.js?v=20260628-card-image"></script>
     <script src="auth.js?v=20260625"></script>
   </body>
 </html>
