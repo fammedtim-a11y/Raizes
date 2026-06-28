@@ -2,6 +2,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const zlib = require("zlib");
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
@@ -226,15 +227,7 @@ async function handleStatic(req, res, url) {
   }
 
   const ext = path.extname(filePath).toLowerCase();
-  res.writeHead(200, {
-    "Content-Type": mimeTypes[ext] || "application/octet-stream",
-    "Cache-Control": ext === ".html" ? "no-store" : "public, max-age=3600"
-  });
-  if (req.method === "HEAD") {
-    res.end();
-    return;
-  }
-  fs.createReadStream(filePath).pipe(res);
+  sendFile(req, res, filePath, mimeTypes[ext] || "application/octet-stream", ext === ".html" ? "no-store" : "public, max-age=3600");
 }
 
 // Entrega as imagens cadastradas nas lições sem expor a pasta data inteira.
@@ -247,15 +240,32 @@ async function sendUpload(req, res, pathname) {
   }
 
   const ext = path.extname(filePath).toLowerCase();
-  res.writeHead(200, {
-    "Content-Type": mimeTypes[ext] || "application/octet-stream",
-    "Cache-Control": "public, max-age=31536000, immutable"
-  });
+  sendFile(req, res, filePath, mimeTypes[ext] || "application/octet-stream", "public, max-age=31536000, immutable");
+}
+
+function sendFile(req, res, filePath, contentType, cacheControl) {
+  const headers = {
+    "Content-Type": contentType,
+    "Cache-Control": cacheControl
+  };
+  const shouldGzip = acceptsGzip(req) && isCompressible(contentType);
+  if (shouldGzip) {
+    headers["Content-Encoding"] = "gzip";
+    headers.Vary = "Accept-Encoding";
+  }
+  res.writeHead(200, headers);
   if (req.method === "HEAD") {
     res.end();
     return;
   }
-  fs.createReadStream(filePath).pipe(res);
+
+  const stream = fs.createReadStream(filePath);
+  stream.on("error", () => res.destroy());
+  if (shouldGzip) {
+    stream.pipe(zlib.createGzip()).pipe(res);
+    return;
+  }
+  stream.pipe(res);
 }
 
 async function login(req, res) {
@@ -672,8 +682,17 @@ function clientIp(req) {
 }
 
 function sendJson(res, status, payload) {
-  res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
-  res.end(JSON.stringify(payload));
+  const text = JSON.stringify(payload);
+  const headers = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" };
+  if (acceptsGzip(res.req) && text.length > 1024) {
+    headers["Content-Encoding"] = "gzip";
+    headers.Vary = "Accept-Encoding";
+    res.writeHead(status, headers);
+    res.end(zlib.gzipSync(text));
+    return;
+  }
+  res.writeHead(status, headers);
+  res.end(text);
 }
 
 function sendText(res, status, text) {
@@ -692,4 +711,12 @@ function onlyDigits(value) {
 
 function cleanText(value) {
   return String(value || "").trim().slice(0, 240);
+}
+
+function acceptsGzip(req) {
+  return String(req?.headers?.["accept-encoding"] || "").includes("gzip");
+}
+
+function isCompressible(contentType) {
+  return /text|javascript|json|svg|html|css/i.test(contentType);
 }

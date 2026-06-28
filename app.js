@@ -310,13 +310,13 @@ function bindEvents() {
     });
   });
 
+  const refreshFilteredViews = debounce(() => {
+    renderList();
+    renderLessonAdminList();
+    renderTrailAdminList();
+    if (state.trailsRendered) renderTrails();
+  }, 120);
   [els.search, els.categoryFilter, els.ageFilter, els.testamentFilter, els.specialFilter, els.createdMonthFilter].filter(Boolean).forEach((el) => {
-    const refreshFilteredViews = () => {
-      renderList();
-      renderLessonAdminList();
-      renderTrailAdminList();
-      if (state.trailsRendered) renderTrails();
-    };
     el.addEventListener("input", refreshFilteredViews);
     el.addEventListener("change", refreshFilteredViews);
   });
@@ -344,7 +344,7 @@ function bindEvents() {
   els.saveNextVideo?.addEventListener("click", () => moveVideoInForm(1));
   els.exportJson?.addEventListener("click", exportJson);
   els.importJson?.addEventListener("change", importJson);
-  window.addEventListener("resize", drawSky);
+  window.addEventListener("resize", debounce(drawSky, 160));
 }
 
 function setTab(tabName) {
@@ -450,11 +450,14 @@ function renderList() {
   if (!els.lessonList || !els.lessonCount) return;
   const lessons = filteredLessons();
   const locked = catalogIsLimited();
+  if (lessons.length && !lessons.some((lesson) => lesson.id === state.activeId)) {
+    state.activeId = lessons[0].id;
+  }
   // Visitante ve todos os cards, mas cada item recebe estado visual de bloqueio.
   els.lessonCount.textContent = locked ? `${lessons.length} item(ns) bloqueado(s)` : `${lessons.length} item(ns)`;
   els.lessonList.innerHTML = lessons.map((lesson) => renderLessonCard(lesson, locked)).join("");
 
-  document.querySelectorAll(".lesson-card").forEach((card) => {
+  els.lessonList.querySelectorAll(".lesson-card").forEach((card) => {
     card.addEventListener("click", () => {
       state.activeId = card.dataset.id;
       renderList();
@@ -462,12 +465,6 @@ function renderList() {
       if (!catalogIsLimited()) loadIntoForm(getActiveLesson());
     });
   });
-
-  if (lessons.length && !lessons.some((lesson) => lesson.id === state.activeId)) {
-    state.activeId = lessons[0].id;
-    renderList();
-    renderReader();
-  }
 
   renderLimitedNotice();
 }
@@ -1854,6 +1851,15 @@ function categoryTheme(category) {
     [["obediencia", "coracao", "tempo"], { emoji: "🌿", primary: "#4f7f69", soft: "#eff8f3" }]
   ];
   return themes.find(([names]) => names.includes(key))?.[1] || { emoji: "📖", primary: "#244c79", soft: "#eef5fb" };
+}
+
+// Evita renderizar listas inteiras a cada tecla digitada nos filtros.
+function debounce(callback, delay = 120) {
+  let timer = 0;
+  return (...args) => {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(() => callback(...args), delay);
+  };
 }
 
 function drawSky() {
