@@ -95,6 +95,7 @@ const els = {
   newLesson: $("#newLessonBtn"),
   ebookPrint: $("#ebookPrintBtn"),
   clearForm: $("#clearFormBtn"),
+  duplicateLesson: $("#duplicateLessonBtn"),
   deleteLesson: $("#deleteLessonBtn"),
   savePrevLesson: $("#savePrevLessonBtn"),
   saveNextLesson: $("#saveNextLessonBtn"),
@@ -311,6 +312,7 @@ function bindEvents() {
 
   els.ebookPrint?.addEventListener("click", printEbook);
   els.clearForm?.addEventListener("click", () => clearForm({ confirm: true }));
+  els.duplicateLesson?.addEventListener("click", duplicateCurrentLesson);
   els.deleteLesson?.addEventListener("click", deleteCurrentLesson);
   els.form?.addEventListener("submit", saveFromForm);
   els.savePrevLesson?.addEventListener("click", () => moveLessonInForm(-1));
@@ -812,6 +814,31 @@ function clearForm(options = {}) {
     $(`#section-${key}`).value = "";
   });
   if (options.confirm) showActionMessage("lesson", "Formulário de lição limpo.");
+}
+
+function duplicateCurrentLesson() {
+  const sourceId = els.lessonId.value || state.activeId;
+  const source = state.lessons.find((lesson) => lesson.id === sourceId);
+  if (!source) {
+    showActionMessage("lesson", "Selecione uma lição para duplicar.", true);
+    return;
+  }
+
+  const duplicate = {
+    ...structuredClone(source),
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    title: `${source.title || "Lição"} (cópia)`
+  };
+
+  state.activeId = duplicate.id;
+  loadIntoForm(duplicate);
+  renderLessonAdminList();
+  renderList();
+  renderReader();
+  showActionMessage("lesson", "Cópia criada no formulário. Ajuste o que desejar e clique em Salvar.");
+  els.title?.focus();
+  els.form?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function handleCardImage(event) {

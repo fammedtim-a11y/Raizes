@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20260628-image-reset" />
+    <link rel="stylesheet" href="styles.css?v=20260628-duplicate" />
   </head>
   <body data-page="admin">
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -140,6 +140,10 @@
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15" /></svg>
                   Limpar
                 </button>
+                <button id="duplicateLessonBtn" class="icon-button" type="button">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8h11v11H8z" /><path d="M5 16H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h11a1 1 0 0 1 1 1v1" /></svg>
+                  Duplicar lição
+                </button>
                 <button id="deleteLessonBtn" class="icon-button danger" type="button">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M10 11v6M14 11v6M6 6l1 15h10l1-15" /></svg>
                   Excluir
@@ -264,7 +268,7 @@
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
     <script src="lessons-data.js?v=20260625"></script>
-    <script src="app.js?v=20260628-image-reset"></script>
+    <script src="app.js?v=20260628-duplicate"></script>
     <script src="auth.js?v=20260625"></script>
   </body>
 </html>
