@@ -530,10 +530,18 @@ textarea:focus {
 }
 
 .lesson-card-verse {
-  color: #526176;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--lesson-primary, #15456d);
+  background: color-mix(in srgb, var(--lesson-accent, #ffd93d) 25%, white);
   font-size: 0.84rem;
-  font-weight: 800;
+  font-weight: 1000;
   line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .lesson-meta {
@@ -786,6 +794,59 @@ textarea:focus {
   display: grid;
   gap: 10px;
   margin: 0 0 18px;
+}
+
+.admin-card-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 36px) / 4);
+  gap: 12px;
+  overflow-x: auto;
+  padding: 2px 2px 14px;
+  scroll-snap-type: x proximity;
+  scrollbar-color: rgba(21, 69, 109, 0.42) rgba(21, 69, 109, 0.08);
+  scrollbar-width: thin;
+}
+
+.admin-card-rail > * {
+  scroll-snap-align: start;
+}
+
+.lesson-admin-rail .admin-lesson-card {
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.lesson-admin-rail .lesson-cover {
+  aspect-ratio: 16 / 10;
+}
+
+.lesson-admin-rail .lesson-card strong {
+  font-size: 0.84rem;
+  line-height: 1.12;
+}
+
+.lesson-admin-rail .lesson-card-verse {
+  font-size: 0.72rem;
+}
+
+.lesson-admin-rail .lesson-meta {
+  display: none;
+}
+
+.trail-admin-rail {
+  margin-bottom: 18px;
+}
+
+.trail-admin-rail .admin-item-card {
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-content: start;
+  min-height: 132px;
+}
+
+.trail-admin-rail .admin-item-action {
+  grid-column: 1 / -1;
+  width: fit-content;
 }
 
 .manager-subheading {
@@ -1462,16 +1523,19 @@ textarea:focus {
 .lesson-cover {
   position: relative;
   display: grid;
-  place-items: center;
+  align-content: center;
+  justify-items: center;
+  row-gap: 3px;
   width: 100%;
   aspect-ratio: 16 / 9;
   margin-bottom: 6px;
   overflow: hidden;
   border-radius: 16px;
   background:
-    radial-gradient(circle at 88% 88%, rgba(255, 255, 255, 0.9), transparent 13%),
-    radial-gradient(circle at 18% 18%, color-mix(in srgb, var(--lesson-accent, #ffd93d) 44%, transparent), transparent 28%),
-    linear-gradient(135deg, color-mix(in srgb, var(--lesson-soft, #eef5fb) 88%, white), color-mix(in srgb, var(--lesson-primary, #15456d) 16%, white) 58%, #fff0df);
+    radial-gradient(circle at 88% 88%, rgba(255, 255, 255, 0.92), transparent 13%),
+    radial-gradient(circle at 16% 18%, color-mix(in srgb, var(--lesson-accent, #ffd93d) 54%, transparent), transparent 31%),
+    radial-gradient(circle at 78% 24%, color-mix(in srgb, var(--lesson-primary, #15456d) 18%, transparent), transparent 26%),
+    linear-gradient(135deg, color-mix(in srgb, var(--lesson-soft, #eef5fb) 74%, white), color-mix(in srgb, var(--lesson-primary, #15456d) 22%, white) 55%, #ffe7d4);
   color: var(--lesson-primary, #15456d);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72);
 }
@@ -1485,12 +1549,12 @@ textarea:focus {
 }
 
 .lesson-cover-book {
-  max-width: calc(100% - 22px);
+  max-width: calc(100% - 18px);
   color: #10233a;
   font-family: "Baloo 2", Fredoka, Nunito, "Segoe UI", Arial, sans-serif;
-  font-size: clamp(1.75rem, 5vw, 3.9rem);
+  font-size: clamp(2rem, 5.6vw, 4.25rem);
   font-weight: 1000;
-  line-height: 0.82;
+  line-height: 0.78;
   letter-spacing: 0;
   text-align: center;
   text-shadow:
@@ -1500,12 +1564,12 @@ textarea:focus {
 }
 
 .lesson-cover-principle {
-  max-width: calc(100% - 26px);
-  margin-top: -8px;
+  max-width: calc(100% - 22px);
+  margin-top: 0;
   color: #10233a;
-  font-size: clamp(0.72rem, 1.7vw, 1.02rem);
+  font-size: clamp(0.78rem, 1.85vw, 1.12rem);
   font-weight: 1000;
-  line-height: 1.05;
+  line-height: 0.98;
   text-align: center;
   text-transform: uppercase;
 }
@@ -1515,11 +1579,12 @@ textarea:focus {
   top: 8px;
   right: 8px;
   max-width: calc(100% - 16px);
-  padding: 4px 7px;
+  padding: 5px 8px;
   border-radius: 999px;
   color: var(--lesson-primary, #15456d);
-  background: rgba(255, 255, 255, 0.7);
-  font-size: 0.68rem;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid color-mix(in srgb, var(--lesson-primary, #15456d) 18%, white);
+  font-size: 0.74rem;
   font-weight: 1000;
   line-height: 1;
   overflow: hidden;
@@ -3370,14 +3435,15 @@ body.is-authenticated .visitor-only {
 
 #studyView .lesson-cover-book {
   max-width: calc(100% - 12px);
-  font-size: clamp(1.05rem, 3.1vw, 2.35rem);
-  line-height: 0.84;
+  font-size: clamp(1.18rem, 3.4vw, 2.45rem);
+  line-height: 0.78;
 }
 
 #studyView .lesson-cover-principle {
   max-width: calc(100% - 16px);
-  margin-top: -4px;
-  font-size: clamp(0.5rem, 1.25vw, 0.78rem);
+  margin-top: 0;
+  font-size: clamp(0.54rem, 1.35vw, 0.82rem);
+  line-height: 0.96;
 }
 
 #studyView .lesson-cover-mark {
@@ -3607,6 +3673,10 @@ body.is-authenticated .visitor-only {
 
   .trail-rail {
     grid-auto-columns: minmax(82vw, 1fr);
+  }
+
+  .admin-card-rail {
+    grid-auto-columns: minmax(178px, 54vw);
   }
 
   .trail-card:hover {

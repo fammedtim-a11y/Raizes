@@ -92,6 +92,8 @@ const els = {
   ebookPrint: $("#ebookPrintBtn"),
   clearForm: $("#clearFormBtn"),
   deleteLesson: $("#deleteLessonBtn"),
+  savePrevLesson: $("#savePrevLessonBtn"),
+  saveNextLesson: $("#saveNextLessonBtn"),
   exportJson: $("#exportJsonBtn"),
   importJson: $("#importJsonInput"),
   lessonActionMessage: $("#lessonActionMessage"),
@@ -116,6 +118,8 @@ const els = {
   videoRecommended: $("#videoRecommendedInput"),
   clearVideo: $("#clearVideoBtn"),
   deleteVideo: $("#deleteVideoBtn"),
+  savePrevVideo: $("#savePrevVideoBtn"),
+  saveNextVideo: $("#saveNextVideoBtn"),
   videoActionMessage: $("#videoActionMessage"),
   lessonAdminList: $("#lessonAdminList"),
   trailAdminList: $("#trailAdminList"),
@@ -252,10 +256,14 @@ function bindEvents() {
   els.clearForm?.addEventListener("click", () => clearForm({ confirm: true }));
   els.deleteLesson?.addEventListener("click", deleteCurrentLesson);
   els.form?.addEventListener("submit", saveFromForm);
+  els.savePrevLesson?.addEventListener("click", () => saveLessonAndMove(-1));
+  els.saveNextLesson?.addEventListener("click", () => saveLessonAndMove(1));
   els.activityImage?.addEventListener("change", handleActivityImage);
   els.videoForm?.addEventListener("submit", saveVideoFromForm);
   els.clearVideo?.addEventListener("click", () => clearVideoForm({ confirm: true }));
   els.deleteVideo?.addEventListener("click", deleteCurrentVideo);
+  els.savePrevVideo?.addEventListener("click", () => saveVideoAndMove(-1));
+  els.saveNextVideo?.addEventListener("click", () => saveVideoAndMove(1));
   els.exportJson?.addEventListener("click", exportJson);
   els.importJson?.addEventListener("change", importJson);
   window.addEventListener("resize", drawSky);
@@ -628,6 +636,18 @@ function inferTestament(content) {
 
 function saveFromForm(event) {
   event.preventDefault();
+  const lesson = persistLessonFromForm();
+  if (!lesson) return;
+  showActionMessage("lesson", `Lição "${lesson.title}" salva com sucesso.`);
+  if (els.studyView) {
+    setTab("study");
+  } else {
+    setManageTab("lessons");
+  }
+}
+
+function persistLessonFromForm() {
+  if (!els.form?.reportValidity()) return null;
   const id = els.lessonId.value || crypto.randomUUID();
   const existingLesson = state.lessons.find((item) => item.id === id);
   const lesson = {
@@ -656,12 +676,32 @@ function saveFromForm(event) {
   saveLessons();
   render();
   loadIntoForm(lesson);
-  showActionMessage("lesson", `Lição "${lesson.title}" salva com sucesso.`);
-  if (els.studyView) {
-    setTab("study");
-  } else {
-    setManageTab("lessons");
+  return lesson;
+}
+
+function saveLessonAndMove(direction) {
+  const lesson = persistLessonFromForm();
+  if (!lesson) return;
+  const nextLesson = getAdjacentLesson(lesson.id, direction);
+  if (!nextLesson) {
+    showActionMessage("lesson", `Lição "${lesson.title}" salva. Não há outra lição neste filtro.`);
+    return;
   }
+  state.activeId = nextLesson.id;
+  loadIntoForm(nextLesson);
+  renderList();
+  renderReader();
+  renderLessonAdminList();
+  showActionMessage("lesson", `Lição salva. Editando agora: "${nextLesson.title}".`);
+  els.form?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function getAdjacentLesson(currentId, direction) {
+  const lessons = filteredLessons();
+  if (!lessons.length) return null;
+  const currentIndex = lessons.findIndex((item) => item.id === currentId);
+  const nextIndex = (currentIndex < 0 ? 0 : currentIndex) + direction;
+  return lessons[nextIndex] || null;
 }
 
 function loadIntoForm(lesson) {
@@ -749,11 +789,23 @@ function fillVideoLessonOptions() {
 
 function saveVideoFromForm(event) {
   event.preventDefault();
+  const video = persistVideoFromForm();
+  if (!video) return;
+  clearVideoForm();
+  state.trailsRendered = true;
+  renderTrails();
+  renderTrailAdminList();
+  renderVideoAdminList();
+  return video;
+}
+
+function persistVideoFromForm() {
+  if (!els.videoForm?.reportValidity()) return null;
   const url = els.videoUrl.value.trim();
   const youtubeId = getYouTubeId(url);
   if (!youtubeId) {
     showActionMessage("video", "Informe um link válido do YouTube.", true);
-    return;
+    return null;
   }
 
   const linkedLesson = state.lessons.find((lesson) => lesson.id === els.videoLesson.value);
@@ -782,21 +834,40 @@ function saveVideoFromForm(event) {
   }
 
   saveManualVideos();
-  clearVideoForm();
   state.trailsRendered = true;
   renderTrails();
   renderTrailAdminList();
   renderVideoAdminList();
-  showActionMessage("video", `Vídeo "${video.title}" salvo com sucesso.`);
-  if (els.trailsView) {
-    setTab("trails");
-  } else {
-    setManageTab("trails");
+  return video;
+}
+
+function saveVideoAndMove(direction) {
+  const video = persistVideoFromForm();
+  if (!video) return;
+  const nextVideo = getAdjacentManualVideo(video.id, direction);
+  if (!nextVideo) {
+    showActionMessage("video", `Vídeo "${video.title}" salvo. Não há outro vídeo manual neste filtro.`);
+    return;
   }
+  loadVideoIntoForm(nextVideo);
+  renderTrailAdminList();
+  renderVideoAdminList();
+  showActionMessage("video", `Vídeo salvo. Editando agora: "${nextVideo.title}".`);
+  els.videoForm?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function getAdjacentManualVideo(currentId, direction) {
+  const manualIds = new Set(state.manualVideos.map((video) => video.id));
+  const videos = filteredVideos().filter((video) => manualIds.has(video.id));
+  if (!videos.length) return null;
+  const currentIndex = videos.findIndex((item) => item.id === currentId);
+  const nextIndex = (currentIndex < 0 ? 0 : currentIndex) + direction;
+  return videos[nextIndex] || null;
 }
 
 function loadVideoIntoForm(video) {
   if (!video || video.source !== "manual" || !els.videoForm) return;
+  state.activeVideoId = video.id;
   els.videoId.value = video.id;
   els.videoTitle.value = video.title || "";
   els.videoUrl.value = video.url || "";
@@ -853,18 +924,7 @@ function renderLessonAdminList() {
     return;
   }
 
-  els.lessonAdminList.innerHTML = lessons.map((lesson) => `
-    <button class="admin-item-card ${lesson.id === state.activeId ? "active" : ""}" type="button" data-admin-lesson-id="${escapeHtml(lesson.id)}">
-      <span class="admin-item-icon">${lesson.activityImage ? `<img src="${escapeHtml(lesson.activityImage)}" alt="" />` : coverEmoji(lesson.category)}</span>
-      <span class="admin-item-body">
-        <strong>${escapeHtml(lesson.title)}</strong>
-        <small>${escapeHtml(lesson.category || "Sem categoria")} · ${escapeHtml(lesson.age || "Todas")} anos</small>
-        <small>Inclusão: ${escapeHtml(formatMonthYear(lesson.createdAt))}</small>
-        <em>${escapeHtml(lesson.verse || "Sem versículo informado")}</em>
-      </span>
-      <span class="admin-item-action">Editar</span>
-    </button>
-  `).join("");
+  els.lessonAdminList.innerHTML = lessons.map((lesson) => renderLessonAdminCard(lesson)).join("");
 
   els.lessonAdminList.querySelectorAll("[data-admin-lesson-id]").forEach((card) => {
     card.addEventListener("click", () => {
@@ -880,26 +940,43 @@ function renderLessonAdminList() {
   });
 }
 
+function renderLessonAdminCard(lesson) {
+  const visual = lessonVisual(lesson);
+  return `
+    <button
+      class="lesson-card admin-lesson-card ${lesson.id === state.activeId ? "active" : ""}"
+      style="--lesson-primary:${visual.primary};--lesson-soft:${visual.soft};--lesson-accent:${visual.accent}"
+      type="button"
+      data-admin-lesson-id="${escapeHtml(lesson.id)}">
+      <span class="lesson-cover">
+        <span class="lesson-cover-ref">${escapeHtml(visual.reference)}</span>
+        <span class="lesson-cover-book">${escapeHtml(visual.book)}</span>
+        <span class="lesson-cover-principle">${escapeHtml(visual.principle)}</span>
+        <span class="lesson-cover-mark">${visual.emoji}</span>
+        <span class="lesson-cover-shine"></span>
+        <span class="lesson-cover-piece piece-a"></span>
+        <span class="lesson-cover-piece piece-b"></span>
+      </span>
+      <strong>${escapeHtml(lesson.title)}</strong>
+      <span class="lesson-card-verse">${escapeHtml(lesson.verse || "Sem versículo informado")}</span>
+      <span class="lesson-meta">
+        <span class="pill">${escapeHtml(lesson.category || "Sem categoria")}</span>
+        <span class="pill">${escapeHtml(formatMonthYear(lesson.createdAt))}</span>
+      </span>
+    </button>
+  `;
+}
+
 function renderTrailAdminList() {
   if (!els.trailAdminList) return;
   const videos = filteredVideos();
   if (!videos.length) {
-    els.trailAdminList.innerHTML = `
-      <div class="manager-subheading">
-        <h3>Trilhas existentes</h3>
-        <p>Nenhuma trilha encontrada com os filtros atuais.</p>
-      </div>
-    `;
+    els.trailAdminList.innerHTML = '<p class="muted-line">Nenhuma trilha encontrada com os filtros atuais.</p>';
     return;
   }
 
-  els.trailAdminList.innerHTML = `
-    <div class="manager-subheading">
-      <h3>Trilhas existentes</h3>
-      <p>Edite vídeos manuais ou abra a lição que gerou uma trilha automática.</p>
-    </div>
-    ${videos.map((video) => `
-      <button class="admin-item-card" type="button" data-admin-trail-id="${escapeHtml(video.id)}">
+  els.trailAdminList.innerHTML = videos.map((video) => `
+      <button class="admin-item-card ${video.id === state.activeVideoId ? "active" : ""}" type="button" data-admin-trail-id="${escapeHtml(video.id)}">
         <span class="admin-item-icon video-icon">▶</span>
         <span class="admin-item-body">
           <strong>${escapeHtml(video.title)}</strong>
@@ -908,15 +985,16 @@ function renderTrailAdminList() {
         </span>
         <span class="admin-item-action">${video.source === "manual" ? "Editar vídeo" : "Editar lição"}</span>
       </button>
-    `).join("")}
-  `;
+    `).join("");
 
   els.trailAdminList.querySelectorAll("[data-admin-trail-id]").forEach((card) => {
     card.addEventListener("click", () => {
       const video = allVideos().find((item) => item.id === card.dataset.adminTrailId);
       if (!video) return;
+      state.activeVideoId = video.id;
       if (video.source === "manual") {
         loadVideoIntoForm(video);
+        renderTrailAdminList();
         els.videoForm?.scrollIntoView({ behavior: "smooth", block: "start" });
         return;
       }
