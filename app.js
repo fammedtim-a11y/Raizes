@@ -55,7 +55,9 @@ const state = {
   tab: "home",
   manageTab: "lessons",
   trailsRendered: false,
-  authUser: null
+  authUser: null,
+  cardImageReadToken: "",
+  activityImageReadToken: ""
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -461,6 +463,7 @@ function renderLessonCard(lesson, locked) {
       ${renderLessonCover(lesson, visual)}
       <span class="lesson-card-topic">${escapeHtml(visual.label)}</span>
       <strong>${escapeHtml(lesson.title)}</strong>
+      <span class="lesson-card-age">${escapeHtml(formatLessonAge(lesson.age))}</span>
       <span class="lesson-card-verse">${escapeHtml(lesson.verse || "Sem versículo informado")}</span>
       <span class="lesson-meta">
         <span class="pill">${escapeHtml(lesson.category)}</span>
@@ -781,6 +784,7 @@ function getAdjacentLesson(currentId, direction) {
 
 function loadIntoForm(lesson) {
   if (!lesson || !els.form) return;
+  resetLessonImageInputs();
   els.lessonId.value = lesson.id;
   els.title.value = lesson.title || "";
   els.category.value = lesson.category || "";
@@ -799,6 +803,7 @@ function clearForm(options = {}) {
     return;
   }
   els.form.reset();
+  resetLessonImageInputs();
   els.lessonId.value = "";
   els.age.value = AGE_GROUPS[0];
   setCardImagePreview("");
@@ -813,8 +818,12 @@ function handleCardImage(event) {
   if (!els.cardImagePreview) return;
   const file = event.target.files?.[0];
   if (!file) return;
+  const token = crypto.randomUUID();
+  state.cardImageReadToken = token;
   const reader = new FileReader();
-  reader.onload = () => setCardImagePreview(String(reader.result || ""));
+  reader.onload = () => {
+    if (state.cardImageReadToken === token) setCardImagePreview(String(reader.result || ""));
+  };
   reader.readAsDataURL(file);
 }
 
@@ -837,9 +846,20 @@ function handleActivityImage(event) {
   if (!els.activityImagePreview) return;
   const file = event.target.files?.[0];
   if (!file) return;
+  const token = crypto.randomUUID();
+  state.activityImageReadToken = token;
   const reader = new FileReader();
-  reader.onload = () => setActivityImagePreview(String(reader.result || ""));
+  reader.onload = () => {
+    if (state.activityImageReadToken === token) setActivityImagePreview(String(reader.result || ""));
+  };
   reader.readAsDataURL(file);
+}
+
+function resetLessonImageInputs() {
+  state.cardImageReadToken = "";
+  state.activityImageReadToken = "";
+  if (els.cardImage) els.cardImage.value = "";
+  if (els.activityImage) els.activityImage.value = "";
 }
 
 function setActivityImagePreview(src) {
@@ -1055,6 +1075,7 @@ function renderLessonAdminCard(lesson) {
       data-admin-lesson-id="${escapeHtml(lesson.id)}">
       ${renderLessonCover(lesson, visual)}
       <strong>${escapeHtml(lesson.title)}</strong>
+      <span class="lesson-card-age">${escapeHtml(formatLessonAge(lesson.age))}</span>
       <span class="lesson-card-verse">${escapeHtml(lesson.verse || "Sem versículo informado")}</span>
       <span class="lesson-meta">
         <span class="pill">${escapeHtml(lesson.category || "Sem categoria")}</span>
@@ -1618,6 +1639,10 @@ function getActiveLesson() {
 
 function unique(values) {
   return [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+}
+
+function formatLessonAge(age) {
+  return age ? `${age} anos` : "Todas as idades";
 }
 
 function normalize(value) {
