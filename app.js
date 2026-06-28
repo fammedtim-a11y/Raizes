@@ -57,7 +57,8 @@ const state = {
   trailsRendered: false,
   authUser: null,
   cardImageReadToken: "",
-  activityImageReadToken: ""
+  activityImageReadToken: "",
+  savingLessons: false
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -234,14 +235,26 @@ async function syncLessonsFromServer() {
 async function saveLessonsToServer() {
   saveLessons();
   if (!isAdminPage) return;
-  const response = await fetch("/api/admin/lessons", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ lessons: state.lessons })
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error || "Não foi possível salvar as lições no servidor.");
+  state.savingLessons = true;
+  window.raizesIsSavingLessons = true;
+  try {
+    const response = await fetch("/api/admin/lessons", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lessons: state.lessons })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || "Não foi possível salvar as lições no servidor.");
+    }
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error("Falha de conexão ao salvar. A imagem pode estar grande demais ou a internet oscilou; tente novamente.");
+    }
+    throw error;
+  } finally {
+    state.savingLessons = false;
+    window.raizesIsSavingLessons = false;
   }
 }
 
@@ -847,11 +860,15 @@ function handleCardImage(event) {
   if (!file) return;
   const token = crypto.randomUUID();
   state.cardImageReadToken = token;
-  const reader = new FileReader();
-  reader.onload = () => {
-    if (state.cardImageReadToken === token) setCardImagePreview(String(reader.result || ""));
-  };
-  reader.readAsDataURL(file);
+  showActionMessage("lesson", "Preparando imagem do card...");
+  readCompressedImage(file, { maxWidth: 1280, maxHeight: 720, quality: 0.84 }).then((src) => {
+    if (state.cardImageReadToken === token) {
+      setCardImagePreview(src);
+      showActionMessage("lesson", "Imagem do card pronta. Clique em Salvar para gravar.");
+    }
+  }).catch(() => {
+    if (state.cardImageReadToken === token) showActionMessage("lesson", "Não foi possível carregar esta imagem do card.", true);
+  });
 }
 
 function setCardImagePreview(src) {
@@ -875,11 +892,15 @@ function handleActivityImage(event) {
   if (!file) return;
   const token = crypto.randomUUID();
   state.activityImageReadToken = token;
-  const reader = new FileReader();
-  reader.onload = () => {
-    if (state.activityImageReadToken === token) setActivityImagePreview(String(reader.result || ""));
-  };
-  reader.readAsDataURL(file);
+  showActionMessage("lesson", "Preparando imagem da atividade...");
+  readCompressedImage(file, { maxWidth: 1600, maxHeight: 1600, quality: 0.86 }).then((src) => {
+    if (state.activityImageReadToken === token) {
+      setActivityImagePreview(src);
+      showActionMessage("lesson", "Imagem da atividade pronta. Clique em Salvar para gravar.");
+    }
+  }).catch(() => {
+    if (state.activityImageReadToken === token) showActionMessage("lesson", "Não foi possível carregar esta imagem da atividade.", true);
+  });
 }
 
 function resetLessonImageInputs() {
@@ -887,6 +908,35 @@ function resetLessonImageInputs() {
   state.activityImageReadToken = "";
   if (els.cardImage) els.cardImage.value = "";
   if (els.activityImage) els.activityImage.value = "";
+}
+
+function readCompressedImage(file, options = {}) {
+  const maxWidth = options.maxWidth || 1280;
+  const maxHeight = options.maxHeight || 1280;
+  const quality = options.quality || 0.84;
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const reader = new FileReader();
+    reader.onload = () => {
+      image.onload = () => {
+        const ratio = Math.min(1, maxWidth / image.width, maxHeight / image.height);
+        const width = Math.max(1, Math.round(image.width * ratio));
+        const height = Math.max(1, Math.round(image.height * ratio));
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext("2d");
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, width, height);
+        context.drawImage(image, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      image.onerror = reject;
+      image.src = String(reader.result || "");
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 function setActivityImagePreview(src) {

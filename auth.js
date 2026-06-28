@@ -8,7 +8,13 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function refreshSession() {
-  const data = await apiGet("/api/session");
+  let data;
+  try {
+    data = await apiGet("/api/session");
+  } catch {
+    if (document.body.dataset.page === "admin" && window.raizesIsSavingLessons) return;
+    return;
+  }
   const previousSignature = userSignature(authState.user);
   authState.user = data.user;
   const currentSignature = userSignature(authState.user);
@@ -27,6 +33,8 @@ async function refreshSession() {
 
   if (document.body.dataset.page === "admin") {
     if (!authState.user || authState.user.role !== "admin") {
+      if (window.raizesIsSavingLessons) return;
+      showNotice("Sua sessão oscilou. Salve novamente se a mensagem de confirmação não aparecer.", true);
       window.location.href = "login.html?next=gerenciamento.html";
       return;
     }

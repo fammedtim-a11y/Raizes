@@ -8,6 +8,7 @@ const ROOT = __dirname;
 const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, "data");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const LESSONS_FILE = path.join(DATA_DIR, "lessons.json");
+const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
 const sessions = new Map();
 const revokedSessions = new Map();
 const loginAttempts = new Map();
@@ -97,6 +98,7 @@ function ensureData() {
   if (!fs.existsSync(USERS_FILE)) {
     writeUsers(initialUsers);
   }
+  loadSessions();
 }
 
 async function handleApi(req, res, url) {
@@ -270,6 +272,7 @@ async function login(req, res) {
   }
   const sessionId = crypto.randomBytes(32).toString("hex");
   sessions.set(sessionId, { userId: user.id, expiresAt: Date.now() + 1000 * 60 * 60 * 12 });
+  writeSessions();
   res.setHeader("Set-Cookie", sessionCookie(sessionId));
   const sharedPasswordMessage = removedSessions
     ? "Sua senha foi usada em outro dispositivo. Por seguranca, a sessao anterior foi encerrada."
@@ -279,7 +282,10 @@ async function login(req, res) {
 
 function logout(req, res) {
   const sessionId = getCookie(req, "rk_session");
-  if (sessionId) sessions.delete(sessionId);
+  if (sessionId) {
+    sessions.delete(sessionId);
+    writeSessions();
+  }
   res.setHeader("Set-Cookie", "rk_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0");
   sendJson(res, 200, { ok: true });
 }
@@ -432,11 +438,13 @@ function getSessionState(req) {
   }
   if (session.expiresAt < Date.now()) {
     sessions.delete(sessionId);
+    writeSessions();
     return { user: null, message: "Sua sessao expirou. Entre novamente para continuar." };
   }
   const user = readUsers().find((item) => item.id === session.userId) || null;
   if (user?.active === false) {
     sessions.delete(sessionId);
+    writeSessions();
     return { user: null, message: "Seu acesso foi desativado. Fale com o administrador." };
   }
   return { user, message: "" };
@@ -450,7 +458,26 @@ function revokeUserSessions(userId) {
     revokedSessions.set(sessionId, "Sua senha foi usada em outro dispositivo. Esta sessao foi encerrada por seguranca.");
     removed += 1;
   }
+  if (removed) writeSessions();
   return removed;
+}
+
+function loadSessions() {
+  if (!fs.existsSync(SESSIONS_FILE)) return;
+  try {
+    const parsed = JSON.parse(fs.readFileSync(SESSIONS_FILE, "utf8"));
+    Object.entries(parsed || {}).forEach(([sessionId, session]) => {
+      if (session?.userId && session.expiresAt > Date.now()) {
+        sessions.set(sessionId, session);
+      }
+    });
+  } catch {
+    sessions.clear();
+  }
+}
+
+function writeSessions() {
+  fs.writeFileSync(SESSIONS_FILE, JSON.stringify(Object.fromEntries(sessions), null, 2), "utf8");
 }
 
 function readUsers() {
