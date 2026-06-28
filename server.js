@@ -9,6 +9,7 @@ const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, "data");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const LESSONS_FILE = path.join(DATA_DIR, "lessons.json");
 const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
+const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 const sessions = new Map();
 const revokedSessions = new Map();
 const loginAttempts = new Map();
@@ -95,6 +96,7 @@ server.listen(PORT, () => {
 
 function ensureData() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
   if (!fs.existsSync(USERS_FILE)) {
     writeUsers(initialUsers);
   }
@@ -212,6 +214,11 @@ async function handleStatic(req, res, url) {
     return;
   }
 
+  if (pathname.startsWith("/uploads/")) {
+    await sendUpload(req, res, pathname);
+    return;
+  }
+
   const filePath = path.join(ROOT, pathname);
   if (!filePath.startsWith(ROOT) || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
     sendText(res, 404, "Arquivo não encontrado.");
@@ -222,6 +229,27 @@ async function handleStatic(req, res, url) {
   res.writeHead(200, {
     "Content-Type": mimeTypes[ext] || "application/octet-stream",
     "Cache-Control": ext === ".html" ? "no-store" : "public, max-age=3600"
+  });
+  if (req.method === "HEAD") {
+    res.end();
+    return;
+  }
+  fs.createReadStream(filePath).pipe(res);
+}
+
+// Entrega as imagens cadastradas nas lições sem expor a pasta data inteira.
+async function sendUpload(req, res, pathname) {
+  const relativeName = pathname.replace(/^\/uploads\//, "");
+  const filePath = path.join(UPLOAD_DIR, relativeName);
+  if (!filePath.startsWith(UPLOAD_DIR) || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+    sendText(res, 404, "Arquivo não encontrado.");
+    return;
+  }
+
+  const ext = path.extname(filePath).toLowerCase();
+  res.writeHead(200, {
+    "Content-Type": mimeTypes[ext] || "application/octet-stream",
+    "Cache-Control": "public, max-age=31536000, immutable"
   });
   if (req.method === "HEAD") {
     res.end();
@@ -505,8 +533,38 @@ async function updateLessons(req, res) {
     sendJson(res, 400, { error: "Lista de lições inválida." });
     return;
   }
-  writeLessons(lessons);
-  sendJson(res, 200, { ok: true, lessons, savedAt: new Date().toISOString() });
+  const storedLessons = persistLessonImages(lessons);
+  writeLessons(storedLessons);
+  sendJson(res, 200, { ok: true, lessons: storedLessons, savedAt: new Date().toISOString() });
+}
+
+// Antes de salvar o catálogo, transforma fotos base64 em arquivos reais.
+// Isso deixa lessons.json leve e evita queda do servidor em salvamentos grandes.
+function persistLessonImages(lessons) {
+  return lessons.map((lesson) => ({
+    ...lesson,
+    cardImage: storeDataImage(lesson.cardImage, "card"),
+    activityImage: storeDataImage(lesson.activityImage, "activity")
+  }));
+}
+
+function storeDataImage(value, prefix) {
+  if (!value || typeof value !== "string" || !value.startsWith("data:image/")) return value || "";
+
+  const match = value.match(/^data:(image\/(?:png|jpe?g|webp));base64,([A-Za-z0-9+/=]+)$/);
+  if (!match) return "";
+
+  const mime = match[1];
+  const buffer = Buffer.from(match[2], "base64");
+  if (!buffer.length || buffer.length > 12 * 1024 * 1024) {
+    throw new Error("Imagem muito grande. Reduza a imagem antes de salvar.");
+  }
+
+  const ext = mime.includes("png") ? ".png" : mime.includes("webp") ? ".webp" : ".jpg";
+  const hash = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 24);
+  const filename = `${prefix}-${hash}${ext}`;
+  fs.writeFileSync(path.join(UPLOAD_DIR, filename), buffer);
+  return `/uploads/${filename}`;
 }
 
 function normalizeUser(user) {

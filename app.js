@@ -247,6 +247,11 @@ async function saveLessonsToServer() {
     if (!response.ok) {
       throw new Error(data.error || "Não foi possível salvar as lições no servidor.");
     }
+    if (Array.isArray(data.lessons)) {
+      state.lessons = normalizeLessonDates(data.lessons);
+      saveLessons();
+    }
+    return data;
   } catch (error) {
     if (error instanceof TypeError) {
       throw new Error("Falha de conexão ao salvar. A imagem pode estar grande demais ou a internet oscilou; tente novamente.");
@@ -768,9 +773,10 @@ async function persistLessonFromForm() {
 
   state.activeId = id;
   await saveLessonsToServer();
+  const savedLesson = state.lessons.find((item) => item.id === id) || lesson;
   render();
-  loadIntoForm(lesson);
-  return lesson;
+  loadIntoForm(savedLesson);
+  return savedLesson;
 }
 
 function moveLessonInForm(direction) {
