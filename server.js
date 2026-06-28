@@ -7,6 +7,7 @@ const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
 const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, "data");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
+const LESSONS_FILE = path.join(DATA_DIR, "lessons.json");
 const sessions = new Map();
 const revokedSessions = new Map();
 const loginAttempts = new Map();
@@ -105,6 +106,16 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (req.method === "GET" && url.pathname === "/api/lessons") {
+    const lessons = readLessons();
+    if (!lessons) {
+      sendJson(res, 404, { error: "Catálogo ainda não foi salvo no servidor." });
+      return;
+    }
+    sendJson(res, 200, { lessons });
+    return;
+  }
+
   if (req.method === "POST" && url.pathname === "/api/login") {
     await login(req, res);
     return;
@@ -130,6 +141,16 @@ async function handleApi(req, res, url) {
 
   if (req.method === "GET" && url.pathname === "/api/admin/users") {
     sendJson(res, 200, { users: readUsers().map(publicAdminUser) });
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/admin/lessons") {
+    sendJson(res, 200, { lessons: readLessons() || [] });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/admin/lessons") {
+    await updateLessons(req, res);
     return;
   }
 
@@ -440,6 +461,27 @@ function writeUsers(users) {
   fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf8");
 }
 
+function readLessons() {
+  if (!fs.existsSync(LESSONS_FILE)) return null;
+  const parsed = JSON.parse(fs.readFileSync(LESSONS_FILE, "utf8"));
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+function writeLessons(lessons) {
+  fs.writeFileSync(LESSONS_FILE, JSON.stringify(lessons, null, 2), "utf8");
+}
+
+async function updateLessons(req, res) {
+  const body = await readBody(req);
+  const lessons = Array.isArray(body.lessons) ? body.lessons : null;
+  if (!lessons) {
+    sendJson(res, 400, { error: "Lista de lições inválida." });
+    return;
+  }
+  writeLessons(lessons);
+  sendJson(res, 200, { ok: true, lessons, savedAt: new Date().toISOString() });
+}
+
 function normalizeUser(user) {
   return {
     ...user,
@@ -466,7 +508,7 @@ function readBody(req) {
     let data = "";
     req.on("data", (chunk) => {
       data += chunk;
-      if (data.length > 1024 * 1024) {
+      if (data.length > 25 * 1024 * 1024) {
         reject(new Error("Payload muito grande."));
       }
     });

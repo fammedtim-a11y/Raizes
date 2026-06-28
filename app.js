@@ -155,6 +155,7 @@ function init() {
   }
   drawSky();
   renderLimitedNotice();
+  syncLessonsFromServer();
 }
 
 function loadLessons() {
@@ -187,6 +188,40 @@ function normalizeLessonDates(lessons) {
 function saveLessons() {
   localStorage.setItem("raizes-lessons", JSON.stringify(state.lessons));
   localStorage.setItem("raizes-lessons-version", DATA_VERSION);
+}
+
+async function syncLessonsFromServer() {
+  try {
+    const response = await fetch("/api/lessons", { cache: "no-store" });
+    if (!response.ok) return;
+    const data = await response.json();
+    if (!Array.isArray(data.lessons)) return;
+    state.lessons = normalizeLessonDates(data.lessons);
+    saveLessons();
+    state.activeId = state.lessons.some((lesson) => lesson.id === state.activeId)
+      ? state.activeId
+      : state.lessons[0]?.id || null;
+    fillFilters();
+    render();
+    if (isAdminPage) loadIntoForm(getActiveLesson());
+    if (state.trailsRendered) renderTrails();
+  } catch {
+    // Sem conexão com o catálogo do servidor, o sistema mantém o catálogo local como fallback.
+  }
+}
+
+async function saveLessonsToServer() {
+  saveLessons();
+  if (!isAdminPage) return;
+  const response = await fetch("/api/admin/lessons", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ lessons: state.lessons })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || "Não foi possível salvar as lições no servidor.");
+  }
 }
 
 function loadManualVideos() {
@@ -258,15 +293,15 @@ function bindEvents() {
   els.clearForm?.addEventListener("click", () => clearForm({ confirm: true }));
   els.deleteLesson?.addEventListener("click", deleteCurrentLesson);
   els.form?.addEventListener("submit", saveFromForm);
-  els.savePrevLesson?.addEventListener("click", () => saveLessonAndMove(-1));
-  els.saveNextLesson?.addEventListener("click", () => saveLessonAndMove(1));
+  els.savePrevLesson?.addEventListener("click", () => moveLessonInForm(-1));
+  els.saveNextLesson?.addEventListener("click", () => moveLessonInForm(1));
   els.cardImage?.addEventListener("change", handleCardImage);
   els.activityImage?.addEventListener("change", handleActivityImage);
   els.videoForm?.addEventListener("submit", saveVideoFromForm);
   els.clearVideo?.addEventListener("click", () => clearVideoForm({ confirm: true }));
   els.deleteVideo?.addEventListener("click", deleteCurrentVideo);
-  els.savePrevVideo?.addEventListener("click", () => saveVideoAndMove(-1));
-  els.saveNextVideo?.addEventListener("click", () => saveVideoAndMove(1));
+  els.savePrevVideo?.addEventListener("click", () => moveVideoInForm(-1));
+  els.saveNextVideo?.addEventListener("click", () => moveVideoInForm(1));
   els.exportJson?.addEventListener("click", exportJson);
   els.importJson?.addEventListener("change", importJson);
   window.addEventListener("resize", drawSky);
@@ -651,19 +686,24 @@ function inferTestament(content) {
   return "";
 }
 
-function saveFromForm(event) {
+async function saveFromForm(event) {
   event.preventDefault();
-  const lesson = persistLessonFromForm();
-  if (!lesson) return;
-  showActionMessage("lesson", `Lição "${lesson.title}" salva com sucesso.`);
-  if (els.studyView) {
-    setTab("study");
-  } else {
-    setManageTab("lessons");
+  try {
+    showActionMessage("lesson", "Salvando lição no servidor...");
+    const lesson = await persistLessonFromForm();
+    if (!lesson) return;
+    showActionMessage("lesson", `Lição "${lesson.title}" salva no banco de dados.`);
+    if (els.studyView) {
+      setTab("study");
+    } else {
+      setManageTab("lessons");
+    }
+  } catch (error) {
+    showActionMessage("lesson", error.message || "Não foi possível salvar a lição.", true);
   }
 }
 
-function persistLessonFromForm() {
+async function persistLessonFromForm() {
   if (!els.form?.reportValidity()) return null;
   const id = els.lessonId.value || crypto.randomUUID();
   const existingLesson = state.lessons.find((item) => item.id === id);
@@ -691,18 +731,17 @@ function persistLessonFromForm() {
   }
 
   state.activeId = id;
-  saveLessons();
+  await saveLessonsToServer();
   render();
   loadIntoForm(lesson);
   return lesson;
 }
 
-function saveLessonAndMove(direction) {
-  const lesson = persistLessonFromForm();
-  if (!lesson) return;
-  const nextLesson = getAdjacentLesson(lesson.id, direction);
+function moveLessonInForm(direction) {
+  const currentId = els.lessonId.value || state.activeId;
+  const nextLesson = getAdjacentLesson(currentId, direction);
   if (!nextLesson) {
-    showActionMessage("lesson", `Lição "${lesson.title}" salva. Não há outra lição neste filtro.`);
+    showActionMessage("lesson", "Não há outra lição neste filtro.");
     return;
   }
   state.activeId = nextLesson.id;
@@ -710,7 +749,7 @@ function saveLessonAndMove(direction) {
   renderList();
   renderReader();
   renderLessonAdminList();
-  showActionMessage("lesson", `Lição salva. Editando agora: "${nextLesson.title}".`);
+  showActionMessage("lesson", `Editando agora: "${nextLesson.title}".`);
   els.form?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -800,7 +839,7 @@ function setActivityImagePreview(src) {
   }
 }
 
-function deleteCurrentLesson() {
+async function deleteCurrentLesson() {
   const id = els.lessonId.value || state.activeId;
   if (!id) {
     showActionMessage("lesson", "Selecione uma lição para excluir.", true);
@@ -815,10 +854,14 @@ function deleteCurrentLesson() {
   if (!confirmed) return;
   state.lessons = state.lessons.filter((item) => item.id !== id);
   state.activeId = state.lessons[0]?.id || null;
-  saveLessons();
-  clearForm();
-  render();
-  showActionMessage("lesson", `Lição "${lesson.title}" excluída com sucesso.`);
+  try {
+    await saveLessonsToServer();
+    clearForm();
+    render();
+    showActionMessage("lesson", `Lição "${lesson.title}" excluída do banco de dados.`);
+  } catch (error) {
+    showActionMessage("lesson", error.message || "Não foi possível excluir a lição no servidor.", true);
+  }
 }
 
 function fillVideoLessonOptions() {
@@ -840,6 +883,7 @@ function saveVideoFromForm(event) {
   renderTrails();
   renderTrailAdminList();
   renderVideoAdminList();
+  showActionMessage("video", `Vídeo "${video.title}" salvo com sucesso.`);
   return video;
 }
 
@@ -885,18 +929,17 @@ function persistVideoFromForm() {
   return video;
 }
 
-function saveVideoAndMove(direction) {
-  const video = persistVideoFromForm();
-  if (!video) return;
-  const nextVideo = getAdjacentManualVideo(video.id, direction);
+function moveVideoInForm(direction) {
+  const currentId = els.videoId.value || state.activeVideoId;
+  const nextVideo = getAdjacentManualVideo(currentId, direction);
   if (!nextVideo) {
-    showActionMessage("video", `Vídeo "${video.title}" salvo. Não há outro vídeo manual neste filtro.`);
+    showActionMessage("video", "Não há outro vídeo manual neste filtro.");
     return;
   }
   loadVideoIntoForm(nextVideo);
   renderTrailAdminList();
   renderVideoAdminList();
-  showActionMessage("video", `Vídeo salvo. Editando agora: "${nextVideo.title}".`);
+  showActionMessage("video", `Editando agora: "${nextVideo.title}".`);
   els.videoForm?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -1091,11 +1134,12 @@ async function importJson(event) {
     if (!Array.isArray(parsed)) throw new Error("Formato invalido");
     state.lessons = normalizeLessonDates(parsed);
     state.activeId = state.lessons[0]?.id || null;
-    saveLessons();
+    await saveLessonsToServer();
     clearForm();
     render();
-  } catch {
-    window.alert("Não foi possível importar este JSON.");
+    showActionMessage("lesson", "JSON importado e salvo no banco de dados.");
+  } catch (error) {
+    window.alert(error.message || "Não foi possível importar este JSON.");
   } finally {
     event.target.value = "";
   }
