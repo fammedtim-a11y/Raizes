@@ -12,9 +12,10 @@ async function refreshSession() {
   try {
     data = await apiGet("/api/session");
   } catch {
-    if (document.body.dataset.page === "admin" && window.raizesIsSavingLessons) return;
+    if (document.body.dataset.page === "admin" && authShouldHoldAdminSession()) return;
     return;
   }
+  if (document.body.dataset.page === "admin" && authShouldHoldAdminSession() && !data.user) return;
   const previousSignature = userSignature(authState.user);
   authState.user = data.user;
   const currentSignature = userSignature(authState.user);
@@ -33,13 +34,17 @@ async function refreshSession() {
 
   if (document.body.dataset.page === "admin") {
     if (!authState.user || authState.user.role !== "admin") {
-      if (window.raizesIsSavingLessons) return;
+      if (authShouldHoldAdminSession()) return;
       showNotice("Sua sessão oscilou. Salve novamente se a mensagem de confirmação não aparecer.", true);
       window.location.href = "login.html?next=gerenciamento.html";
       return;
     }
     if (userChanged) loadAdminUsers();
   }
+}
+
+function authShouldHoldAdminSession() {
+  return Boolean(window.raizesIsSavingLessons || window.raizesIsPreparingImages);
 }
 
 function userSignature(user) {

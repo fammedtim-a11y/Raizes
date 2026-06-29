@@ -58,6 +58,8 @@ const state = {
   authUser: null,
   cardImageReadToken: "",
   activityImageReadToken: "",
+  cardImagePromise: null,
+  activityImagePromise: null,
   savingLessons: false
 };
 
@@ -743,6 +745,7 @@ async function saveFromForm(event) {
 
 async function persistLessonFromForm() {
   if (!els.form?.reportValidity()) return null;
+  await waitForLessonImages();
   const id = els.lessonId.value || crypto.randomUUID();
   const existingLesson = state.lessons.find((item) => item.id === id);
   const lesson = {
@@ -863,14 +866,20 @@ function handleCardImage(event) {
   if (!file) return;
   const token = crypto.randomUUID();
   state.cardImageReadToken = token;
+  window.raizesIsPreparingImages = true;
   showActionMessage("lesson", "Preparando imagem do card...");
-  readCompressedImage(file, { maxWidth: 1280, maxHeight: 720, quality: 0.84 }).then((src) => {
+  state.cardImagePromise = readCompressedImage(file, { maxWidth: 1280, maxHeight: 720, quality: 0.84 }).then((src) => {
     if (state.cardImageReadToken === token) {
       setCardImagePreview(src);
       showActionMessage("lesson", "Imagem do card pronta. Clique em Salvar para gravar.");
     }
+    return src;
   }).catch(() => {
     if (state.cardImageReadToken === token) showActionMessage("lesson", "Não foi possível carregar esta imagem do card.", true);
+    return null;
+  }).finally(() => {
+    if (state.cardImageReadToken === token) state.cardImagePromise = null;
+    window.raizesIsPreparingImages = Boolean(state.cardImagePromise || state.activityImagePromise);
   });
 }
 
@@ -895,22 +904,38 @@ function handleActivityImage(event) {
   if (!file) return;
   const token = crypto.randomUUID();
   state.activityImageReadToken = token;
+  window.raizesIsPreparingImages = true;
   showActionMessage("lesson", "Preparando imagem da atividade...");
-  readCompressedImage(file, { maxWidth: 1600, maxHeight: 1600, quality: 0.86 }).then((src) => {
+  state.activityImagePromise = readCompressedImage(file, { maxWidth: 1600, maxHeight: 1600, quality: 0.86 }).then((src) => {
     if (state.activityImageReadToken === token) {
       setActivityImagePreview(src);
       showActionMessage("lesson", "Imagem da atividade pronta. Clique em Salvar para gravar.");
     }
+    return src;
   }).catch(() => {
     if (state.activityImageReadToken === token) showActionMessage("lesson", "Não foi possível carregar esta imagem da atividade.", true);
+    return null;
+  }).finally(() => {
+    if (state.activityImageReadToken === token) state.activityImagePromise = null;
+    window.raizesIsPreparingImages = Boolean(state.cardImagePromise || state.activityImagePromise);
   });
 }
 
 function resetLessonImageInputs() {
   state.cardImageReadToken = "";
   state.activityImageReadToken = "";
+  state.cardImagePromise = null;
+  state.activityImagePromise = null;
+  window.raizesIsPreparingImages = false;
   if (els.cardImage) els.cardImage.value = "";
   if (els.activityImage) els.activityImage.value = "";
+}
+
+async function waitForLessonImages() {
+  const pending = [state.cardImagePromise, state.activityImagePromise].filter(Boolean);
+  if (!pending.length) return;
+  showActionMessage("lesson", "Finalizando preparo das imagens antes de salvar...");
+  await Promise.all(pending);
 }
 
 function readCompressedImage(file, options = {}) {
