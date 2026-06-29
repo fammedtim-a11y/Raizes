@@ -351,6 +351,7 @@ function bindEvents() {
 
 function setTab(tabName) {
   if (!canAccessTab(tabName)) tabName = state.authUser ? "devotional" : "home";
+  const previousTab = state.tab;
   state.tab = tabName;
   els.tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.tab === tabName));
   els.homeView?.classList.toggle("active", tabName === "home");
@@ -359,12 +360,20 @@ function setTab(tabName) {
   els.trailsView?.classList.toggle("active", tabName === "trails");
   els.manageView?.classList.toggle("active", tabName === "manage");
   els.filterToolbar?.classList.toggle("hidden", !["study", "trails"].includes(tabName));
+  if (previousTab === "trails" && tabName !== "trails") stopTrailPlayback();
   if (tabName === "trails" && !state.trailsRendered) {
     setTimeout(() => {
       renderTrails();
       state.trailsRendered = true;
     }, 0);
   }
+}
+
+function stopTrailPlayback() {
+  if (!els.streamPlayer) return;
+  // Remove o iframe do YouTube ao sair de Trilhas, garantindo que o video pare.
+  els.streamPlayer.innerHTML = "";
+  state.trailsRendered = false;
 }
 
 function setManageTab(tabName) {
