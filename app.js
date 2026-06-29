@@ -1,4 +1,24 @@
-const AGE_GROUPS = ["1 e 2", "3 e 4", "5 e 6", "7 a 10"];
+const AGE_GROUPS = [
+  "Berçário: 0 a 2 anos",
+  "Maternal: 3 a 4 anos",
+  "Jardim: 5 a 6 anos",
+  "Primários: 7 a 8 anos",
+  "Pré-Juniores: 9 a 10 anos",
+  "Juniores: 11 e 12 anos"
+];
+
+const AGE_ALIASES = {
+  "1 e 2": "Berçário: 0 a 2 anos",
+  "0 a 2": "Berçário: 0 a 2 anos",
+  "3 e 4": "Maternal: 3 a 4 anos",
+  "3 a 4": "Maternal: 3 a 4 anos",
+  "5 e 6": "Jardim: 5 a 6 anos",
+  "5 a 6": "Jardim: 5 a 6 anos",
+  "7 a 10": "Primários: 7 a 8 anos",
+  "7 a 8": "Primários: 7 a 8 anos",
+  "9 a 10": "Pré-Juniores: 9 a 10 anos",
+  "11 e 12": "Juniores: 11 e 12 anos"
+};
 const CATEGORIES = [
   "Deus Pai",
   "Deus Filho",
@@ -186,8 +206,19 @@ function normalizeLessonDates(lessons) {
   const fallbackDate = "2026-06-01T00:00:00.000Z";
   return lessons.map((lesson) => ({
     ...lesson,
+    age: normalizeAgeLabel(lesson.age),
     createdAt: lesson.createdAt || lesson.includedAt || lesson.updatedAt || fallbackDate
   }));
+}
+
+function normalizeAgeLabel(age) {
+  const value = String(age || "").trim();
+  return AGE_ALIASES[value] || value || AGE_GROUPS[0];
+}
+
+function ageText(age, fallback = "Todas as idades") {
+  const normalized = normalizeAgeLabel(age);
+  return normalized || fallback;
 }
 
 function saveLessons() {
@@ -270,7 +301,7 @@ function loadManualVideos() {
   if (!saved) return [];
   try {
     const parsed = JSON.parse(saved);
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? parsed.map((video) => ({ ...video, age: video.age ? normalizeAgeLabel(video.age) : "" })) : [];
   } catch {
     return [];
   }
@@ -499,7 +530,7 @@ function renderLessonCard(lesson, locked) {
       <span class="lesson-card-verse">${escapeHtml(lesson.verse || "Sem versículo informado")}</span>
       <span class="lesson-meta">
         <span class="pill">${escapeHtml(lesson.category)}</span>
-        <span class="pill">${escapeHtml(lesson.age)} anos</span>
+        <span class="pill">${escapeHtml(ageText(lesson.age))}</span>
         ${locked ? '<span class="pill lock-pill">🔒 Bloqueado</span>' : ""}
       </span>
     </button>
@@ -550,7 +581,7 @@ function renderReader() {
   template.querySelector(".reader-kicker").textContent = "Lição bíblica infantil";
   template.querySelector("h2").textContent = lesson.title;
   template.querySelector(".reader-category").textContent = `${theme.emoji} ${lesson.category}`;
-  template.querySelector(".reader-age").textContent = `👧 ${lesson.age} anos`;
+  template.querySelector(".reader-age").textContent = `👧 ${ageText(lesson.age)}`;
   template.querySelector(".reader-verse strong").textContent = lesson.verse || "Versículo não informado";
   const timeline = template.querySelector(".section-timeline");
 
@@ -646,7 +677,7 @@ function renderLockedReader(lesson) {
       <p>Esta lição já está disponível no catálogo, mas o plano completo é liberado apenas para usuários com acesso ativo.</p>
       <div class="lesson-meta">
         <span class="pill">${escapeHtml(lesson.category || "Lição")}</span>
-        <span class="pill">${escapeHtml(lesson.age || "Todas")} anos</span>
+        <span class="pill">${escapeHtml(ageText(lesson.age, "Todas as idades"))}</span>
         <span class="pill lock-pill">Bloqueado</span>
       </div>
       <div class="home-login-actions">
@@ -682,7 +713,7 @@ function filteredLessons() {
 
     const matchesTerm = !term || content.includes(term);
     const matchesCategory = category === "Todas" || lesson.category === category;
-    const matchesAge = age === "Todas" || lesson.age === age;
+    const matchesAge = age === "Todas" || normalizeAgeLabel(lesson.age) === age;
     const matchesTestament = testament === "Todos" || inferTestament(content) === testament;
     const matchesSpecial = special === "Todas" || content.includes(normalize(special));
     const matchesCreatedMonth = !createdMonth || lessonMonthKey(lesson.createdAt) === createdMonth;
@@ -766,7 +797,7 @@ async function persistLessonFromForm() {
     createdAt: existingLesson?.createdAt || new Date().toISOString(),
     title: els.title.value.trim(),
     category: els.category.value.trim(),
-    age: els.age.value,
+    age: normalizeAgeLabel(els.age.value),
     verse: els.verse.value.trim(),
     cardImage: els.cardImagePreview.dataset.image || "",
     activityImage: els.activityImagePreview.dataset.image || "",
@@ -1025,7 +1056,7 @@ function fillVideoLessonOptions() {
   const current = els.videoLesson.value;
   els.videoLesson.innerHTML = [
     '<option value="">Sem lição específica</option>',
-    ...state.lessons.map((lesson) => `<option value="${escapeHtml(lesson.id)}">${escapeHtml(lesson.title)} · ${escapeHtml(lesson.age)} anos</option>`)
+    ...state.lessons.map((lesson) => `<option value="${escapeHtml(lesson.id)}">${escapeHtml(lesson.title)} · ${escapeHtml(ageText(lesson.age))}</option>`)
   ].join("");
   els.videoLesson.value = [...els.videoLesson.options].some((option) => option.value === current) ? current : "";
 }
@@ -1053,6 +1084,7 @@ function persistVideoFromForm() {
   }
 
   const linkedLesson = state.lessons.find((lesson) => lesson.id === els.videoLesson.value);
+  const videoAge = els.videoAge.value ? normalizeAgeLabel(els.videoAge.value) : linkedLesson?.age ? normalizeAgeLabel(linkedLesson.age) : "";
   const video = {
     id: els.videoId.value || crypto.randomUUID(),
     source: "manual",
@@ -1060,7 +1092,7 @@ function persistVideoFromForm() {
     url,
     youtubeId,
     category: els.videoCategory.value.trim() || linkedLesson?.category || "Trilha",
-    age: els.videoAge.value || linkedLesson?.age || "",
+    age: videoAge,
     lessonId: els.videoLesson.value,
     description: els.videoDescription.value.trim(),
     playlist: els.videoPlaylist.value.trim(),
@@ -1115,7 +1147,7 @@ function loadVideoIntoForm(video) {
   els.videoTitle.value = video.title || "";
   els.videoUrl.value = video.url || "";
   els.videoCategory.value = video.category || "";
-  els.videoAge.value = video.age || "";
+  els.videoAge.value = video.age ? normalizeAgeLabel(video.age) : "";
   els.videoLesson.value = video.lessonId || "";
   els.videoDescription.value = video.description || "";
   els.videoPlaylist.value = video.playlist || "";
@@ -1216,7 +1248,7 @@ function renderTrailAdminList() {
         <span class="admin-item-icon video-icon">▶</span>
         <span class="admin-item-body">
           <strong>${escapeHtml(video.title)}</strong>
-          <small>${escapeHtml(video.category || "Trilha")} · ${escapeHtml(video.age || "Todas as idades")}</small>
+          <small>${escapeHtml(video.category || "Trilha")} · ${escapeHtml(video.age ? ageText(video.age) : "Todas as idades")}</small>
           <em>${video.source === "manual" ? "Vídeo manual" : `Gerado pela lição: ${escapeHtml(video.lessonTitle || "sem título")}`}</em>
         </span>
         <span class="admin-item-action">${video.source === "manual" ? "Editar vídeo" : "Editar lição"}</span>
@@ -1258,7 +1290,7 @@ function renderVideoAdminList() {
   els.videoAdminList.innerHTML = state.manualVideos.map((video) => `
     <button class="video-admin-card" type="button" data-video-id="${escapeHtml(video.id)}">
       <strong>${escapeHtml(video.title)}</strong>
-      <span>${escapeHtml(video.category || "Trilha")} · ${escapeHtml(video.age || "Todas as idades")}</span>
+      <span>${escapeHtml(video.category || "Trilha")} · ${escapeHtml(video.age ? ageText(video.age) : "Todas as idades")}</span>
     </button>
   `).join("");
 
@@ -1411,7 +1443,7 @@ function renderTrailCard(video) {
       <div class="trail-content">
         <div class="lesson-meta">
           <span class="pill">${escapeHtml(video.category || "Trilha")}</span>
-          <span class="pill">${escapeHtml(video.age || "Todas")} anos</span>
+          <span class="pill">${escapeHtml(video.age ? ageText(video.age) : "Todas as idades")}</span>
           ${locked ? '<span class="pill lock-pill">Bloqueado</span>' : ""}
         </div>
         <h3>${escapeHtml(video.title)}</h3>
@@ -1462,7 +1494,7 @@ function renderStreamPlayer(video) {
       <p>${escapeHtml(video.description || video.lessonTitle || "Vídeo selecionado para apoiar a lição.")}</p>
       <div class="lesson-meta">
         <span class="pill">${escapeHtml(video.category || "Trilha")}</span>
-        <span class="pill">${escapeHtml(video.age || "Todas")} anos</span>
+        <span class="pill">${escapeHtml(video.age ? ageText(video.age) : "Todas as idades")}</span>
         <span class="pill">${escapeHtml(video.playlist || video.season || "Catálogo")}</span>
       </div>
       <div class="trail-actions">
@@ -1483,7 +1515,7 @@ function renderLockedStreamPlayer(video) {
       <p>Esta trilha está no acervo, mas o vídeo completo é liberado apenas para usuários com acesso ativo.</p>
       <div class="lesson-meta">
         <span class="pill">${escapeHtml(video.category || "Trilha")}</span>
-        <span class="pill">${escapeHtml(video.age || "Todas")} anos</span>
+        <span class="pill">${escapeHtml(video.age ? ageText(video.age) : "Todas as idades")}</span>
         <span class="pill lock-pill">Bloqueado</span>
       </div>
       <div class="home-login-actions">
@@ -1573,7 +1605,7 @@ function filteredVideos() {
     const content = normalize([video.title, video.category, video.age, video.description, video.lessonTitle].join(" "));
     const matchesTerm = !term || content.includes(term);
     const matchesCategory = category === "Todas" || video.category === category;
-    const matchesAge = age === "Todas" || !video.age || video.age === age;
+    const matchesAge = age === "Todas" || !video.age || normalizeAgeLabel(video.age) === age;
     return linkedMatch && matchesTerm && matchesCategory && matchesAge;
   });
 
@@ -1615,7 +1647,7 @@ function extractLessonVideos(lesson) {
           category: lesson.category,
           age: lesson.age,
           playlist: lesson.title,
-          season: `Temporada ${lesson.age} anos`,
+          season: `Temporada ${ageText(lesson.age)}`,
           featured: false,
           trending: /louvor|oferta|biblica|cria/i.test(label + " " + line),
           recommended: /biblica|memorizacao|versiculo|aplicacao/i.test(normalize(label)),
@@ -1690,7 +1722,7 @@ function waitForEbookLayout() {
 
 function buildEbookHtml(lessons) {
   const category = els.categoryFilter.value === "Todas" ? "Todas as categorias" : els.categoryFilter.value;
-  const age = els.ageFilter.value === "Todas" ? "Todas as idades" : `${els.ageFilter.value} anos`;
+  const age = els.ageFilter.value === "Todas" ? "Todas as idades" : els.ageFilter.value;
   const today = new Date().toLocaleDateString("pt-BR");
 
   return `
@@ -1708,7 +1740,7 @@ function buildEbookHtml(lessons) {
           <div class="ebook-toc-row">
             <strong>${String(index + 1).padStart(2, "0")}</strong>
             <span>${escapeHtml(lesson.title)}</span>
-            <em>${escapeHtml(lesson.category)} · ${escapeHtml(lesson.age)} anos</em>
+            <em>${escapeHtml(lesson.category)} · ${escapeHtml(ageText(lesson.age))}</em>
           </div>
         `).join("")}
       </section>
@@ -1724,7 +1756,7 @@ function buildEbookLessonHtml(lesson, number) {
       <header class="ebook-lesson-header">
         <span>${String(number).padStart(2, "0")}</span>
         <div>
-          <p>${theme.emoji} ${escapeHtml(lesson.category)} · ${escapeHtml(lesson.age)} anos</p>
+          <p>${theme.emoji} ${escapeHtml(lesson.category)} · ${escapeHtml(ageText(lesson.age))}</p>
           <h2>${escapeHtml(lesson.title)}</h2>
           <strong>${escapeHtml(lesson.verse || "Versículo não informado")}</strong>
         </div>
@@ -1760,7 +1792,7 @@ function unique(values) {
 }
 
 function formatLessonAge(age) {
-  return age ? `${age} anos` : "Todas as idades";
+  return age ? ageText(age) : "Todas as idades";
 }
 
 function normalize(value) {

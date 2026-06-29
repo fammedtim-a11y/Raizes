@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Catálogo de Lições Bíblicas</title>
-    <link rel="stylesheet" href="styles.css?v=20260629-control-admin" />
+    <link rel="stylesheet" href="styles.css?v=20260629-footer-ages" />
   </head>
   <body>
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -103,11 +103,12 @@
               <h2>Escolha a turma e comece a preparar a aula</h2>
             </div>
             <div class="age-grid">
-              <button class="age-card yellow" type="button" data-age-select="1 e 2"><span>👶</span><strong>Berçário</strong><em>0 a 2 anos</em></button>
-              <button class="age-card green" type="button" data-age-select="3 e 4"><span>🌿</span><strong>Maternal</strong><em>3 a 4 anos</em></button>
-              <button class="age-card blue" type="button" data-age-select="5 e 6"><span>📘</span><strong>Jardim</strong><em>5 a 6 anos</em></button>
-              <button class="age-card purple" type="button" data-age-select="7 a 10"><span>✨</span><strong>Primários</strong><em>7 a 8 anos</em></button>
-              <button class="age-card red" type="button" data-age-select="7 a 10"><span>🔥</span><strong>Juniores</strong><em>9 a 11 anos</em></button>
+              <button class="age-card yellow" type="button" data-age-select="Berçário: 0 a 2 anos"><span>👶</span><strong>Berçário</strong><em>0 a 2 anos</em></button>
+              <button class="age-card green" type="button" data-age-select="Maternal: 3 a 4 anos"><span>🌿</span><strong>Maternal</strong><em>3 a 4 anos</em></button>
+              <button class="age-card blue" type="button" data-age-select="Jardim: 5 a 6 anos"><span>📘</span><strong>Jardim</strong><em>5 a 6 anos</em></button>
+              <button class="age-card purple" type="button" data-age-select="Primários: 7 a 8 anos"><span>✨</span><strong>Primários</strong><em>7 a 8 anos</em></button>
+              <button class="age-card red" type="button" data-age-select="Pré-Juniores: 9 a 10 anos"><span>🔥</span><strong>Pré-Juniores</strong><em>9 a 10 anos</em></button>
+              <button class="age-card orange" type="button" data-age-select="Juniores: 11 e 12 anos"><span>🏆</span><strong>Juniores</strong><em>11 e 12 anos</em></button>
             </div>
           </section>
         </section>
@@ -164,38 +165,25 @@
         </section>
 
       </main>
-      <section class="site-info-section" aria-label="Informacoes do Raizes Kids">
-        <article id="sobre">
-          <span class="home-kicker">Sobre</span>
-          <h2>Sobre o Raizes Kids</h2>
-          <p data-site-info="about">Raizes Kids e uma plataforma criada para facilitar a vida de lideres e discipuladores de criancas, reunindo licoes, trilhas, devocionais e materiais de apoio em um so lugar.</p>
-        </article>
-        <article id="contato">
-          <span class="home-kicker">Contato</span>
-          <h2>Fale conosco</h2>
-          <p>Email: <a data-site-link="email" data-site-info="contactEmail" href="mailto:raizes@gmail.com">raizes@gmail.com</a></p>
-          <p>WhatsApp: <a id="whatsapp" data-site-link="whatsapp" data-site-info="whatsapp" href="https://wa.me/5531971773756">31 97177-3756</a></p>
-          <p>Instagram: <a id="instagram" data-site-link="instagram" data-site-info="instagram" href="https://instagram.com/raizeskids">@raizeskids</a></p>
-        </article>
-        <article id="privacidade">
-          <span class="home-kicker">Privacidade</span>
-          <h2>Politica de Privacidade</h2>
-          <p data-site-info="privacy">Usamos os dados de cadastro apenas para liberar acesso, administrar assinaturas, registrar seguranca de login e melhorar a experiencia dentro do sistema.</p>
-        </article>
-      </section>
-
       <footer class="site-footer">
-        <div>
+        <div class="site-footer-brand">
           <img src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
           <p>"Ensina a criança no caminho em que deve andar." (Provérbios 22:6)</p>
         </div>
-        <nav aria-label="Rodapé">
-          <a href="#sobre">Sobre o Ministério</a>
-          <a href="#contato">Contato</a>
-          <a data-site-link="whatsapp" href="https://wa.me/5531971773756">WhatsApp</a>
-          <a data-site-link="instagram" href="https://instagram.com/raizeskids">Instagram</a>
-          <a href="#privacidade">Política de Privacidade</a>
-        </nav>
+        <section class="site-info-section" aria-label="Informacoes do Raizes Kids">
+          <article id="sobre">
+            <span class="home-kicker">Sobre</span>
+            <h2>Sobre o Raizes Kids</h2>
+            <p data-site-info="about">Raizes Kids e uma plataforma criada para facilitar a vida de lideres e discipuladores de criancas, reunindo licoes, trilhas, devocionais e materiais de apoio em um so lugar.</p>
+          </article>
+          <article id="contato">
+            <span class="home-kicker">Contato</span>
+            <h2>Fale conosco</h2>
+            <p>Email: <a data-site-link="email" data-site-info="contactEmail" href="mailto:raizes@gmail.com">raizes@gmail.com</a></p>
+            <p>WhatsApp: <a id="whatsapp" data-site-link="whatsapp" data-site-info="whatsapp" href="https://wa.me/5531971773756">31 97177-3756</a></p>
+            <p>Instagram: <a id="instagram" data-site-link="instagram" data-site-info="instagram" href="https://instagram.com/raizeskids">@raizeskids</a></p>
+          </article>
+        </section>
       </footer>
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
@@ -223,7 +211,7 @@
     </template>
 
     <script src="lessons-data.js?v=20260625"></script>
-    <script src="app.js?v=20260629-control-admin"></script>
-    <script src="auth.js?v=20260629-control-admin"></script>
+    <script src="app.js?v=20260629-footer-ages"></script>
+    <script src="auth.js?v=20260629-footer-ages"></script>
   </body>
 </html>

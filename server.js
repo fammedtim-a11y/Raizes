@@ -78,8 +78,20 @@ const defaultSiteInfo = {
   about: "Raizes Kids e uma plataforma criada para facilitar a vida de lideres e discipuladores de criancas, reunindo licoes, trilhas, devocionais e materiais de apoio em um so lugar.",
   contactEmail: "raizes@gmail.com",
   whatsapp: "31971773756",
-  instagram: "@raizeskids",
-  privacy: "Usamos os dados de cadastro apenas para liberar acesso, administrar assinaturas, registrar seguranca de login e melhorar a experiencia dentro do sistema."
+  instagram: "@raizeskids"
+};
+
+const ageAliases = {
+  "1 e 2": "Berçário: 0 a 2 anos",
+  "0 a 2": "Berçário: 0 a 2 anos",
+  "3 e 4": "Maternal: 3 a 4 anos",
+  "3 a 4": "Maternal: 3 a 4 anos",
+  "5 e 6": "Jardim: 5 a 6 anos",
+  "5 a 6": "Jardim: 5 a 6 anos",
+  "7 a 10": "Primários: 7 a 8 anos",
+  "7 a 8": "Primários: 7 a 8 anos",
+  "9 a 10": "Pré-Juniores: 9 a 10 anos",
+  "11 e 12": "Juniores: 11 e 12 anos"
 };
 
 ensureData();
@@ -659,7 +671,7 @@ function writeSiteInfo(info) {
 function readLessons() {
   if (!fs.existsSync(LESSONS_FILE)) return null;
   const parsed = JSON.parse(fs.readFileSync(LESSONS_FILE, "utf8"));
-  return Array.isArray(parsed) ? parsed : [];
+  return Array.isArray(parsed) ? normalizeLessonAges(parsed) : [];
 }
 
 function writeLessons(lessons) {
@@ -683,9 +695,19 @@ async function updateLessons(req, res) {
 function persistLessonImages(lessons) {
   return lessons.map((lesson) => ({
     ...lesson,
+    age: normalizeAgeLabel(lesson.age),
     cardImage: storeDataImage(lesson.cardImage, "card"),
     activityImage: storeDataImage(lesson.activityImage, "activity")
   }));
+}
+
+function normalizeLessonAges(lessons) {
+  return lessons.map((lesson) => ({ ...lesson, age: normalizeAgeLabel(lesson.age) }));
+}
+
+function normalizeAgeLabel(age) {
+  const value = String(age || "").trim();
+  return ageAliases[value] || value || "Berçário: 0 a 2 anos";
 }
 
 function storeDataImage(value, prefix) {
@@ -744,7 +766,6 @@ async function updateSiteInfo(req, res) {
     contactEmail: normalizeEmail(body.contactEmail || defaultSiteInfo.contactEmail),
     whatsapp: onlyDigits(body.whatsapp || defaultSiteInfo.whatsapp),
     instagram: cleanText(body.instagram || defaultSiteInfo.instagram),
-    privacy: cleanText(body.privacy || defaultSiteInfo.privacy),
     updatedAt: new Date().toISOString()
   };
   writeSiteInfo(info);

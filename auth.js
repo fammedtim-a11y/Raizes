@@ -381,7 +381,7 @@ async function loadAdminSiteInfo() {
 window.loadAdminSiteInfo = loadAdminSiteInfo;
 
 function fillSiteInfoForm(form, info) {
-  ["about", "contactEmail", "whatsapp", "instagram", "privacy"].forEach((key) => {
+  ["about", "contactEmail", "whatsapp", "instagram"].forEach((key) => {
     if (form.elements[key]) form.elements[key].value = info?.[key] || "";
   });
 }
