@@ -10,6 +10,7 @@ const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, "data");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const LESSONS_FILE = path.join(DATA_DIR, "lessons.json");
 const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
+const ACCESS_LOG_FILE = path.join(DATA_DIR, "access-log.json");
 const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 const sessions = new Map();
 const revokedSessions = new Map();
@@ -141,11 +142,31 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (req.method === "GET" && url.pathname === "/api/profile") {
+    const user = getSessionUser(req);
+    if (!user) {
+      sendJson(res, 403, { error: "Entre novamente para editar seu perfil." });
+      return;
+    }
+    sendJson(res, 200, { user: publicProfileUser(user) });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/profile") {
+    await updateProfile(req, res);
+    return;
+  }
+
   const admin = requireAdmin(req, res);
   if (!admin) return;
 
   if (req.method === "GET" && url.pathname === "/api/admin/users") {
     sendJson(res, 200, { users: readUsers().map(publicAdminUser) });
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/admin/access-logs") {
+    sendJson(res, 200, { logs: readAccessLogs().slice(-300).reverse() });
     return;
   }
 
@@ -227,6 +248,10 @@ async function handleStatic(req, res, url) {
   }
 
   const ext = path.extname(filePath).toLowerCase();
+  if (ext === ".html") {
+    const user = getSessionUser(req);
+    if (user) appendAccessLog(req, "page", user, pathname);
+  }
   sendFile(req, res, filePath, mimeTypes[ext] || "application/octet-stream", ext === ".html" ? "no-store" : "public, max-age=3600");
 }
 
@@ -311,6 +336,8 @@ async function login(req, res) {
   const sessionId = crypto.randomBytes(32).toString("hex");
   sessions.set(sessionId, { userId: user.id, expiresAt: Date.now() + 1000 * 60 * 60 * 12 });
   writeSessions();
+  markUserAccess(user.id, { lastLoginAt: new Date().toISOString() });
+  appendAccessLog(req, "login", user, "/api/login");
   res.setHeader("Set-Cookie", sessionCookie(sessionId));
   const sharedPasswordMessage = removedSessions
     ? "Sua senha foi usada em outro dispositivo. Por seguranca, a sessao anterior foi encerrada."
@@ -334,7 +361,7 @@ async function register(req, res) {
   const password = String(body.password || "");
   const confirmPassword = String(body.confirmPassword || "");
 
-  if (!body.name || !username || !body.email || !body.address || !body.church) {
+  if (!body.name || !username || !body.email || !body.phone || !body.address || !body.church) {
     sendJson(res, 400, { error: "Preencha todos os dados do cadastro." });
     return;
   }
@@ -358,6 +385,7 @@ async function register(req, res) {
     active: true,
     name: cleanText(body.name),
     email: cleanText(body.email),
+    phone: onlyDigits(body.phone || ""),
     address: cleanText(body.address),
     church: cleanText(body.church),
     resetRequested: false,
@@ -485,6 +513,7 @@ function getSessionState(req) {
     writeSessions();
     return { user: null, message: "Seu acesso foi desativado. Fale com o administrador." };
   }
+  markUserAccess(user.id, { lastAccessAt: new Date().toISOString() });
   return { user, message: "" };
 }
 
@@ -524,6 +553,50 @@ function readUsers() {
 
 function writeUsers(users) {
   fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf8");
+}
+
+function markUserAccess(userId, fields) {
+  const users = readUsers();
+  const user = users.find((item) => item.id === userId);
+  if (!user) return;
+  if (fields.lastAccessAt && !fields.lastLoginAt) {
+    const previous = new Date(user.lastAccessAt || 0).getTime();
+    if (Date.now() - previous < 1000 * 60 * 5) return;
+  }
+  Object.assign(user, fields);
+  writeUsers(users);
+}
+
+function readAccessLogs() {
+  if (!fs.existsSync(ACCESS_LOG_FILE)) return [];
+  try {
+    const parsed = JSON.parse(fs.readFileSync(ACCESS_LOG_FILE, "utf8"));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeAccessLogs(logs) {
+  fs.writeFileSync(ACCESS_LOG_FILE, JSON.stringify(logs.slice(-2000), null, 2), "utf8");
+}
+
+function appendAccessLog(req, event, user, targetPath) {
+  const logs = readAccessLogs();
+  logs.push({
+    id: crypto.randomUUID(),
+    at: new Date().toISOString(),
+    event,
+    path: targetPath || "",
+    userId: user?.id || "",
+    username: user?.username || "",
+    name: user?.name || "",
+    email: user?.email || "",
+    ip: clientIp(req),
+    device: deviceLabel(req.headers["user-agent"] || ""),
+    userAgent: String(req.headers["user-agent"] || "").slice(0, 300)
+  });
+  writeAccessLogs(logs);
 }
 
 function readLessons() {
@@ -577,10 +650,68 @@ function storeDataImage(value, prefix) {
   return `/uploads/${filename}`;
 }
 
+async function updateProfile(req, res) {
+  const sessionUser = getSessionUser(req);
+  if (!sessionUser) {
+    sendJson(res, 403, { error: "Entre novamente para editar seu perfil." });
+    return;
+  }
+
+  const body = await readBody(req);
+  if (!body.name || !body.email || !body.phone || !body.address || !body.church) {
+    sendJson(res, 400, { error: "Preencha nome, email, telefone, endereco e igreja." });
+    return;
+  }
+
+  const users = readUsers();
+  const user = users.find((item) => item.id === sessionUser.id);
+  if (!user) {
+    sendJson(res, 404, { error: "Usuario nao encontrado." });
+    return;
+  }
+
+  user.name = cleanText(body.name);
+  user.email = cleanText(body.email);
+  user.phone = onlyDigits(body.phone || "");
+  user.address = cleanText(body.address);
+  user.church = cleanText(body.church);
+  user.updatedAt = new Date().toISOString();
+  writeUsers(users);
+  sendJson(res, 200, { ok: true, user: publicProfileUser(user), message: "Perfil atualizado." });
+}
+
+async function passwordResetRequest(req, res) {
+  const body = await readBody(req);
+  const username = onlyDigits(body.cpf || body.username || "");
+  const email = normalizeEmail(body.email || "");
+  const phone = onlyDigits(body.phone || "");
+  const password = String(body.password || "");
+  const confirmPassword = String(body.confirmPassword || "");
+  if (!username || !email || !phone || !password || password !== confirmPassword || !/^\d{6}$/.test(password)) {
+    sendJson(res, 400, { error: "Informe CPF, email, telefone e uma nova senha de 6 digitos." });
+    return;
+  }
+
+  const users = readUsers();
+  const user = users.find((item) => item.username === username);
+  if (!user || normalizeEmail(user.email) !== email || onlyDigits(user.phone || "") !== phone) {
+    sendJson(res, 403, { error: "Os dados informados nao conferem com o cadastro." });
+    return;
+  }
+
+  user.passwordHash = hashPassword(password);
+  user.resetRequested = false;
+  user.updatedAt = new Date().toISOString();
+  writeUsers(users);
+  revokeUserSessions(user.id);
+  sendJson(res, 200, { ok: true, message: "Senha redefinida. Voce ja pode entrar com a nova senha." });
+}
+
 function normalizeUser(user) {
   return {
     ...user,
-    accessLevel: user.role === "admin" ? "prime" : user.accessLevel || "prime"
+    accessLevel: user.role === "admin" ? "prime" : user.accessLevel || "prime",
+    phone: user.phone || ""
   };
 }
 
@@ -620,7 +751,20 @@ function readBody(req) {
 
 function publicUser(user) {
   if (!user) return null;
-  return { username: user.username, role: user.role, accessLevel: user.accessLevel || "prime", approved: user.approved, active: user.active !== false, name: user.name };
+  return { id: user.id, username: user.username, role: user.role, accessLevel: user.accessLevel || "prime", approved: user.approved, active: user.active !== false, name: user.name };
+}
+
+function publicProfileUser(user) {
+  return {
+    username: user.username,
+    role: user.role,
+    accessLevel: user.accessLevel || "prime",
+    name: user.name || "",
+    email: user.email || "",
+    phone: user.phone || "",
+    address: user.address || "",
+    church: user.church || ""
+  };
 }
 
 function publicAdminUser(user) {
@@ -633,10 +777,15 @@ function publicAdminUser(user) {
     active: user.active !== false,
     name: user.name,
     email: user.email,
+    phone: user.phone || "",
     address: user.address,
     church: user.church,
     resetRequested: Boolean(user.resetRequested),
-    createdAt: user.createdAt
+    createdAt: user.createdAt,
+    approvedAt: user.approvedAt || "",
+    updatedAt: user.updatedAt || "",
+    lastLoginAt: user.lastLoginAt || "",
+    lastAccessAt: user.lastAccessAt || ""
   };
 }
 
@@ -711,6 +860,21 @@ function onlyDigits(value) {
 
 function cleanText(value) {
   return String(value || "").trim().slice(0, 240);
+}
+
+function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function deviceLabel(userAgent) {
+  const value = String(userAgent || "");
+  const device = /Mobile|Android|iPhone|iPad/i.test(value) ? "Celular/Tablet" : "Computador";
+  const browser = value.includes("Edg/") ? "Edge"
+    : value.includes("Chrome/") ? "Chrome"
+      : value.includes("Firefox/") ? "Firefox"
+        : value.includes("Safari/") ? "Safari"
+          : "Navegador";
+  return `${device} - ${browser}`;
 }
 
 function acceptsGzip(req) {

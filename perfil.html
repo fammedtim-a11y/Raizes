@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Raízes Kids | Perfil</title>
+    <link rel="stylesheet" href="styles.css?v=20260629-profile-admin" />
+  </head>
+  <body class="auth-page" data-page="profile">
+    <main class="auth-shell">
+      <section class="auth-card profile-card">
+        <img class="auth-logo" src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
+        <form id="profileForm" class="auth-form active">
+          <h1>Meu perfil</h1>
+          <p>Atualize seus dados de cadastro para manter seu acesso organizado.</p>
+          <label><span>CPF</span><input name="username" inputmode="numeric" disabled /></label>
+          <label><span>Nome completo</span><input name="name" required /></label>
+          <label><span>Email</span><input name="email" type="email" required /></label>
+          <label><span>Telefone</span><input name="phone" inputmode="tel" required /></label>
+          <label><span>Endereço</span><input name="address" required /></label>
+          <label><span>Igreja que pertence</span><input name="church" required /></label>
+          <button class="icon-button primary" type="submit">Salvar perfil</button>
+        </form>
+        <p id="authMessage" class="auth-message" role="status"></p>
+        <a class="auth-back" href="index.html">Voltar para o site</a>
+      </section>
+    </main>
+    <script src="auth.js?v=20260629-profile-admin"></script>
+  </body>
+</html>

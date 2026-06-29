@@ -40,6 +40,7 @@ async function refreshSession() {
       return;
     }
     if (userChanged) loadAdminUsers();
+    if (userChanged) loadAdminAccessLogs();
   }
 }
 
@@ -61,6 +62,7 @@ function renderAuthSlots() {
     if (authState.user) {
       slot.innerHTML = `
         <span class="auth-name">${authEscapeHtml(authState.user.name || authState.user.username)}</span>
+        <a class="tab auth-profile" href="perfil.html">Perfil</a>
         <button class="tab auth-logout" type="button">Sair</button>
       `;
       slot.querySelector(".auth-logout").addEventListener("click", logout);
@@ -87,6 +89,7 @@ function bindAuthForms() {
   const loginForm = document.querySelector("#loginForm");
   const registerForm = document.querySelector("#registerForm");
   const resetForm = document.querySelector("#resetForm");
+  const profileForm = document.querySelector("#profileForm");
 
   loginForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -114,14 +117,44 @@ function bindAuthForms() {
   resetForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const result = await apiPost("/api/password-reset", formData(resetForm));
-    setAuthMessage(result.error || result.message || "Pedido enviado.", Boolean(result.error));
+    setAuthMessage(result.error || result.message || "Senha redefinida.", Boolean(result.error));
     if (!result.error) resetForm.reset();
   });
+
+  if (profileForm) {
+    loadProfile(profileForm);
+    profileForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const data = formData(profileForm);
+      delete data.username;
+      const result = await apiPost("/api/profile", data);
+      setAuthMessage(result.error || result.message || "Perfil atualizado.", Boolean(result.error));
+      if (!result.error && result.user) fillProfileForm(profileForm, result.user);
+    });
+  }
 }
 
 async function logout() {
   await apiPost("/api/logout", {});
   window.location.href = "index.html";
+}
+
+async function loadProfile(form) {
+  const data = await apiGet("/api/profile");
+  if (data.error) {
+    setAuthMessage(data.error, true);
+    window.setTimeout(() => {
+      window.location.href = "login.html?next=perfil.html";
+    }, 1200);
+    return;
+  }
+  fillProfileForm(form, data.user);
+}
+
+function fillProfileForm(form, user) {
+  ["username", "name", "email", "phone", "address", "church"].forEach((key) => {
+    if (form.elements[key]) form.elements[key].value = user?.[key] || "";
+  });
 }
 
 async function loadAdminUsers() {
@@ -133,7 +166,13 @@ async function loadAdminUsers() {
     return;
   }
 
-  list.innerHTML = data.users.map(renderAdminUserCard).join("");
+  list.innerHTML = `
+    <div class="admin-export-row">
+      <button class="icon-button primary" type="button" id="exportUsersCsvBtn">Exportar Excel</button>
+    </div>
+    ${data.users.map(renderAdminUserCard).join("")}
+  `;
+  document.querySelector("#exportUsersCsvBtn")?.addEventListener("click", () => exportUsersCsv(data.users));
 
   list.querySelectorAll("[data-approve]").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -172,6 +211,38 @@ async function loadAdminUsers() {
   });
 }
 
+async function loadAdminAccessLogs() {
+  const list = document.querySelector("#adminAccessLogsList");
+  if (!list) return;
+  const data = await apiGet("/api/admin/access-logs");
+  if (data.error) {
+    list.innerHTML = `<p class="muted-line">${authEscapeHtml(data.error)}</p>`;
+    return;
+  }
+  const logs = Array.isArray(data.logs) ? data.logs : [];
+  list.innerHTML = logs.length ? logs.map(renderAccessLogCard).join("") : '<p class="muted-line">Nenhum acesso registrado ainda.</p>';
+  const refreshButton = document.querySelector("#refreshAccessLogsBtn");
+  if (refreshButton) refreshButton.onclick = loadAdminAccessLogs;
+}
+
+window.loadAdminAccessLogs = loadAdminAccessLogs;
+
+function renderAccessLogCard(log) {
+  return `
+    <article class="access-log-card">
+      <div>
+        <strong>${authEscapeHtml(log.name || log.username || "Usuario")}</strong>
+        <span>${authEscapeHtml(log.event || "acesso")} - ${authEscapeHtml(log.path || "")}</span>
+        <small>${formatDateTime(log.at)} - ${authEscapeHtml(log.device || "Dispositivo")}</small>
+      </div>
+      <div>
+        <small>CPF: ${authEscapeHtml(log.username || "")}</small>
+        <small>IP: ${authEscapeHtml(log.ip || "")}</small>
+      </div>
+    </article>
+  `;
+}
+
 function renderAdminUserCard(user) {
   const accessLevel = user.accessLevel || "prime";
   const accessLabel = accessLevel === "simple" ? "Simples" : accessLevel === "leader" ? "Lideres" : "Prime";
@@ -207,13 +278,61 @@ function renderAdminUserCard(user) {
       <div>
         <strong>${authEscapeHtml(user.name || user.username)}</strong>
         <span>${authEscapeHtml(user.username)} - ${authEscapeHtml(user.email || "Sem email")}</span>
+        <small>Telefone: ${authEscapeHtml(user.phone || "Nao informado")}</small>
         <small>${authEscapeHtml(user.church || "Igreja nao informada")} - ${authEscapeHtml(user.address || "Endereco nao informado")}</small>
         <small>Status: ${status} - Categoria: ${accessLabel}</small>
+        <small>Criado: ${formatDateTime(user.createdAt)} - Ultimo acesso: ${formatDateTime(user.lastAccessAt)}</small>
         ${user.resetRequested ? "<em>Solicitou redefinicao de senha</em>" : ""}
       </div>
       <div class="user-actions">${actionButtons}</div>
     </article>
   `;
+}
+
+function exportUsersCsv(users) {
+  const headers = ["Nome", "CPF", "Email", "Telefone", "Igreja", "Endereco", "Status", "Categoria", "Criado em", "Aprovado em", "Ultimo login", "Ultimo acesso"];
+  const rows = users.map((user) => {
+    const accessLevel = user.accessLevel === "simple" ? "Simples" : user.accessLevel === "leader" ? "Lideres" : "Prime";
+    const status = user.role === "admin" ? "Administrador" : user.active === false ? "Desativado" : user.approved ? "Ativo" : "Aguardando aprovacao";
+    return [
+      user.name,
+      user.username,
+      user.email,
+      user.phone,
+      user.church,
+      user.address,
+      status,
+      accessLevel,
+      formatDateTime(user.createdAt),
+      formatDateTime(user.approvedAt),
+      formatDateTime(user.lastLoginAt),
+      formatDateTime(user.lastAccessAt)
+    ];
+  });
+  downloadCsv("usuarios-raizes.csv", headers, rows);
+}
+
+function downloadCsv(filename, headers, rows) {
+  const escapeCell = (value) => `"${String(value || "").replaceAll('"', '""')}"`;
+  const content = [
+    "sep=;",
+    headers.map(escapeCell).join(";"),
+    ...rows.map((row) => row.map(escapeCell).join(";"))
+  ].join("\r\n");
+  const blob = new Blob(["\ufeff", content], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function formatDateTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("pt-BR");
 }
 
 async function adminAction(url, body) {

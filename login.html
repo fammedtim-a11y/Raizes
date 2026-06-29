@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes Kids | Acesso</title>
-    <link rel="stylesheet" href="styles.css?v=20260629-stop-trail-video" />
+    <link rel="stylesheet" href="styles.css?v=20260629-profile-admin" />
   </head>
   <body class="auth-page">
     <main class="auth-shell">
@@ -34,6 +34,7 @@
           <label><span>Nome completo</span><input name="name" required /></label>
           <label><span>CPF</span><input name="cpf" inputmode="numeric" required /></label>
           <label><span>Email</span><input name="email" type="email" required /></label>
+          <label><span>Telefone</span><input name="phone" inputmode="tel" required /></label>
           <label><span>Endereço</span><input name="address" required /></label>
           <label><span>Igreja que pertence</span><input name="church" required /></label>
           <label><span>Senha de 6 dígitos</span><input name="password" type="password" inputmode="numeric" minlength="6" maxlength="6" required /></label>
@@ -43,18 +44,19 @@
 
         <form id="resetForm" class="auth-form" data-auth-panel="reset">
           <h1>Redefinir senha</h1>
-          <p>Informe seu usuário/CPF. O administrador verá o pedido e poderá definir uma nova senha.</p>
-          <label>
-            <span>Usuário/CPF</span>
-            <input name="username" inputmode="numeric" required />
-          </label>
-          <button class="icon-button accent" type="submit">Solicitar redefinição</button>
+          <p>Confirme seus dados de cadastro para criar uma nova senha imediatamente.</p>
+          <label><span>CPF</span><input name="cpf" inputmode="numeric" required /></label>
+          <label><span>Email cadastrado</span><input name="email" type="email" required /></label>
+          <label><span>Telefone cadastrado</span><input name="phone" inputmode="tel" required /></label>
+          <label><span>Nova senha de 6 dígitos</span><input name="password" type="password" inputmode="numeric" minlength="6" maxlength="6" required /></label>
+          <label><span>Confirmar nova senha</span><input name="confirmPassword" type="password" inputmode="numeric" minlength="6" maxlength="6" required /></label>
+          <button class="icon-button accent" type="submit">Redefinir senha</button>
         </form>
 
         <p id="authMessage" class="auth-message" role="status"></p>
         <a class="auth-back" href="index.html">Voltar para o site</a>
       </section>
     </main>
-    <script src="auth.js?v=20260629-stop-trail-video"></script>
+    <script src="auth.js?v=20260629-profile-admin"></script>
   </body>
 </html>
