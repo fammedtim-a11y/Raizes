@@ -193,6 +193,38 @@
   font-weight: 800;
 }
 
+.site-info-section {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 22px 0;
+}
+
+.site-info-section article {
+  padding: 18px;
+  border: 1px solid rgba(45, 156, 255, 0.15);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 12px 30px rgba(26, 45, 76, 0.08);
+}
+
+.site-info-section h2 {
+  margin: 4px 0 10px;
+  font-size: 1.2rem;
+}
+
+.site-info-section p {
+  margin: 8px 0;
+  color: var(--muted);
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.site-info-section a {
+  color: var(--blue-deep);
+  font-weight: 900;
+}
+
 .user-access-control {
   display: grid;
   gap: 4px;
@@ -1724,6 +1756,25 @@ textarea:focus {
   border-radius: 18px;
   background: rgba(255,255,255,0.75);
   box-shadow: var(--shadow);
+}
+
+.manage-tab-group {
+  flex: 1.4;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px;
+  border: 1px solid rgba(45, 156, 255, 0.13);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.manage-tab-group > span {
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 1000;
+  text-transform: uppercase;
 }
 
 .manage-tab {
@@ -3616,6 +3667,20 @@ body.is-authenticated .visitor-only {
     margin: 12px 0;
     padding: 12px;
     border-radius: 16px;
+  }
+
+  .site-info-section {
+    grid-template-columns: 1fr;
+  }
+
+  .manage-tab-group {
+    width: 100%;
+    flex: 1 0 100%;
+    flex-wrap: wrap;
+  }
+
+  .manage-tab-group > span {
+    width: 100%;
   }
 
   .home-view {

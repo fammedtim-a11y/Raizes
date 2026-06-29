@@ -11,6 +11,7 @@ const USERS_FILE = path.join(DATA_DIR, "users.json");
 const LESSONS_FILE = path.join(DATA_DIR, "lessons.json");
 const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
 const ACCESS_LOG_FILE = path.join(DATA_DIR, "access-log.json");
+const SITE_INFO_FILE = path.join(DATA_DIR, "site-info.json");
 const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 const sessions = new Map();
 const revokedSessions = new Map();
@@ -73,6 +74,14 @@ const mimeTypes = {
   ".svg": "image/svg+xml"
 };
 
+const defaultSiteInfo = {
+  about: "Raizes Kids e uma plataforma criada para facilitar a vida de lideres e discipuladores de criancas, reunindo licoes, trilhas, devocionais e materiais de apoio em um so lugar.",
+  contactEmail: "raizes@gmail.com",
+  whatsapp: "31971773756",
+  instagram: "@raizeskids",
+  privacy: "Usamos os dados de cadastro apenas para liberar acesso, administrar assinaturas, registrar seguranca de login e melhorar a experiencia dentro do sistema."
+};
+
 ensureData();
 
 const server = http.createServer(async (req, res) => {
@@ -122,6 +131,11 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (req.method === "GET" && url.pathname === "/api/site-info") {
+    sendJson(res, 200, { info: readSiteInfo() });
+    return;
+  }
+
   if (req.method === "POST" && url.pathname === "/api/login") {
     await login(req, res);
     return;
@@ -166,7 +180,23 @@ async function handleApi(req, res, url) {
   }
 
   if (req.method === "GET" && url.pathname === "/api/admin/access-logs") {
-    sendJson(res, 200, { logs: readAccessLogs().slice(-300).reverse() });
+    sendJson(res, 200, { logs: adminAccessLogs().slice(-300).reverse() });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/admin/access-logs/clear") {
+    writeAccessLogs([]);
+    sendJson(res, 200, { ok: true, message: "Registros de acesso apagados." });
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/admin/site-info") {
+    sendJson(res, 200, { info: readSiteInfo() });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/admin/site-info") {
+    await updateSiteInfo(req, res);
     return;
   }
 
@@ -581,6 +611,19 @@ function writeAccessLogs(logs) {
   fs.writeFileSync(ACCESS_LOG_FILE, JSON.stringify(logs.slice(-2000), null, 2), "utf8");
 }
 
+function adminAccessLogs() {
+  const usersById = new Map(readUsers().map((user) => [user.id, user]));
+  return readAccessLogs().map((log) => {
+    const user = usersById.get(log.userId);
+    return {
+      ...log,
+      name: user?.name || log.name || "",
+      username: user?.username || log.username || "",
+      email: user?.email || log.email || ""
+    };
+  });
+}
+
 function appendAccessLog(req, event, user, targetPath) {
   const logs = readAccessLogs();
   logs.push({
@@ -597,6 +640,20 @@ function appendAccessLog(req, event, user, targetPath) {
     userAgent: String(req.headers["user-agent"] || "").slice(0, 300)
   });
   writeAccessLogs(logs);
+}
+
+function readSiteInfo() {
+  if (!fs.existsSync(SITE_INFO_FILE)) return { ...defaultSiteInfo };
+  try {
+    const parsed = JSON.parse(fs.readFileSync(SITE_INFO_FILE, "utf8"));
+    return { ...defaultSiteInfo, ...(parsed || {}) };
+  } catch {
+    return { ...defaultSiteInfo };
+  }
+}
+
+function writeSiteInfo(info) {
+  fs.writeFileSync(SITE_INFO_FILE, JSON.stringify({ ...defaultSiteInfo, ...info }, null, 2), "utf8");
 }
 
 function readLessons() {
@@ -678,6 +735,20 @@ async function updateProfile(req, res) {
   user.updatedAt = new Date().toISOString();
   writeUsers(users);
   sendJson(res, 200, { ok: true, user: publicProfileUser(user), message: "Perfil atualizado." });
+}
+
+async function updateSiteInfo(req, res) {
+  const body = await readBody(req);
+  const info = {
+    about: cleanText(body.about || defaultSiteInfo.about),
+    contactEmail: normalizeEmail(body.contactEmail || defaultSiteInfo.contactEmail),
+    whatsapp: onlyDigits(body.whatsapp || defaultSiteInfo.whatsapp),
+    instagram: cleanText(body.instagram || defaultSiteInfo.instagram),
+    privacy: cleanText(body.privacy || defaultSiteInfo.privacy),
+    updatedAt: new Date().toISOString()
+  };
+  writeSiteInfo(info);
+  sendJson(res, 200, { ok: true, info, message: "Informacoes de contato atualizadas." });
 }
 
 async function passwordResetRequest(req, res) {

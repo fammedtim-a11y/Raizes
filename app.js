@@ -153,7 +153,7 @@ function init() {
   state.activeId = state.lessons[0]?.id || null;
   render();
   if (isAdminPage) {
-    setManageTab(location.hash === "#trilhas" ? "trails" : location.hash === "#usuarios" ? "users" : location.hash === "#acessos" ? "access" : "lessons");
+    setManageTab(location.hash === "#trilhas" ? "trails" : location.hash === "#usuarios" ? "users" : location.hash === "#acessos" ? "access" : location.hash === "#contato" ? "contact" : "lessons");
     loadIntoForm(getActiveLesson());
   } else {
     const initialTab = location.hash === "#trilhas" ? "trails" : location.hash === "#licoes" ? "study" : "home";
@@ -385,7 +385,9 @@ function setManageTab(tabName) {
   $("#trailManagePanel")?.classList.toggle("active", tabName === "trails");
   $("#userManagePanel")?.classList.toggle("active", tabName === "users");
   $("#accessManagePanel")?.classList.toggle("active", tabName === "access");
+  $("#contactManagePanel")?.classList.toggle("active", tabName === "contact");
   if (tabName === "access") window.loadAdminAccessLogs?.();
+  if (tabName === "contact") window.loadAdminSiteInfo?.();
 }
 
 function applyAccessVisibility() {

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20260629-profile-admin" />
+    <link rel="stylesheet" href="styles.css?v=20260629-control-admin" />
   </head>
   <body data-page="admin">
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -69,8 +69,12 @@
           <div class="manage-tabs">
             <button class="manage-tab active" data-manage-tab="lessons" type="button">Criar/Gerenciar lições</button>
             <button class="manage-tab" data-manage-tab="trails" type="button">Gerenciar trilhas</button>
-            <button class="manage-tab" data-manage-tab="users" type="button">Usuários</button>
-            <button class="manage-tab" data-manage-tab="access" type="button">Acessos</button>
+            <div class="manage-tab-group" aria-label="Controle administrativo">
+              <span>Controle</span>
+              <button class="manage-tab" data-manage-tab="users" type="button">Usuários</button>
+              <button class="manage-tab" data-manage-tab="access" type="button">Acessos</button>
+              <button class="manage-tab" data-manage-tab="contact" type="button">Contato</button>
+            </div>
           </div>
 
           <div id="lessonManagePanel" class="manage-panel active">
@@ -271,16 +275,57 @@
                 <h2>Registro de acessos</h2>
                 <p>Veja fluxo de uso, IP e dispositivos usados para acessar o app.</p>
               </div>
-              <button id="refreshAccessLogsBtn" class="icon-button" type="button">Atualizar</button>
+              <div class="admin-export-row">
+                <button id="exportAccessLogsCsvBtn" class="icon-button primary" type="button">Exportar Excel</button>
+                <button id="refreshAccessLogsBtn" class="icon-button" type="button">Atualizar</button>
+                <button id="clearAccessLogsBtn" class="icon-button danger" type="button">Apagar registros</button>
+              </div>
             </div>
             <div id="adminAccessLogsList" class="access-log-list"></div>
+          </section>
+
+          <section id="contactManagePanel" class="video-manager manage-panel">
+            <div class="manager-heading">
+              <div>
+                <h2>Sobre, contato e privacidade</h2>
+                <p>Edite as informacoes institucionais exibidas no site.</p>
+              </div>
+            </div>
+            <form id="siteInfoForm" class="editor">
+              <label>
+                <span>Sobre</span>
+                <textarea name="about" rows="5" placeholder="Resumo sobre o Raizes Kids"></textarea>
+              </label>
+              <div class="form-grid">
+                <label>
+                  <span>Email de contato</span>
+                  <input name="contactEmail" type="email" placeholder="raizes@gmail.com" />
+                </label>
+                <label>
+                  <span>WhatsApp</span>
+                  <input name="whatsapp" placeholder="31 97177-3756" />
+                </label>
+                <label>
+                  <span>Instagram</span>
+                  <input name="instagram" placeholder="@raizeskids" />
+                </label>
+              </div>
+              <label>
+                <span>Politica de Privacidade</span>
+                <textarea name="privacy" rows="6" placeholder="Texto da politica de privacidade"></textarea>
+              </label>
+              <div class="form-actions">
+                <button class="icon-button primary" type="submit">Salvar informacoes</button>
+              </div>
+              <p id="siteInfoMessage" class="action-message" role="status"></p>
+            </form>
           </section>
         </section>
       </main>
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
     <script src="lessons-data.js?v=20260625"></script>
-    <script src="app.js?v=20260629-profile-admin"></script>
-    <script src="auth.js?v=20260629-profile-admin"></script>
+    <script src="app.js?v=20260629-control-admin"></script>
+    <script src="auth.js?v=20260629-control-admin"></script>
   </body>
 </html>

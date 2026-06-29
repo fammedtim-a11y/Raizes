@@ -3,6 +3,7 @@ const authState = { user: null, initialized: false };
 document.addEventListener("DOMContentLoaded", () => {
   bindAuthTabs();
   bindAuthForms();
+  loadPublicSiteInfo();
   refreshSession();
   window.setInterval(refreshSession, 60000);
 });
@@ -90,6 +91,7 @@ function bindAuthForms() {
   const registerForm = document.querySelector("#registerForm");
   const resetForm = document.querySelector("#resetForm");
   const profileForm = document.querySelector("#profileForm");
+  const siteInfoForm = document.querySelector("#siteInfoForm");
 
   loginForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -130,6 +132,19 @@ function bindAuthForms() {
       const result = await apiPost("/api/profile", data);
       setAuthMessage(result.error || result.message || "Perfil atualizado.", Boolean(result.error));
       if (!result.error && result.user) fillProfileForm(profileForm, result.user);
+    });
+  }
+
+  if (siteInfoForm) {
+    loadAdminSiteInfo();
+    siteInfoForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const result = await apiPost("/api/admin/site-info", formData(siteInfoForm));
+      setActionMessage("#siteInfoMessage", result.error || result.message || "Informacoes salvas.", Boolean(result.error));
+      if (!result.error && result.info) {
+        fillSiteInfoForm(siteInfoForm, result.info);
+        applySiteInfo(result.info);
+      }
     });
   }
 }
@@ -220,12 +235,27 @@ async function loadAdminAccessLogs() {
     return;
   }
   const logs = Array.isArray(data.logs) ? data.logs : [];
+  window.raizesAccessLogs = logs;
   list.innerHTML = logs.length ? logs.map(renderAccessLogCard).join("") : '<p class="muted-line">Nenhum acesso registrado ainda.</p>';
   const refreshButton = document.querySelector("#refreshAccessLogsBtn");
   if (refreshButton) refreshButton.onclick = loadAdminAccessLogs;
+  const exportButton = document.querySelector("#exportAccessLogsCsvBtn");
+  if (exportButton) exportButton.onclick = () => exportAccessLogsCsv(window.raizesAccessLogs || []);
+  const clearButton = document.querySelector("#clearAccessLogsBtn");
+  if (clearButton) clearButton.onclick = clearAccessLogs;
 }
 
 window.loadAdminAccessLogs = loadAdminAccessLogs;
+
+async function clearAccessLogs() {
+  if (!window.confirm("Apagar todos os registros de acesso? Esta acao nao pode ser desfeita.")) return;
+  const result = await apiPost("/api/admin/access-logs/clear", {});
+  if (result.error) {
+    window.alert(result.error);
+    return;
+  }
+  await loadAdminAccessLogs();
+}
 
 function renderAccessLogCard(log) {
   return `
@@ -312,6 +342,76 @@ function exportUsersCsv(users) {
   downloadCsv("usuarios-raizes.csv", headers, rows);
 }
 
+function exportAccessLogsCsv(logs) {
+  const headers = ["Data", "Evento", "Pagina", "Nome", "CPF", "Email", "Dispositivo", "IP", "Navegador completo"];
+  const rows = logs.map((log) => [
+    formatDateTime(log.at),
+    log.event,
+    log.path,
+    log.name,
+    log.username,
+    log.email,
+    log.device,
+    log.ip,
+    log.userAgent
+  ]);
+  downloadCsv("acessos-raizes.csv", headers, rows);
+}
+
+async function loadPublicSiteInfo() {
+  try {
+    const data = await apiGet("/api/site-info");
+    if (data.info) applySiteInfo(data.info);
+  } catch {
+    // As informacoes fixas do HTML continuam visiveis se o servidor oscilar.
+  }
+}
+
+async function loadAdminSiteInfo() {
+  const form = document.querySelector("#siteInfoForm");
+  if (!form) return;
+  const data = await apiGet("/api/admin/site-info");
+  if (data.error) {
+    setActionMessage("#siteInfoMessage", data.error, true);
+    return;
+  }
+  fillSiteInfoForm(form, data.info || {});
+}
+
+window.loadAdminSiteInfo = loadAdminSiteInfo;
+
+function fillSiteInfoForm(form, info) {
+  ["about", "contactEmail", "whatsapp", "instagram", "privacy"].forEach((key) => {
+    if (form.elements[key]) form.elements[key].value = info?.[key] || "";
+  });
+}
+
+function applySiteInfo(info) {
+  document.querySelectorAll("[data-site-info]").forEach((el) => {
+    const key = el.dataset.siteInfo;
+    el.textContent = key === "whatsapp" ? formatPhoneDisplay(info?.[key]) : info?.[key] || "";
+  });
+  document.querySelectorAll("[data-site-link='email']").forEach((el) => {
+    const email = info?.contactEmail || "";
+    el.href = email ? `mailto:${email}` : "#contato";
+  });
+  document.querySelectorAll("[data-site-link='whatsapp']").forEach((el) => {
+    const phone = String(info?.whatsapp || "").replace(/\D/g, "");
+    el.href = phone ? `https://wa.me/55${phone}` : "#whatsapp";
+  });
+  document.querySelectorAll("[data-site-link='instagram']").forEach((el) => {
+    const handle = String(info?.instagram || "").replace(/^@/, "");
+    el.href = handle ? `https://instagram.com/${handle}` : "#instagram";
+  });
+}
+
+function formatPhoneDisplay(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (digits.length === 11) return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  if (digits.length === 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return value || "";
+}
+
 function downloadCsv(filename, headers, rows) {
   const escapeCell = (value) => `"${String(value || "").replaceAll('"', '""')}"`;
   const content = [
@@ -340,6 +440,14 @@ async function adminAction(url, body) {
   if (result.error) window.alert(result.error);
   await loadAdminUsers();
   return result;
+}
+
+function setActionMessage(selector, message, error = false) {
+  const el = document.querySelector(selector);
+  if (!el) return;
+  el.textContent = message || "";
+  el.classList.toggle("visible", Boolean(message));
+  el.classList.toggle("error", error);
 }
 
 function formData(form) {
