@@ -52,6 +52,17 @@ const SECTIONS = [
   ["snack", "Lanche", "palette", "🍞"]
 ];
 
+const DEVOTIONAL_FIELDS = [
+  ["devotional", "Devocional em família", "📖"],
+  ["prayer", "Oração", "🙏"],
+  ["activity", "Vamos brincar?", "🎨"]
+];
+
+const TRAINING_FIELDS = [
+  ["content", "Conteúdo do treinamento", "🎓"],
+  ["notes", "Orientações ao líder", "📝"]
+];
+
 const DATA_VERSION = window.RAIZES_LESSONS_VERSION || "manual-v1";
 const DEFAULT_LESSONS = Array.isArray(window.RAIZES_LESSONS_DATA) ? window.RAIZES_LESSONS_DATA : [];
 
@@ -69,8 +80,12 @@ const ICONS = {
 
 const state = {
   lessons: loadLessons(),
+  devotionals: loadCollection("raizes-devotionals", []),
+  trainings: loadCollection("raizes-trainings", []),
   manualVideos: loadManualVideos(),
   activeId: null,
+  activeDevotionalId: null,
+  activeTrainingId: null,
   activeVideoId: null,
   tab: "home",
   manageTab: "lessons",
@@ -80,6 +95,9 @@ const state = {
   activityImageReadToken: "",
   cardImagePromise: null,
   activityImagePromise: null,
+  contentImageReadToken: "",
+  contentImagePromise: null,
+  contentFilePromise: null,
   savingLessons: false
 };
 
@@ -91,6 +109,7 @@ const els = {
   filterToolbar: $("#filterToolbar"),
   homeView: $("#homeView"),
   devotionalView: $("#devotionalView"),
+  trainingView: $("#trainingView"),
   studyView: $("#studyView"),
   trailsView: $("#trailsView"),
   manageView: $("#manageView"),
@@ -173,15 +192,16 @@ function init() {
   state.activeId = state.lessons[0]?.id || null;
   render();
   if (isAdminPage) {
-    setManageTab(location.hash === "#trilhas" ? "trails" : location.hash === "#usuarios" ? "users" : location.hash === "#acessos" ? "access" : location.hash === "#contato" ? "contact" : "lessons");
+    setManageTab(location.hash === "#trilhas" ? "trails" : location.hash === "#devocionais" ? "devotionals" : location.hash === "#treinamentos" ? "trainings" : location.hash === "#usuarios" ? "users" : location.hash === "#acessos" ? "access" : location.hash === "#contato" ? "contact" : "lessons");
     loadIntoForm(getActiveLesson());
   } else {
-    const initialTab = location.hash === "#trilhas" ? "trails" : location.hash === "#licoes" ? "study" : "home";
+    const initialTab = location.hash === "#trilhas" ? "trails" : location.hash === "#licoes" ? "study" : location.hash === "#treinamentos" ? "training" : location.hash === "#devocional" ? "devotional" : "home";
     setTab(initialTab);
   }
   drawSky();
   renderLimitedNotice();
   syncLessonsFromServer();
+  syncContentFromServer();
 }
 
 function loadLessons() {
@@ -199,6 +219,25 @@ function loadLessons() {
     return lessons;
   } catch {
     return normalizeLessonDates(DEFAULT_LESSONS);
+  }
+}
+
+function loadCollection(key, fallback) {
+  const saved = localStorage.getItem(key);
+  if (!saved) return fallback;
+  try {
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed) ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveCollectionCache(key, items) {
+  try {
+    localStorage.setItem(key, JSON.stringify(items));
+  } catch {
+    localStorage.removeItem(key);
   }
 }
 
@@ -263,6 +302,44 @@ async function syncLessonsFromServer() {
   } catch {
     // Sem conexão com o catálogo do servidor, o sistema mantém o catálogo local como fallback.
   }
+}
+
+async function syncContentFromServer() {
+  await Promise.all([
+    syncCollectionFromServer("/api/devotionals", "devotionals", "raizes-devotionals"),
+    syncCollectionFromServer("/api/trainings", "trainings", "raizes-trainings")
+  ]);
+  state.activeDevotionalId = state.devotionals.some((item) => item.id === state.activeDevotionalId)
+    ? state.activeDevotionalId
+    : state.devotionals[0]?.id || null;
+  state.activeTrainingId = state.trainings.some((item) => item.id === state.activeTrainingId)
+    ? state.activeTrainingId
+    : state.trainings[0]?.id || null;
+  renderDevotionals();
+  renderTrainings();
+  renderContentAdminLists();
+}
+
+async function syncCollectionFromServer(url, stateKey, cacheKey) {
+  try {
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) return;
+    const data = await response.json();
+    if (!Array.isArray(data[stateKey])) return;
+    state[stateKey] = normalizeContentItems(data[stateKey]);
+    saveCollectionCache(cacheKey, state[stateKey]);
+  } catch {
+    // O cache local segura a navegação se a conexão oscilar.
+  }
+}
+
+function normalizeContentItems(items) {
+  return items.map((item) => ({
+    ...item,
+    createdAt: item.createdAt || item.updatedAt || new Date().toISOString(),
+    sections: item.sections || {},
+    attachments: Array.isArray(item.attachments) ? item.attachments : []
+  }));
 }
 
 async function saveLessonsToServer() {
@@ -377,6 +454,7 @@ function bindEvents() {
   els.saveNextVideo?.addEventListener("click", () => moveVideoInForm(1));
   els.exportJson?.addEventListener("click", exportJson);
   els.importJson?.addEventListener("change", importJson);
+  document.querySelectorAll(".content-editor").forEach((form) => bindContentEditor(form));
   window.addEventListener("resize", debounce(drawSky, 160));
 }
 
@@ -387,6 +465,7 @@ function setTab(tabName) {
   els.tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.tab === tabName));
   els.homeView?.classList.toggle("active", tabName === "home");
   els.devotionalView?.classList.toggle("active", tabName === "devotional");
+  els.trainingView?.classList.toggle("active", tabName === "training");
   els.studyView?.classList.toggle("active", tabName === "study");
   els.trailsView?.classList.toggle("active", tabName === "trails");
   els.manageView?.classList.toggle("active", tabName === "manage");
@@ -413,7 +492,9 @@ function setManageTab(tabName) {
     tab.classList.toggle("active", tab.dataset.manageTab === tabName);
   });
   $("#lessonManagePanel")?.classList.toggle("active", tabName === "lessons");
+  $("#devotionalManagePanel")?.classList.toggle("active", tabName === "devotionals");
   $("#trailManagePanel")?.classList.toggle("active", tabName === "trails");
+  $("#trainingManagePanel")?.classList.toggle("active", tabName === "trainings");
   $("#userManagePanel")?.classList.toggle("active", tabName === "users");
   $("#accessManagePanel")?.classList.toggle("active", tabName === "access");
   $("#contactManagePanel")?.classList.toggle("active", tabName === "contact");
@@ -438,6 +519,7 @@ function canAccessTab(tabName) {
   if (tabName === "home") return canAccessLevel("prime");
   if (tabName === "devotional") return true;
   if (["study", "trails"].includes(tabName)) return canAccessLevel("leader");
+  if (tabName === "training") return canAccessLevel("prime");
   return canAccessLevel("prime");
 }
 
@@ -614,6 +696,113 @@ function renderReader() {
   els.reader.innerHTML = "";
   els.reader.append(template);
   $("#printPdfBtn").addEventListener("click", printCurrentLesson);
+}
+
+function renderDevotionals() {
+  renderContentArea({
+    items: state.devotionals,
+    activeKey: "activeDevotionalId",
+    listSelector: "#devotionalList",
+    countSelector: "#devotionalCount",
+    readerSelector: "#devotionalReader",
+    emptyTitle: "Nenhum devocional cadastrado",
+    emptyText: "Cadastre devocionais no gerenciamento para orientar as famílias durante a semana.",
+    typeLabel: "Devocional",
+    fields: DEVOTIONAL_FIELDS,
+    onChange: renderDevotionals
+  });
+}
+
+function renderTrainings() {
+  renderContentArea({
+    items: state.trainings,
+    activeKey: "activeTrainingId",
+    listSelector: "#trainingList",
+    countSelector: "#trainingCount",
+    readerSelector: "#trainingReader",
+    emptyTitle: "Nenhum treinamento cadastrado",
+    emptyText: "Cadastre treinamentos com vídeos, imagens e anexos para os líderes.",
+    typeLabel: "Treinamento",
+    fields: TRAINING_FIELDS,
+    onChange: renderTrainings
+  });
+}
+
+function renderContentArea(config) {
+  const list = document.querySelector(config.listSelector);
+  const count = document.querySelector(config.countSelector);
+  const reader = document.querySelector(config.readerSelector);
+  if (!list || !reader) return;
+  const items = normalizeContentItems(config.items);
+  if (count) count.textContent = `${items.length} item(ns)`;
+  if (!items.length) {
+    list.innerHTML = "";
+    reader.innerHTML = `<div class="reader-empty"><h2>${config.emptyTitle}</h2><p>${config.emptyText}</p></div>`;
+    return;
+  }
+  if (!items.some((item) => item.id === state[config.activeKey])) state[config.activeKey] = items[0].id;
+  const active = items.find((item) => item.id === state[config.activeKey]) || items[0];
+  list.innerHTML = items.map((item) => renderContentCard(item, item.id === active.id, config.typeLabel)).join("");
+  list.querySelectorAll("[data-content-id]").forEach((card) => {
+    card.addEventListener("click", () => {
+      state[config.activeKey] = card.dataset.contentId;
+      config.onChange();
+    });
+  });
+  reader.innerHTML = renderContentReader(active, config);
+}
+
+function renderContentCard(item, active, typeLabel) {
+  const visual = categoryTheme(item.category || typeLabel);
+  const cover = item.cardImage
+    ? `<div class="lesson-cover custom-cover"><img src="${escapeHtml(item.cardImage)}" alt="" /></div>`
+    : `<div class="lesson-cover"><span class="lesson-cover-book">${escapeHtml(typeLabel)}</span><span class="lesson-cover-principle">${escapeHtml(item.principle || item.description || item.title)}</span><span class="lesson-cover-ref">${escapeHtml(item.season || formatMonthYear(item.createdAt))}</span></div>`;
+  return `
+    <button class="lesson-card ${active ? "active" : ""}" style="--lesson-primary:${visual.primary};--lesson-soft:${visual.soft};--lesson-accent:${visual.accent}" type="button" data-content-id="${escapeHtml(item.id)}">
+      ${cover}
+      <span class="lesson-card-topic">${escapeHtml(item.category || typeLabel)}</span>
+      <strong>${escapeHtml(item.title)}</strong>
+      <span class="lesson-card-age">${escapeHtml(item.season || formatMonthYear(item.createdAt))}</span>
+      <span class="lesson-card-verse">${escapeHtml(item.verse || item.principle || "Conteúdo de apoio")}</span>
+    </button>
+  `;
+}
+
+function renderContentReader(item, config) {
+  const theme = categoryTheme(item.category || config.typeLabel);
+  const attachments = item.attachments?.length ? `
+    <section class="lesson-section">
+      <div class="section-icon">📎</div>
+      <div class="section-body">
+        <h3>Anexos</h3>
+        <div class="attachment-list">${item.attachments.map((file) => `<a class="icon-button" href="${escapeHtml(file.url)}" target="_blank" rel="noreferrer">${escapeHtml(file.name || "Anexo")}</a>`).join("")}</div>
+      </div>
+    </section>
+  ` : "";
+  return `
+    <header class="reader-hero">
+      <div class="reader-glow" aria-hidden="true"></div>
+      <div class="reader-title-block">
+        <span class="reader-kicker">${escapeHtml(config.typeLabel)} · ${escapeHtml(item.season || formatMonthYear(item.createdAt))}</span>
+        <h2>${escapeHtml(item.title)}</h2>
+        <div class="reader-meta">
+          <span class="reader-chip">${theme.emoji} ${escapeHtml(item.category || config.typeLabel)}</span>
+          ${item.bibleText ? `<span class="reader-chip">${escapeHtml(item.bibleText)}</span>` : ""}
+        </div>
+        ${item.verse ? `<p class="reader-verse"><span>Versículo</span><strong>${escapeHtml(item.verse)}</strong></p>` : ""}
+      </div>
+    </header>
+    <div class="section-timeline">
+      ${item.principle ? `<section class="lesson-section"><div class="section-icon">🌱</div><div class="section-body"><h3>Princípio</h3><p>${escapeHtml(item.principle)}</p></div></section>` : ""}
+      ${config.fields.map(([key, label, emoji]) => {
+        const text = item.sections?.[key]?.trim();
+        if (!text) return "";
+        return `<section class="lesson-section"><div class="section-icon">${emoji}</div><div class="section-body"><h3>${label}</h3>${renderLessonTextWithPlayers(text)}</div></section>`;
+      }).join("")}
+      ${item.activityImage ? `<section class="lesson-section activity-art"><div class="section-icon">🎨</div><div class="section-body"><h3>Atividade</h3><img src="${escapeHtml(item.activityImage)}" alt="Atividade" /></div></section>` : ""}
+      ${attachments}
+    </div>
+  `;
 }
 
 function renderLessonTextWithPlayers(text) {
@@ -834,6 +1023,8 @@ function moveLessonInForm(direction) {
   loadIntoForm(nextLesson);
   renderList();
   renderReader();
+  renderDevotionals();
+  renderTrainings();
   renderLessonAdminList();
   showActionMessage("lesson", `Editando agora: "${nextLesson.title}".`);
   els.form?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1423,6 +1614,187 @@ function renderTrails() {
   });
 }
 
+function renderContentAdminLists() {
+  renderContentAdminList("devotional", state.devotionals, "#devotionalAdminList");
+  renderContentAdminList("training", state.trainings, "#trainingAdminList");
+}
+
+function renderContentAdminList(type, items, selector) {
+  const list = document.querySelector(selector);
+  if (!list) return;
+  if (!items.length) {
+    list.innerHTML = `<p class="muted-line">Nenhum ${type === "devotional" ? "devocional" : "treinamento"} cadastrado ainda.</p>`;
+    return;
+  }
+  list.innerHTML = items.map((item) => renderContentCard(item, false, type === "devotional" ? "Devocional" : "Treinamento").replace("data-content-id", `data-admin-${type}-id`)).join("");
+  list.querySelectorAll(`[data-admin-${type}-id]`).forEach((card) => {
+    card.addEventListener("click", () => {
+      const item = items.find((entry) => entry.id === card.getAttribute(`data-admin-${type}-id`));
+      if (item) loadContentIntoForm(type, item);
+    });
+  });
+}
+
+function bindContentEditor(form) {
+  const type = form.dataset.contentType;
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    try {
+      showContentMessage(form, "Salvando no servidor...");
+      const item = await contentFromForm(type, form);
+      await saveContentCollection(type, item);
+      clearContentForm(form);
+      showContentMessage(form, `${type === "devotional" ? "Devocional" : "Treinamento"} salvo com sucesso.`);
+    } catch (error) {
+      showContentMessage(form, error.message || "Nao foi possivel salvar.", true);
+    }
+  });
+  form.querySelector("[data-content-clear]")?.addEventListener("click", () => clearContentForm(form));
+  form.querySelector("[data-content-delete]")?.addEventListener("click", async () => {
+    const id = form.elements.id.value;
+    if (!id || !window.confirm("Excluir este item?")) return;
+    const key = type === "devotional" ? "devotionals" : "trainings";
+    state[key] = state[key].filter((item) => item.id !== id);
+    await postContentCollection(type);
+    clearContentForm(form);
+    renderDevotionals();
+    renderTrainings();
+    renderContentAdminLists();
+  });
+}
+
+async function contentFromForm(type, form) {
+  const data = Object.fromEntries(new FormData(form).entries());
+  const existing = findContentItem(type, data.id);
+  const createdAt = data.createdMonth ? `${data.createdMonth}-01T00:00:00.000Z` : existing?.createdAt || new Date().toISOString();
+  const item = {
+    ...(existing || {}),
+    id: data.id || crypto.randomUUID(),
+    title: String(data.title || "").trim(),
+    category: String(data.category || (type === "devotional" ? "Família" : "Treinamento")).trim(),
+    season: String(data.season || "").trim(),
+    createdAt,
+    cardImage: existing?.cardImage || "",
+    activityImage: existing?.activityImage || "",
+    attachments: existing?.attachments || [],
+    sections: {}
+  };
+  if (!item.title) throw new Error("Informe o titulo.");
+  if (type === "devotional") {
+    item.principle = String(data.principle || "").trim();
+    item.bibleText = String(data.bibleText || "").trim();
+    item.verse = String(data.verse || "").trim();
+    item.sections = {
+      devotional: String(data.devotional || "").trim(),
+      prayer: String(data.prayer || "").trim(),
+      activity: String(data.activity || "").trim()
+    };
+    item.activityImage = await readOptionalImage(form.elements.activityImageFile, item.activityImage);
+  } else {
+    item.youtubeUrl = String(data.youtubeUrl || "").trim();
+    item.description = String(data.description || "").trim();
+    item.sections = {
+      content: String(data.content || "").trim(),
+      notes: String(data.notes || "").trim()
+    };
+    item.attachments = [...item.attachments, ...await readOptionalAttachments(form.elements.attachmentsFile)];
+  }
+  item.cardImage = await readOptionalImage(form.elements.cardImageFile, item.cardImage);
+  return item;
+}
+
+async function saveContentCollection(type, item) {
+  const key = type === "devotional" ? "devotionals" : "trainings";
+  const index = state[key].findIndex((entry) => entry.id === item.id);
+  if (index >= 0) state[key][index] = item;
+  else state[key].unshift(item);
+  await postContentCollection(type);
+  renderDevotionals();
+  renderTrainings();
+  renderContentAdminLists();
+  if (state.trailsRendered) renderTrails();
+}
+
+async function postContentCollection(type) {
+  const key = type === "devotional" ? "devotionals" : "trainings";
+  const url = type === "devotional" ? "/api/admin/devotionals" : "/api/admin/trainings";
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ [key]: state[key] })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Falha ao salvar no servidor.");
+  if (Array.isArray(data[key])) state[key] = normalizeContentItems(data[key]);
+  saveCollectionCache(type === "devotional" ? "raizes-devotionals" : "raizes-trainings", state[key]);
+}
+
+function findContentItem(type, id) {
+  const key = type === "devotional" ? "devotionals" : "trainings";
+  return state[key].find((item) => item.id === id);
+}
+
+function loadContentIntoForm(type, item) {
+  const form = document.querySelector(type === "devotional" ? "#devotionalForm" : "#trainingForm");
+  if (!form) return;
+  form.elements.id.value = item.id || "";
+  form.elements.title.value = item.title || "";
+  form.elements.category.value = item.category || "";
+  form.elements.season.value = item.season || "";
+  form.elements.createdMonth.value = lessonMonthKey(item.createdAt);
+  if (type === "devotional") {
+    form.elements.principle.value = item.principle || "";
+    form.elements.bibleText.value = item.bibleText || "";
+    form.elements.verse.value = item.verse || "";
+    form.elements.devotional.value = item.sections?.devotional || "";
+    form.elements.prayer.value = item.sections?.prayer || "";
+    form.elements.activity.value = item.sections?.activity || "";
+  } else {
+    form.elements.youtubeUrl.value = item.youtubeUrl || "";
+    form.elements.description.value = item.description || "";
+    form.elements.content.value = item.sections?.content || "";
+    form.elements.notes.value = item.sections?.notes || "";
+  }
+  form.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function clearContentForm(form) {
+  form.reset();
+  form.elements.id.value = "";
+}
+
+async function readOptionalImage(input, fallback) {
+  const file = input?.files?.[0];
+  if (!file) return fallback || "";
+  return readCompressedImage(file, { maxWidth: 1280, maxHeight: 720, quality: 0.84 });
+}
+
+async function readOptionalAttachments(input) {
+  const files = [...(input?.files || [])];
+  return Promise.all(files.map(async (file) => ({
+    name: file.name,
+    type: file.type,
+    url: await readFileDataUrl(file)
+  })));
+}
+
+function readFileDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function showContentMessage(form, message, error = false) {
+  const el = form.querySelector(".action-message");
+  if (!el) return;
+  el.textContent = message;
+  el.classList.toggle("visible", Boolean(message));
+  el.classList.toggle("error", error);
+}
+
 function formatMonthYear(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "sem data";
@@ -1623,6 +1995,14 @@ function allVideos() {
       autoVideos.push(video);
     });
   });
+  state.devotionals.forEach((devotional) => {
+    extractContentVideos(devotional, "devotional").forEach((video) => {
+      const key = `${video.youtubeId}-${devotional.id}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      autoVideos.push(video);
+    });
+  });
   return [...state.manualVideos, ...autoVideos];
 }
 
@@ -1656,6 +2036,39 @@ function extractLessonVideos(lesson) {
           description: `${label} da lição "${lesson.title}".`
         });
       });
+    });
+  });
+  return videos;
+}
+
+function extractContentVideos(item, source) {
+  const videos = [];
+  const text = [
+    item.title,
+    item.youtubeUrl,
+    item.description,
+    ...Object.values(item.sections || {})
+  ].filter(Boolean).join("\n");
+  const urls = text.match(/https?:\/\/[^\s)"]+/g) || [];
+  urls.filter((url) => /youtu\.?be|youtube\.com/i.test(url)).forEach((url) => {
+    const youtubeId = getYouTubeId(url);
+    if (!youtubeId) return;
+    videos.push({
+      id: `auto-${source}-${item.id}-${youtubeId}`,
+      source,
+      title: `${source === "devotional" ? "Devocional" : "Treinamento"} · ${item.title}`,
+      url,
+      youtubeId,
+      category: item.category || (source === "devotional" ? "Devocional" : "Treinamento"),
+      age: "",
+      playlist: item.title,
+      season: item.season || formatMonthYear(item.createdAt),
+      featured: false,
+      trending: source === "devotional",
+      recommended: true,
+      lessonId: "",
+      lessonTitle: item.title,
+      description: item.principle || item.description || ""
     });
   });
   return videos;

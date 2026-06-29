@@ -501,6 +501,24 @@ textarea:focus {
   align-items: start;
 }
 
+.content-layout {
+  grid-template-columns: 360px 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+#devotionalList,
+#trainingList {
+  display: grid;
+  gap: 12px;
+}
+
+.attachment-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .lesson-list,
 .lesson-reader,
 .editor,
@@ -3724,6 +3742,11 @@ body.is-authenticated .visitor-only {
   }
 
   #studyView {
+    gap: 12px;
+  }
+
+  .content-layout {
+    grid-template-columns: 1fr;
     gap: 12px;
   }
 

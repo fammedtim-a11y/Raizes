@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Catálogo de Lições Bíblicas</title>
-    <link rel="stylesheet" href="styles.css?v=20260629-footer-ages" />
+    <link rel="stylesheet" href="styles.css?v=20260629-dev-training" />
   </head>
   <body>
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -20,8 +20,9 @@
         <nav class="tabs" aria-label="Modos do catálogo">
           <button class="tab active" data-tab="home" type="button">Home</button>
           <button class="tab" data-tab="devotional" data-min-access="simple" type="button">Devocional</button>
-          <button class="tab" data-tab="study" data-min-access="leader" type="button">Lições</button>
           <button class="tab" data-tab="trails" data-min-access="leader" type="button">Trilhas</button>
+          <button class="tab" data-tab="study" data-min-access="leader" type="button">Lições</button>
+          <button class="tab" data-tab="training" data-min-access="prime" type="button">Treinamentos</button>
           <a class="tab admin-link admin-only" href="gerenciamento.html">Gerenciamento</a>
           <span class="auth-slot"></span>
         </nav>
@@ -138,15 +139,15 @@
           </article>
         </section>
 
-        <section id="devotionalView" class="view devotional-view" aria-label="Devocional">
-          <div class="reader-empty">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 3h12v18l-6-4-6 4V3Z" />
-              <path d="M9 8h6M9 12h4" />
-            </svg>
-            <h2>Devocional da família</h2>
-            <p>Esta área será construída para acompanhar pais, líderes e crianças durante a semana.</p>
-          </div>
+        <section id="devotionalView" class="view content-layout devotional-view" aria-label="Devocional">
+          <aside class="lesson-list" aria-label="Lista de devocionais">
+            <div class="list-heading">
+              <strong>Devocionais</strong>
+              <span id="devotionalCount"></span>
+            </div>
+            <div id="devotionalList"></div>
+          </aside>
+          <article class="lesson-reader" id="devotionalReader"></article>
         </section>
 
         <section id="trailsView" class="view trails-layout" aria-label="Trilhas com vídeos">
@@ -162,6 +163,17 @@
           <section id="streamHero" class="stream-hero" aria-label="Destaque principal"></section>
           <nav id="streamQuickNav" class="stream-quick-nav" aria-label="Atalhos das trilhas"></nav>
           <div id="trailGrid" class="trail-grid"></div>
+        </section>
+
+        <section id="trainingView" class="view content-layout training-view" aria-label="Treinamentos">
+          <aside class="lesson-list" aria-label="Lista de treinamentos">
+            <div class="list-heading">
+              <strong>Treinamentos</strong>
+              <span id="trainingCount"></span>
+            </div>
+            <div id="trainingList"></div>
+          </aside>
+          <article class="lesson-reader" id="trainingReader"></article>
         </section>
 
       </main>
@@ -211,7 +223,7 @@
     </template>
 
     <script src="lessons-data.js?v=20260625"></script>
-    <script src="app.js?v=20260629-footer-ages"></script>
-    <script src="auth.js?v=20260629-footer-ages"></script>
+    <script src="app.js?v=20260629-dev-training"></script>
+    <script src="auth.js?v=20260629-dev-training"></script>
   </body>
 </html>

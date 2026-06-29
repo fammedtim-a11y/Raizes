@@ -64,11 +64,12 @@ function renderAuthSlots() {
       slot.innerHTML = `
         <span class="auth-name">${authEscapeHtml(authState.user.name || authState.user.username)}</span>
         <a class="tab auth-profile" href="perfil.html">Perfil</a>
+        <a class="tab" href="index.html#contato">Contato</a>
         <button class="tab auth-logout" type="button">Sair</button>
       `;
       slot.querySelector(".auth-logout").addEventListener("click", logout);
     } else {
-      slot.innerHTML = '<a class="tab auth-login" href="login.html">Entrar / Cadastrar</a>';
+      slot.innerHTML = '<a class="tab" href="index.html#contato">Contato</a><a class="tab auth-login" href="login.html">Entrar / Cadastrar</a>';
     }
   });
 }

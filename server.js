@@ -9,6 +9,8 @@ const ROOT = __dirname;
 const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, "data");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const LESSONS_FILE = path.join(DATA_DIR, "lessons.json");
+const DEVOTIONALS_FILE = path.join(DATA_DIR, "devotionals.json");
+const TRAININGS_FILE = path.join(DATA_DIR, "trainings.json");
 const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
 const ACCESS_LOG_FILE = path.join(DATA_DIR, "access-log.json");
 const SITE_INFO_FILE = path.join(DATA_DIR, "site-info.json");
@@ -67,6 +69,14 @@ const mimeTypes = {
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
+  ".pdf": "application/pdf",
+  ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ".xls": "application/vnd.ms-excel",
+  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".doc": "application/msword",
+  ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ".ppt": "application/vnd.ms-powerpoint",
+  ".txt": "text/plain; charset=utf-8",
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
@@ -93,6 +103,28 @@ const ageAliases = {
   "9 a 10": "Pré-Juniores: 9 a 10 anos",
   "11 e 12": "Juniores: 11 e 12 anos"
 };
+
+const initialDevotionals = [
+  {
+    id: "culto-familia-semana-16",
+    title: "Culto em Família - Semana 16",
+    category: "Família",
+    season: "Semana 16",
+    createdAt: "2026-06-01T00:00:00.000Z",
+    verse: '"Nunca lhes falte o zelo, sejam fervorosos no espírito, sirvam ao Senhor." Rm 12.11',
+    principle: "Vou valorizar tudo o que Deus me der.",
+    bibleText: "Esaú despreza a primogenitura - Gn 25.29-34",
+    cardImage: "",
+    activityImage: "",
+    sections: {
+      devotional: "Hoje vamos conversar sobre os presentes de Deus, sobre tudo que Ele já nos deu e sobre o que ainda pode nos dar. Na correria dos nossos dias, podemos deixar de perceber as pequenas coisas que Deus faz por nós. Precisamos ser gratos sempre e valorizar o Senhor pelo que Ele fez, faz e ainda fará. Assim como Esaú desprezou o presente que havia recebido de Deus, nós também perdemos a bênção quando desprezamos aquilo que Ele nos dá. Devemos cuidar bem do que recebemos: nossa família, nossa casa, nosso corpo, nossos materiais e cada oportunidade.",
+      prayer: "Senhor, muito obrigado por estar sempre conosco, por cada presente que já me deu e pelo que ainda tem para mim. Me ensine a ser mais cuidadoso com as minhas coisas e com os presentes que me dá. Obrigado pela minha família, por mais um dia de vida. Amém!",
+      activity: "Vamos brincar? Prepare um café da tarde, café da manhã, almoço ou jantar especial para a criança. Diga que você valoriza a vida dela e o privilégio de viverem juntos como família. Use esse momento para reforçar que também devemos valorizar e agradar a Deus todos os dias."
+    }
+  }
+];
+
+const initialTrainings = [];
 
 ensureData();
 
@@ -123,6 +155,12 @@ function ensureData() {
   if (!fs.existsSync(USERS_FILE)) {
     writeUsers(initialUsers);
   }
+  if (!fs.existsSync(DEVOTIONALS_FILE)) {
+    writeDevotionals(initialDevotionals);
+  }
+  if (!fs.existsSync(TRAININGS_FILE)) {
+    writeTrainings(initialTrainings);
+  }
   loadSessions();
 }
 
@@ -140,6 +178,16 @@ async function handleApi(req, res, url) {
       return;
     }
     sendJson(res, 200, { lessons });
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/devotionals") {
+    sendJson(res, 200, { devotionals: readDevotionals() });
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/trainings") {
+    sendJson(res, 200, { trainings: readTrainings() });
     return;
   }
 
@@ -214,6 +262,26 @@ async function handleApi(req, res, url) {
 
   if (req.method === "GET" && url.pathname === "/api/admin/lessons") {
     sendJson(res, 200, { lessons: readLessons() || [] });
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/admin/devotionals") {
+    sendJson(res, 200, { devotionals: readDevotionals() });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/admin/devotionals") {
+    await updateDevotionals(req, res);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/admin/trainings") {
+    sendJson(res, 200, { trainings: readTrainings() });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/admin/trainings") {
+    await updateTrainings(req, res);
     return;
   }
 
@@ -678,6 +746,26 @@ function writeLessons(lessons) {
   fs.writeFileSync(LESSONS_FILE, JSON.stringify(lessons, null, 2), "utf8");
 }
 
+function readDevotionals() {
+  if (!fs.existsSync(DEVOTIONALS_FILE)) return initialDevotionals;
+  const parsed = JSON.parse(fs.readFileSync(DEVOTIONALS_FILE, "utf8"));
+  return Array.isArray(parsed) ? normalizeContentDates(parsed) : [];
+}
+
+function writeDevotionals(devotionals) {
+  fs.writeFileSync(DEVOTIONALS_FILE, JSON.stringify(devotionals, null, 2), "utf8");
+}
+
+function readTrainings() {
+  if (!fs.existsSync(TRAININGS_FILE)) return initialTrainings;
+  const parsed = JSON.parse(fs.readFileSync(TRAININGS_FILE, "utf8"));
+  return Array.isArray(parsed) ? normalizeContentDates(parsed) : [];
+}
+
+function writeTrainings(trainings) {
+  fs.writeFileSync(TRAININGS_FILE, JSON.stringify(trainings, null, 2), "utf8");
+}
+
 async function updateLessons(req, res) {
   const body = await readBody(req);
   const lessons = Array.isArray(body.lessons) ? body.lessons : null;
@@ -690,6 +778,37 @@ async function updateLessons(req, res) {
   sendJson(res, 200, { ok: true, lessons: storedLessons, savedAt: new Date().toISOString() });
 }
 
+async function updateDevotionals(req, res) {
+  const body = await readBody(req);
+  const devotionals = Array.isArray(body.devotionals) ? body.devotionals : null;
+  if (!devotionals) {
+    sendJson(res, 400, { error: "Lista de devocionais invalida." });
+    return;
+  }
+  const stored = persistContentFiles(devotionals, "devotional");
+  writeDevotionals(stored);
+  sendJson(res, 200, { ok: true, devotionals: stored, savedAt: new Date().toISOString() });
+}
+
+async function updateTrainings(req, res) {
+  const body = await readBody(req);
+  const trainings = Array.isArray(body.trainings) ? body.trainings : null;
+  if (!trainings) {
+    sendJson(res, 400, { error: "Lista de treinamentos invalida." });
+    return;
+  }
+  const stored = persistContentFiles(trainings, "training");
+  writeTrainings(stored);
+  sendJson(res, 200, { ok: true, trainings: stored, savedAt: new Date().toISOString() });
+}
+
+function normalizeContentDates(items) {
+  return items.map((item) => ({
+    ...item,
+    createdAt: item.createdAt || item.includedAt || item.updatedAt || new Date().toISOString()
+  }));
+}
+
 // Antes de salvar o catálogo, transforma fotos base64 em arquivos reais.
 // Isso deixa lessons.json leve e evita queda do servidor em salvamentos grandes.
 function persistLessonImages(lessons) {
@@ -699,6 +818,29 @@ function persistLessonImages(lessons) {
     cardImage: storeDataImage(lesson.cardImage, "card"),
     activityImage: storeDataImage(lesson.activityImage, "activity")
   }));
+}
+
+function persistContentFiles(items, prefix) {
+  return normalizeContentDates(items).map((item) => ({
+    ...item,
+    cardImage: storeDataImage(item.cardImage, `${prefix}-card`),
+    activityImage: storeDataImage(item.activityImage, `${prefix}-activity`),
+    attachments: Array.isArray(item.attachments)
+      ? item.attachments.map((attachment) => persistAttachment(attachment, prefix)).filter(Boolean)
+      : []
+  }));
+}
+
+function persistAttachment(attachment, prefix) {
+  if (!attachment) return null;
+  if (attachment.url && !String(attachment.url).startsWith("data:")) return attachment;
+  const storedUrl = storeDataFile(attachment.url, prefix, attachment.name);
+  if (!storedUrl) return null;
+  return {
+    name: cleanText(attachment.name || "Anexo"),
+    type: cleanText(attachment.type || ""),
+    url: storedUrl
+  };
 }
 
 function normalizeLessonAges(lessons) {
@@ -727,6 +869,38 @@ function storeDataImage(value, prefix) {
   const filename = `${prefix}-${hash}${ext}`;
   fs.writeFileSync(path.join(UPLOAD_DIR, filename), buffer);
   return `/uploads/${filename}`;
+}
+
+function storeDataFile(value, prefix, originalName = "arquivo") {
+  if (!value || typeof value !== "string" || !value.startsWith("data:")) return value || "";
+
+  const match = value.match(/^data:([^;,]+);base64,([A-Za-z0-9+/=]+)$/);
+  if (!match) return "";
+
+  const mime = match[1];
+  const buffer = Buffer.from(match[2], "base64");
+  if (!buffer.length || buffer.length > 24 * 1024 * 1024) {
+    throw new Error("Arquivo muito grande. Use anexos de ate 24MB.");
+  }
+
+  const ext = safeFileExtension(originalName, mime);
+  const hash = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 24);
+  const filename = `${prefix}-file-${hash}${ext}`;
+  fs.writeFileSync(path.join(UPLOAD_DIR, filename), buffer);
+  return `/uploads/${filename}`;
+}
+
+function safeFileExtension(name, mime) {
+  const ext = path.extname(String(name || "")).toLowerCase();
+  if (/^\.(pdf|xlsx?|docx?|pptx?|txt|csv|png|jpe?g|webp)$/.test(ext)) return ext;
+  if (mime.includes("pdf")) return ".pdf";
+  if (mime.includes("spreadsheet") || mime.includes("excel")) return ".xlsx";
+  if (mime.includes("word")) return ".docx";
+  if (mime.includes("presentation")) return ".pptx";
+  if (mime.includes("png")) return ".png";
+  if (mime.includes("jpeg")) return ".jpg";
+  if (mime.includes("webp")) return ".webp";
+  return ".bin";
 }
 
 async function updateProfile(req, res) {
