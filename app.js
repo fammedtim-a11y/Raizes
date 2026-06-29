@@ -469,7 +469,7 @@ function setTab(tabName) {
   els.studyView?.classList.toggle("active", tabName === "study");
   els.trailsView?.classList.toggle("active", tabName === "trails");
   els.manageView?.classList.toggle("active", tabName === "manage");
-  els.filterToolbar?.classList.toggle("hidden", !["study", "trails"].includes(tabName));
+  els.filterToolbar?.classList.toggle("hidden", !["study", "trails", "devotional", "training"].includes(tabName));
   if (previousTab === "trails" && tabName !== "trails") stopTrailPlayback();
   if (tabName === "trails" && !state.trailsRendered) {
     setTimeout(() => {
@@ -549,7 +549,8 @@ function render() {
 }
 
 function fillFilters() {
-  const categories = unique([...CATEGORIES, ...state.lessons.map((lesson) => lesson.category).filter(Boolean)]);
+  const contentCategories = [...state.devotionals, ...state.trainings].map((item) => item.category).filter(Boolean);
+  const categories = unique([...CATEGORIES, ...state.lessons.map((lesson) => lesson.category).filter(Boolean), ...contentCategories]);
   if (els.categoryFilter) fillSelect(els.categoryFilter, ["Todas", ...categories]);
   if (els.ageFilter) fillSelect(els.ageFilter, ["Todas", ...AGE_GROUPS]);
   if (els.categoryOptions) {
@@ -733,7 +734,7 @@ function renderContentArea(config) {
   const count = document.querySelector(config.countSelector);
   const reader = document.querySelector(config.readerSelector);
   if (!list || !reader) return;
-  const items = normalizeContentItems(config.items);
+  const items = filteredContentItems(normalizeContentItems(config.items));
   if (count) count.textContent = `${items.length} item(ns)`;
   if (!items.length) {
     list.innerHTML = "";
@@ -750,6 +751,28 @@ function renderContentArea(config) {
     });
   });
   reader.innerHTML = renderContentReader(active, config);
+}
+
+function filteredContentItems(items) {
+  const term = normalize(els.search?.value || "");
+  const category = els.categoryFilter?.value || "Todas";
+  const createdMonth = els.createdMonthFilter?.value || "";
+  return items.filter((item) => {
+    const content = normalize([
+      item.title,
+      item.category,
+      item.season,
+      item.verse,
+      item.principle,
+      item.bibleText,
+      item.description,
+      ...Object.values(item.sections || {})
+    ].join(" "));
+    const matchesTerm = !term || content.includes(term);
+    const matchesCategory = category === "Todas" || item.category === category;
+    const matchesCreatedMonth = !createdMonth || lessonMonthKey(item.createdAt) === createdMonth;
+    return matchesTerm && matchesCategory && matchesCreatedMonth;
+  });
 }
 
 function renderContentCard(item, active, typeLabel) {
@@ -799,7 +822,7 @@ function renderContentReader(item, config) {
         if (!text) return "";
         return `<section class="lesson-section"><div class="section-icon">${emoji}</div><div class="section-body"><h3>${label}</h3>${renderLessonTextWithPlayers(text)}</div></section>`;
       }).join("")}
-      ${item.activityImage ? `<section class="lesson-section activity-art"><div class="section-icon">🎨</div><div class="section-body"><h3>Atividade</h3><img src="${escapeHtml(item.activityImage)}" alt="Atividade" /></div></section>` : ""}
+      ${item.activityImage ? `<section class="lesson-section activity-art"><div class="section-icon">🎨</div><div class="section-body"><h3>${config.typeLabel === "Treinamento" ? "Imagem do treinamento" : "Atividade"}</h3><img src="${escapeHtml(item.activityImage)}" alt="${config.typeLabel === "Treinamento" ? "Imagem do treinamento" : "Atividade"}" /></div></section>` : ""}
       ${attachments}
     </div>
   `;
@@ -1697,6 +1720,7 @@ async function contentFromForm(type, form) {
       content: String(data.content || "").trim(),
       notes: String(data.notes || "").trim()
     };
+    item.activityImage = await readOptionalImage(form.elements.activityImageFile, item.activityImage);
     item.attachments = [...item.attachments, ...await readOptionalAttachments(form.elements.attachmentsFile)];
   }
   item.cardImage = await readOptionalImage(form.elements.cardImageFile, item.cardImage);

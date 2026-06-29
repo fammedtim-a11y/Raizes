@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Catálogo de Lições Bíblicas</title>
-    <link rel="stylesheet" href="styles.css?v=20260629-dev-training" />
+    <link rel="stylesheet" href="styles.css?v=20260629-menu-content" />
   </head>
   <body>
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -17,15 +17,17 @@
             <p>Raízes Kids | ensino cristão por faixa etária</p>
           </div>
         </div>
-        <nav class="tabs" aria-label="Modos do catálogo">
-          <button class="tab active" data-tab="home" type="button">Home</button>
-          <button class="tab" data-tab="devotional" data-min-access="simple" type="button">Devocional</button>
-          <button class="tab" data-tab="trails" data-min-access="leader" type="button">Trilhas</button>
-          <button class="tab" data-tab="study" data-min-access="leader" type="button">Lições</button>
-          <button class="tab" data-tab="training" data-min-access="prime" type="button">Treinamentos</button>
-          <a class="tab admin-link admin-only" href="gerenciamento.html">Gerenciamento</a>
+        <div class="topbar-actions">
+          <nav class="tabs nav-main" aria-label="Modos do catálogo">
+            <button class="tab active" data-tab="home" type="button">Home</button>
+            <button class="tab" data-tab="devotional" data-min-access="simple" type="button">Devocional</button>
+            <button class="tab" data-tab="trails" data-min-access="leader" type="button">Trilhas</button>
+            <button class="tab" data-tab="study" data-min-access="leader" type="button">Lições</button>
+            <button class="tab" data-tab="training" data-min-access="prime" type="button">Treinamentos</button>
+            <a class="tab admin-link admin-only" href="gerenciamento.html">Gerenciamento</a>
+          </nav>
           <span class="auth-slot"></span>
-        </nav>
+        </div>
       </header>
 
       <main>
@@ -60,6 +62,10 @@
               <option value="Gratidao">Gratidão</option>
               <option value="Dia das Criancas">Dia das Crianças</option>
             </select>
+          </label>
+          <label>
+            <span>Mês de inclusão</span>
+            <input id="createdMonthFilter" type="month" />
           </label>
         </section>
 
@@ -223,7 +229,7 @@
     </template>
 
     <script src="lessons-data.js?v=20260625"></script>
-    <script src="app.js?v=20260629-dev-training"></script>
-    <script src="auth.js?v=20260629-dev-training"></script>
+    <script src="app.js?v=20260629-menu-content"></script>
+    <script src="auth.js?v=20260629-menu-content"></script>
   </body>
 </html>

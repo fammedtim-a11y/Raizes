@@ -280,12 +280,20 @@ svg {
 }
 
 .topbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(220px, auto) minmax(0, 1fr);
   align-items: center;
   justify-content: space-between;
   gap: 20px;
   padding: 18px 20px;
   border-radius: 8px;
+}
+
+.topbar-actions {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  min-width: 0;
 }
 
 .brand {
@@ -336,14 +344,20 @@ h1 {
 }
 
 .tabs {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
   gap: 4px;
+  justify-content: flex-end;
   padding: 6px;
   border: 1px solid rgba(45, 156, 255, 0.18);
   border-radius: 16px;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(246, 252, 255, 0.68)),
     rgba(255, 255, 255, 0.58);
+}
+
+.nav-main {
+  width: min(100%, 820px);
 }
 
 .tab {
@@ -478,6 +492,8 @@ textarea:focus {
 .auth-slot {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 4px;
   border: 1px solid rgba(45, 156, 255, 0.14);
@@ -486,7 +502,7 @@ textarea:focus {
 }
 
 .auth-name {
-  max-width: 180px;
+  max-width: 260px;
   padding: 0 10px;
   color: var(--ink);
   font-weight: 1000;
@@ -502,7 +518,7 @@ textarea:focus {
 }
 
 .content-layout {
-  grid-template-columns: 360px 1fr;
+  grid-template-columns: 1fr;
   gap: 18px;
   align-items: start;
 }
@@ -510,7 +526,26 @@ textarea:focus {
 #devotionalList,
 #trainingList {
   display: grid;
-  gap: 12px;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(240px, 292px);
+  gap: 10px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: 0 0 8px;
+  scroll-snap-type: x proximity;
+}
+
+#devotionalList .lesson-card,
+#trainingList .lesson-card {
+  min-height: 100%;
+  margin-bottom: 0;
+  scroll-snap-align: start;
+}
+
+.content-layout .lesson-list {
+  position: static;
+  max-height: none;
+  overflow: hidden;
 }
 
 .attachment-list {
@@ -3638,9 +3673,14 @@ body.is-authenticated .visitor-only {
   }
 
   .topbar {
+    grid-template-columns: 1fr;
     gap: 12px;
     padding: 12px;
     border-radius: 16px;
+  }
+
+  .topbar-actions {
+    justify-items: stretch;
   }
 
   .brand {
@@ -3665,7 +3705,15 @@ body.is-authenticated .visitor-only {
   }
 
   .auth-slot {
-    display: contents;
+    display: flex;
+    justify-content: stretch;
+    width: 100%;
+  }
+
+  .auth-name {
+    max-width: none;
+    width: 100%;
+    text-align: center;
   }
 
   .tab,
