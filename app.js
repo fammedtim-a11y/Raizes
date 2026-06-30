@@ -1711,7 +1711,7 @@ async function contentFromForm(type, form) {
   const createdAt = data.createdMonth ? `${data.createdMonth}-01T00:00:00.000Z` : existing?.createdAt || new Date().toISOString();
   const removeCardImage = Boolean(data.removeCardImage);
   const removeActivityImage = Boolean(data.removeActivityImage);
-  const removeAttachments = Boolean(data.removeAttachments);
+  const removedAttachmentUrls = new Set(new FormData(form).getAll("removeAttachmentUrl").map(String));
   const item = {
     ...(existing || {}),
     id: data.id || crypto.randomUUID(),
@@ -1721,7 +1721,7 @@ async function contentFromForm(type, form) {
     createdAt,
     cardImage: removeCardImage ? "" : existing?.cardImage || "",
     activityImage: removeActivityImage ? "" : existing?.activityImage || "",
-    attachments: removeAttachments ? [] : existing?.attachments || [],
+    attachments: (existing?.attachments || []).filter((attachment) => !removedAttachmentUrls.has(String(attachment.url || ""))),
     sections: {}
   };
   if (!item.title) throw new Error("Informe o titulo.");
@@ -1801,6 +1801,7 @@ function loadContentIntoForm(type, item) {
     form.elements.description.value = item.description || "";
     form.elements.content.value = item.sections?.content || "";
     form.elements.notes.value = item.sections?.notes || "";
+    renderCurrentAttachments(form, item.attachments || []);
   }
   form.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -1808,6 +1809,38 @@ function loadContentIntoForm(type, item) {
 function clearContentForm(form) {
   form.reset();
   form.elements.id.value = "";
+  renderCurrentAttachments(form, []);
+}
+
+function renderCurrentAttachments(form, attachments) {
+  const holder = form.querySelector("[data-current-attachments]");
+  if (!holder) return;
+  if (!attachments.length) {
+    holder.innerHTML = `
+      <div class="current-attachments-empty">
+        <strong>Anexos atuais</strong>
+        <span>Nenhum anexo salvo neste treinamento.</span>
+      </div>
+    `;
+    return;
+  }
+  holder.innerHTML = `
+    <div class="current-attachments-heading">
+      <strong>Anexos atuais</strong>
+      <span>Marque apenas o arquivo que deseja remover ao salvar.</span>
+    </div>
+    <div class="current-attachments-list">
+      ${attachments.map((attachment) => `
+        <label class="attachment-remove-option">
+          <input name="removeAttachmentUrl" type="checkbox" value="${escapeHtml(attachment.url || "")}" />
+          <span>
+            <strong>${escapeHtml(attachment.name || "Anexo")}</strong>
+            <small>${escapeHtml(attachment.type || "Arquivo salvo")}</small>
+          </span>
+        </label>
+      `).join("")}
+    </div>
+  `;
 }
 
 async function printContentPdf(type, item) {
