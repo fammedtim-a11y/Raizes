@@ -794,11 +794,11 @@ function writeLessons(lessons) {
 function readDevotionals() {
   if (!fs.existsSync(DEVOTIONALS_FILE)) return initialDevotionals;
   const parsed = JSON.parse(fs.readFileSync(DEVOTIONALS_FILE, "utf8"));
-  return Array.isArray(parsed) ? normalizeContentDates(parsed) : [];
+  return Array.isArray(parsed) ? sortDevotionals(normalizeContentDates(parsed)) : [];
 }
 
 function writeDevotionals(devotionals) {
-  fs.writeFileSync(DEVOTIONALS_FILE, JSON.stringify(devotionals, null, 2), "utf8");
+  fs.writeFileSync(DEVOTIONALS_FILE, JSON.stringify(sortDevotionals(devotionals), null, 2), "utf8");
 }
 
 function readTrainings() {
@@ -852,6 +852,23 @@ function normalizeContentDates(items) {
     ...item,
     createdAt: item.createdAt || item.includedAt || item.updatedAt || new Date().toISOString()
   }));
+}
+
+function sortDevotionals(items) {
+  return [...items].sort((a, b) => {
+    const rankA = devotionalChronologyRank(a);
+    const rankB = devotionalChronologyRank(b);
+    if (rankA !== rankB) return rankA - rankB;
+    return String(a.title || "").localeCompare(String(b.title || ""), "pt-BR", { numeric: true });
+  });
+}
+
+function devotionalChronologyRank(item) {
+  const source = `${item.season || ""} ${item.title || ""} ${item.id || ""}`;
+  const weekMatch = source.match(/semana\D*(\d+)/i);
+  if (weekMatch) return Number(weekMatch[1]);
+  const date = new Date(item.createdAt || item.updatedAt || 0).getTime();
+  return Number.isFinite(date) && date > 0 ? 10000 + date : Number.MAX_SAFE_INTEGER;
 }
 
 // Antes de salvar o catálogo, transforma fotos base64 em arquivos reais.
