@@ -793,16 +793,7 @@ function renderContentCard(item, active, typeLabel) {
 
 function renderContentReader(item, config) {
   const theme = categoryTheme(item.category || config.typeLabel);
-  const featuredVideoId = config.typeLabel === "Treinamento" ? getYouTubeId(item.youtubeUrl || "") : "";
-  const featuredVideo = featuredVideoId ? `
-    <section class="lesson-section">
-      <div class="section-icon">🎬</div>
-      <div class="section-body">
-        <h3>Vídeo do treinamento</h3>
-        ${buildInlineLessonVideo(featuredVideoId)}
-      </div>
-    </section>
-  ` : "";
+  const linkedVideo = renderContentLinkedVideoSection(item, config.typeLabel);
   const attachments = item.attachments?.length ? `
     <section class="lesson-section">
       <div class="section-icon">📎</div>
@@ -826,7 +817,7 @@ function renderContentReader(item, config) {
       </div>
     </header>
     <div class="section-timeline">
-      ${featuredVideo}
+      ${linkedVideo}
       ${item.principle ? `<section class="lesson-section"><div class="section-icon">🌱</div><div class="section-body"><h3>Princípio</h3><p>${escapeHtml(item.principle)}</p></div></section>` : ""}
       ${config.fields.map(([key, label, emoji]) => {
         const text = item.sections?.[key]?.trim();
@@ -836,6 +827,28 @@ function renderContentReader(item, config) {
       ${item.activityImage ? `<section class="lesson-section activity-art"><div class="section-icon">🎨</div><div class="section-body"><h3>${config.typeLabel === "Treinamento" ? "Imagem do treinamento" : "Atividade"}</h3><img src="${escapeHtml(item.activityImage)}" alt="${config.typeLabel === "Treinamento" ? "Imagem do treinamento" : "Atividade"}" /></div></section>` : ""}
       ${attachments}
     </div>
+  `;
+}
+
+function renderContentLinkedVideoSection(item, typeLabel) {
+  const candidateTexts = [
+    item.youtubeUrl,
+    item.description,
+    item.verse,
+    item.principle,
+    item.bibleText
+  ].filter((value) => getYouTubeId(value || ""));
+  const sectionText = candidateTexts.find(Boolean);
+  if (!sectionText) return "";
+  const title = typeLabel === "Treinamento" ? "Vídeo do treinamento" : "Vídeo do culto em família";
+  return `
+    <section class="lesson-section">
+      <div class="section-icon">🎬</div>
+      <div class="section-body">
+        <h3>${title}</h3>
+        ${renderLessonTextWithPlayers(sectionText)}
+      </div>
+    </section>
   `;
 }
 
