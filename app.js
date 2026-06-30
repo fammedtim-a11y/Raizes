@@ -1684,6 +1684,14 @@ function bindContentEditor(form) {
     }
   });
   form.querySelector("[data-content-clear]")?.addEventListener("click", () => clearContentForm(form));
+  form.querySelector("[data-content-export-pdf]")?.addEventListener("click", async () => {
+    try {
+      const item = await contentFromForm(type, form);
+      await printContentPdf(type, item);
+    } catch (error) {
+      showContentMessage(form, error.message || "Nao foi possivel exportar o PDF.", true);
+    }
+  });
   form.querySelector("[data-content-delete]")?.addEventListener("click", async () => {
     const id = form.elements.id.value;
     if (!id || !window.confirm("Excluir este item?")) return;
@@ -1701,6 +1709,9 @@ async function contentFromForm(type, form) {
   const data = Object.fromEntries(new FormData(form).entries());
   const existing = findContentItem(type, data.id);
   const createdAt = data.createdMonth ? `${data.createdMonth}-01T00:00:00.000Z` : existing?.createdAt || new Date().toISOString();
+  const removeCardImage = Boolean(data.removeCardImage);
+  const removeActivityImage = Boolean(data.removeActivityImage);
+  const removeAttachments = Boolean(data.removeAttachments);
   const item = {
     ...(existing || {}),
     id: data.id || crypto.randomUUID(),
@@ -1708,9 +1719,9 @@ async function contentFromForm(type, form) {
     category: String(data.category || (type === "devotional" ? "Família" : "Treinamento")).trim(),
     season: String(data.season || "").trim(),
     createdAt,
-    cardImage: existing?.cardImage || "",
-    activityImage: existing?.activityImage || "",
-    attachments: existing?.attachments || [],
+    cardImage: removeCardImage ? "" : existing?.cardImage || "",
+    activityImage: removeActivityImage ? "" : existing?.activityImage || "",
+    attachments: removeAttachments ? [] : existing?.attachments || [],
     sections: {}
   };
   if (!item.title) throw new Error("Informe o titulo.");
@@ -1772,6 +1783,7 @@ function findContentItem(type, id) {
 function loadContentIntoForm(type, item) {
   const form = document.querySelector(type === "devotional" ? "#devotionalForm" : "#trainingForm");
   if (!form) return;
+  form.reset();
   form.elements.id.value = item.id || "";
   form.elements.title.value = item.title || "";
   form.elements.category.value = item.category || "";
@@ -1796,6 +1808,84 @@ function loadContentIntoForm(type, item) {
 function clearContentForm(form) {
   form.reset();
   form.elements.id.value = "";
+}
+
+async function printContentPdf(type, item) {
+  if (!els.ebookPrintArea) return;
+  els.ebookPrintArea.innerHTML = buildContentPdfHtml(type, item);
+  document.body.classList.add("ebook-printing");
+  await waitForEbookLayout();
+  const cleanup = () => {
+    document.body.classList.remove("ebook-printing");
+    els.ebookPrintArea.innerHTML = "";
+    window.removeEventListener("afterprint", cleanup);
+  };
+  window.addEventListener("afterprint", cleanup);
+  window.print();
+}
+
+function buildContentPdfHtml(type, item) {
+  const isTraining = type === "training";
+  const fields = isTraining ? TRAINING_FIELDS : DEVOTIONAL_FIELDS;
+  const theme = categoryTheme(item.category || (isTraining ? "Treinamento" : "Família"));
+  const typeLabel = isTraining ? "Treinamento" : "Culto em Família";
+  return `
+    <article class="ebook">
+      <section class="ebook-cover">
+        <p>Raízes Kids</p>
+        <h1>${escapeHtml(typeLabel)}</h1>
+        <div class="ebook-cover-line"></div>
+        <span>${escapeHtml(item.title)}</span>
+        <small>${escapeHtml(item.category || typeLabel)} · ${escapeHtml(item.season || formatMonthYear(item.createdAt))}</small>
+      </section>
+      <section class="ebook-lesson" style="--theme:${theme.primary};--theme-soft:${theme.soft}">
+        <header class="ebook-lesson-header">
+          <span>${theme.emoji}</span>
+          <div>
+            <p>${escapeHtml(item.category || typeLabel)} · ${escapeHtml(item.season || formatMonthYear(item.createdAt))}</p>
+            <h2>${escapeHtml(item.title)}</h2>
+            <strong>${escapeHtml(item.verse || item.principle || item.description || "Conteúdo de apoio")}</strong>
+          </div>
+        </header>
+        <div class="ebook-sections">
+          ${item.youtubeUrl ? `
+            <section class="ebook-section">
+              <h3>🎬 Vídeo</h3>
+              <p>${escapeHtml(item.youtubeUrl)}</p>
+            </section>
+          ` : ""}
+          ${item.principle ? `
+            <section class="ebook-section">
+              <h3>🌱 Princípio</h3>
+              <p>${escapeHtml(item.principle)}</p>
+            </section>
+          ` : ""}
+          ${item.bibleText ? `
+            <section class="ebook-section">
+              <h3>📖 Texto bíblico</h3>
+              <p>${escapeHtml(item.bibleText)}</p>
+            </section>
+          ` : ""}
+          ${fields.map(([key, label, emoji]) => {
+            const text = item.sections?.[key]?.trim();
+            if (!text) return "";
+            return `
+              <section class="ebook-section">
+                <h3>${emoji} ${label}</h3>
+                <p>${linkify(escapeHtml(text))}</p>
+              </section>
+            `;
+          }).join("")}
+          ${item.activityImage ? `
+            <section class="ebook-section">
+              <h3>🎨 ${isTraining ? "Imagem do treinamento" : "Atividade"}</h3>
+              <img class="ebook-activity-image" src="${escapeHtml(item.activityImage)}" alt="${isTraining ? "Imagem do treinamento" : "Atividade"}" />
+            </section>
+          ` : ""}
+        </div>
+      </section>
+    </article>
+  `;
 }
 
 async function readOptionalImage(input, fallback) {

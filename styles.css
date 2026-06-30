@@ -2062,6 +2062,27 @@ textarea:focus {
   margin-top: 18px;
 }
 
+.inline-check {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: -4px;
+  padding: 8px 10px;
+  border: 1px dashed rgba(50, 89, 112, 0.28);
+  border-radius: 8px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.inline-check input {
+  width: 16px;
+  height: 16px;
+  margin: 0 8px 0 0;
+  accent-color: var(--blue);
+}
+
 .data-panel {
   position: sticky;
   top: 18px;
