@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20260629-menu-content" />
+    <link rel="stylesheet" href="styles.css?v=20260629-culto-training-seeds" />
   </head>
   <body data-page="admin">
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -20,7 +20,7 @@
         <div class="topbar-actions">
           <nav class="tabs nav-main" aria-label="Navegação administrativa">
             <a class="tab" href="index.html">Home</a>
-            <a class="tab" href="index.html#devocional">Devocional</a>
+            <a class="tab" href="index.html#devocional">Culto em Família</a>
             <a class="tab" href="index.html#trilhas">Trilhas</a>
             <a class="tab" href="index.html#licoes">Lições</a>
             <a class="tab" href="index.html#treinamentos">Treinamentos</a>
@@ -72,7 +72,7 @@
         <section id="manageView" class="view active manage-layout" aria-label="Gerenciamento">
           <div class="manage-tabs">
             <button class="manage-tab active" data-manage-tab="lessons" type="button">Lições</button>
-            <button class="manage-tab" data-manage-tab="devotionals" type="button">Devocionais</button>
+            <button class="manage-tab" data-manage-tab="devotionals" type="button">Culto em Família</button>
             <button class="manage-tab" data-manage-tab="trails" type="button">Gerenciar trilhas</button>
             <button class="manage-tab" data-manage-tab="trainings" type="button">Treinamentos</button>
             <div class="manage-tab-group" aria-label="Controle administrativo">
@@ -169,7 +169,7 @@
           <section id="devotionalManagePanel" class="video-manager manage-panel">
             <div class="manager-heading">
               <div>
-                <h2>Devocionais cadastrados</h2>
+                <h2>Cultos em Família cadastrados</h2>
                 <p>Alimente o culto em família com princípio, versículo, oração, atividade e vídeos.</p>
               </div>
             </div>
@@ -187,11 +187,11 @@
               <label><span>Versículo</span><textarea name="verse" rows="3"></textarea></label>
               <label class="image-field"><span>Imagem do card</span><input name="cardImageFile" type="file" accept="image/png,image/jpeg,image/webp" /></label>
               <label class="image-field"><span>Desenho/atividade</span><input name="activityImageFile" type="file" accept="image/png,image/jpeg,image/webp" /></label>
-              <label><span>Devocional em família</span><textarea name="devotional" rows="8"></textarea></label>
+              <label><span>Culto em Família</span><textarea name="devotional" rows="8"></textarea></label>
               <label><span>Oração</span><textarea name="prayer" rows="4"></textarea></label>
               <label><span>Vamos brincar?</span><textarea name="activity" rows="5"></textarea></label>
               <div class="form-actions">
-                <button class="icon-button primary" type="submit">Salvar devocional</button>
+                <button class="icon-button primary" type="submit">Salvar culto</button>
                 <button class="icon-button" type="button" data-content-clear>Limpar</button>
                 <button class="icon-button danger" type="button" data-content-delete>Excluir</button>
               </div>

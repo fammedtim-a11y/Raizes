@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const zlib = require("zlib");
+const { seededDevotionals, seededTrainings } = require("./seed-content");
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
@@ -85,7 +86,7 @@ const mimeTypes = {
 };
 
 const defaultSiteInfo = {
-  about: "Raizes Kids e uma plataforma criada para facilitar a vida de lideres e discipuladores de criancas, reunindo licoes, trilhas, devocionais e materiais de apoio em um so lugar.",
+  about: "Raizes Kids e uma plataforma criada para facilitar a vida de lideres e discipuladores de criancas, reunindo licoes, trilhas, cultos em familia e materiais de apoio em um so lugar.",
   contactEmail: "raizes@gmail.com",
   whatsapp: "31971773756",
   instagram: "@raizeskids"
@@ -104,7 +105,7 @@ const ageAliases = {
   "11 e 12": "Juniores: 11 e 12 anos"
 };
 
-const initialDevotionals = [
+const initialDevotionals = seededDevotionals.length ? seededDevotionals : [
   {
     id: "culto-familia-semana-16",
     title: "Culto em Família - Semana 16",
@@ -124,7 +125,7 @@ const initialDevotionals = [
   }
 ];
 
-const initialTrainings = [];
+const initialTrainings = seededTrainings;
 
 ensureData();
 
@@ -161,7 +162,51 @@ function ensureData() {
   if (!fs.existsSync(TRAININGS_FILE)) {
     writeTrainings(initialTrainings);
   }
+  mergeSeedContent();
   loadSessions();
+}
+
+function mergeSeedContent() {
+  mergeSeedFile(DEVOTIONALS_FILE, seededDevotionals, writeDevotionals);
+  mergeSeedFile(TRAININGS_FILE, seededTrainings, writeTrainings);
+}
+
+function mergeSeedFile(filePath, seedItems, writeFn) {
+  if (!seedItems.length || !fs.existsSync(filePath)) return;
+  try {
+    const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    const current = Array.isArray(parsed) ? parsed : [];
+    const seedsById = new Map(seedItems.map((item) => [item.id, item]));
+    let changed = false;
+    const merged = current.map((item) => {
+      const seed = seedsById.get(item.id);
+      if (!seed) return item;
+      seedsById.delete(item.id);
+      if (!shouldRefreshSeedItem(item)) return item;
+      changed = true;
+      return {
+        ...seed,
+        cardImage: item.cardImage || seed.cardImage || "",
+        activityImage: item.activityImage || seed.activityImage || "",
+        updatedAt: item.updatedAt || seed.updatedAt
+      };
+    });
+    const missing = [...seedsById.values()].filter((item) => item.id);
+    if (missing.length) changed = true;
+    if (changed) writeFn([...merged, ...missing]);
+  } catch {
+    writeFn(seedItems);
+  }
+}
+
+function shouldRefreshSeedItem(item) {
+  if (item.seedManaged) return true;
+  if (item.id === "culto-familia-semana-16") {
+    const text = String(item.sections?.devotional || "");
+    return text.includes("Hoje vamos conversar sobre os presentes de Deus, sobre tudo que Ele ja nos deu")
+      || text.includes("Hoje vamos conversar sobre os presentes de Deus, sobre tudo que Ele já nos deu");
+  }
+  return false;
 }
 
 async function handleApi(req, res, url) {
@@ -782,7 +827,7 @@ async function updateDevotionals(req, res) {
   const body = await readBody(req);
   const devotionals = Array.isArray(body.devotionals) ? body.devotionals : null;
   if (!devotionals) {
-    sendJson(res, 400, { error: "Lista de devocionais invalida." });
+    sendJson(res, 400, { error: "Lista de cultos em familia invalida." });
     return;
   }
   const stored = persistContentFiles(devotionals, "devotional");

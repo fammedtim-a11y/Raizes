@@ -53,7 +53,7 @@ const SECTIONS = [
 ];
 
 const DEVOTIONAL_FIELDS = [
-  ["devotional", "Devocional em família", "📖"],
+  ["devotional", "Culto em Família", "📖"],
   ["prayer", "Oração", "🙏"],
   ["activity", "Vamos brincar?", "🎨"]
 ];
@@ -706,9 +706,9 @@ function renderDevotionals() {
     listSelector: "#devotionalList",
     countSelector: "#devotionalCount",
     readerSelector: "#devotionalReader",
-    emptyTitle: "Nenhum devocional cadastrado",
-    emptyText: "Cadastre devocionais no gerenciamento para orientar as famílias durante a semana.",
-    typeLabel: "Devocional",
+    emptyTitle: "Nenhum culto em família cadastrado",
+    emptyText: "Cadastre cultos em família no gerenciamento para orientar as famílias durante a semana.",
+    typeLabel: "Culto em Família",
     fields: DEVOTIONAL_FIELDS,
     onChange: renderDevotionals
   });
@@ -793,6 +793,16 @@ function renderContentCard(item, active, typeLabel) {
 
 function renderContentReader(item, config) {
   const theme = categoryTheme(item.category || config.typeLabel);
+  const featuredVideoId = config.typeLabel === "Treinamento" ? getYouTubeId(item.youtubeUrl || "") : "";
+  const featuredVideo = featuredVideoId ? `
+    <section class="lesson-section">
+      <div class="section-icon">🎬</div>
+      <div class="section-body">
+        <h3>Vídeo do treinamento</h3>
+        ${buildInlineLessonVideo(featuredVideoId)}
+      </div>
+    </section>
+  ` : "";
   const attachments = item.attachments?.length ? `
     <section class="lesson-section">
       <div class="section-icon">📎</div>
@@ -816,6 +826,7 @@ function renderContentReader(item, config) {
       </div>
     </header>
     <div class="section-timeline">
+      ${featuredVideo}
       ${item.principle ? `<section class="lesson-section"><div class="section-icon">🌱</div><div class="section-body"><h3>Princípio</h3><p>${escapeHtml(item.principle)}</p></div></section>` : ""}
       ${config.fields.map(([key, label, emoji]) => {
         const text = item.sections?.[key]?.trim();
@@ -957,7 +968,7 @@ function renderLimitedNotice() {
   parent.insertAdjacentHTML("afterbegin", `
     <div class="limited-notice">
       <strong>Catálogo visível, acesso protegido</strong>
-      <span>Você está vendo tudo que existe. Entre para abrir lições, trilhas, devocionais e EBF completa.</span>
+      <span>Você está vendo tudo que existe. Entre para abrir lições, trilhas, cultos em família e EBF completa.</span>
       <a href="login.html">Entrar</a>
     </div>
   `);
@@ -1646,10 +1657,10 @@ function renderContentAdminList(type, items, selector) {
   const list = document.querySelector(selector);
   if (!list) return;
   if (!items.length) {
-    list.innerHTML = `<p class="muted-line">Nenhum ${type === "devotional" ? "devocional" : "treinamento"} cadastrado ainda.</p>`;
+    list.innerHTML = `<p class="muted-line">Nenhum ${type === "devotional" ? "culto em família" : "treinamento"} cadastrado ainda.</p>`;
     return;
   }
-  list.innerHTML = items.map((item) => renderContentCard(item, false, type === "devotional" ? "Devocional" : "Treinamento").replace("data-content-id", `data-admin-${type}-id`)).join("");
+  list.innerHTML = items.map((item) => renderContentCard(item, false, type === "devotional" ? "Culto em Família" : "Treinamento").replace("data-content-id", `data-admin-${type}-id`)).join("");
   list.querySelectorAll(`[data-admin-${type}-id]`).forEach((card) => {
     card.addEventListener("click", () => {
       const item = items.find((entry) => entry.id === card.getAttribute(`data-admin-${type}-id`));
@@ -1667,7 +1678,7 @@ function bindContentEditor(form) {
       const item = await contentFromForm(type, form);
       await saveContentCollection(type, item);
       clearContentForm(form);
-      showContentMessage(form, `${type === "devotional" ? "Devocional" : "Treinamento"} salvo com sucesso.`);
+      showContentMessage(form, `${type === "devotional" ? "Culto em Família" : "Treinamento"} salvo com sucesso.`);
     } catch (error) {
       showContentMessage(form, error.message || "Nao foi possivel salvar.", true);
     }
@@ -2080,10 +2091,10 @@ function extractContentVideos(item, source) {
     videos.push({
       id: `auto-${source}-${item.id}-${youtubeId}`,
       source,
-      title: `${source === "devotional" ? "Devocional" : "Treinamento"} · ${item.title}`,
+      title: `${source === "devotional" ? "Culto em Família" : "Treinamento"} · ${item.title}`,
       url,
       youtubeId,
-      category: item.category || (source === "devotional" ? "Devocional" : "Treinamento"),
+      category: item.category || (source === "devotional" ? "Culto em Família" : "Treinamento"),
       age: "",
       playlist: item.title,
       season: item.season || formatMonthYear(item.createdAt),
