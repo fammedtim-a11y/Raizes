@@ -46,7 +46,7 @@ async function refreshSession() {
 }
 
 function authShouldHoldAdminSession() {
-  return Boolean(window.raizesIsSavingLessons || window.raizesIsPreparingImages);
+  return Boolean(window.raizesIsSavingLessons || window.raizesIsPreparingImages || window.raizesIsSavingContent);
 }
 
 function userSignature(user) {

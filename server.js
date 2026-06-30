@@ -305,6 +305,11 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (req.method === "GET" && url.pathname === "/api/admin/backup") {
+    sendSystemBackup(res);
+    return;
+  }
+
   if (req.method === "GET" && url.pathname === "/api/admin/lessons") {
     sendJson(res, 200, { lessons: readLessons() || [] });
     return;
@@ -818,9 +823,13 @@ async function updateLessons(req, res) {
     sendJson(res, 400, { error: "Lista de lições inválida." });
     return;
   }
-  const storedLessons = persistLessonImages(lessons);
-  writeLessons(storedLessons);
-  sendJson(res, 200, { ok: true, lessons: storedLessons, savedAt: new Date().toISOString() });
+  try {
+    const storedLessons = persistLessonImages(lessons);
+    writeLessons(storedLessons);
+    sendJson(res, 200, { ok: true, lessons: storedLessons, savedAt: new Date().toISOString() });
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Nao foi possivel salvar as imagens." });
+  }
 }
 
 async function updateDevotionals(req, res) {
@@ -830,9 +839,13 @@ async function updateDevotionals(req, res) {
     sendJson(res, 400, { error: "Lista de cultos em familia invalida." });
     return;
   }
-  const stored = persistContentFiles(devotionals, "devotional");
-  writeDevotionals(stored);
-  sendJson(res, 200, { ok: true, devotionals: stored, savedAt: new Date().toISOString() });
+  try {
+    const stored = persistContentFiles(devotionals, "devotional");
+    writeDevotionals(stored);
+    sendJson(res, 200, { ok: true, devotionals: stored, savedAt: new Date().toISOString() });
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Nao foi possivel salvar os arquivos." });
+  }
 }
 
 async function updateTrainings(req, res) {
@@ -842,9 +855,121 @@ async function updateTrainings(req, res) {
     sendJson(res, 400, { error: "Lista de treinamentos invalida." });
     return;
   }
-  const stored = persistContentFiles(trainings, "training");
-  writeTrainings(stored);
-  sendJson(res, 200, { ok: true, trainings: stored, savedAt: new Date().toISOString() });
+  try {
+    const stored = persistContentFiles(trainings, "training");
+    writeTrainings(stored);
+    sendJson(res, 200, { ok: true, trainings: stored, savedAt: new Date().toISOString() });
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Nao foi possivel salvar os arquivos." });
+  }
+}
+
+function sendSystemBackup(res) {
+  try {
+    const archive = createBackupArchive();
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    res.writeHead(200, {
+      "Content-Type": "application/gzip",
+      "Content-Disposition": `attachment; filename="backup-raizes-${stamp}.tar.gz"`,
+      "Cache-Control": "no-store"
+    });
+    res.end(archive);
+  } catch (error) {
+    console.error(error);
+    sendJson(res, 500, { error: "Nao foi possivel gerar o backup geral." });
+  }
+}
+
+function createBackupArchive() {
+  const chunks = [];
+  for (const file of collectBackupFiles()) {
+    addTarEntry(chunks, file.name, fs.readFileSync(file.path), fs.statSync(file.path));
+  }
+  chunks.push(Buffer.alloc(1024));
+  return zlib.gzipSync(Buffer.concat(chunks));
+}
+
+function collectBackupFiles() {
+  const files = [];
+  const seen = new Set();
+  collectBackupTree(ROOT, "", files, seen);
+  if (path.resolve(DATA_DIR) !== path.resolve(ROOT, "data")) {
+    collectBackupTree(DATA_DIR, "data", files, seen);
+  }
+  return files.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function collectBackupTree(baseDir, archiveBase, files, seen) {
+  if (!fs.existsSync(baseDir)) return;
+  for (const entry of fs.readdirSync(baseDir, { withFileTypes: true })) {
+    if (shouldSkipBackupEntry(entry.name)) continue;
+    const fullPath = path.join(baseDir, entry.name);
+    const relativeName = archiveBase ? path.posix.join(archiveBase, entry.name) : entry.name;
+    if (entry.isDirectory()) {
+      collectBackupTree(fullPath, relativeName, files, seen);
+      continue;
+    }
+    if (!entry.isFile()) continue;
+    const realPath = fs.realpathSync(fullPath);
+    if (seen.has(realPath)) continue;
+    seen.add(realPath);
+    files.push({ path: fullPath, name: relativeName.replace(/\\/g, "/") });
+  }
+}
+
+function shouldSkipBackupEntry(name) {
+  return [
+    ".git",
+    ".agents",
+    ".codex",
+    "node_modules",
+    ".env",
+    ".env.local",
+    "npm-debug.log"
+  ].includes(name);
+}
+
+function addTarEntry(chunks, name, content, stat) {
+  const header = buildTarHeader(name, content.length, stat);
+  chunks.push(header, content, Buffer.alloc((512 - (content.length % 512)) % 512));
+}
+
+function buildTarHeader(name, size, stat) {
+  const header = Buffer.alloc(512);
+  const { filename, prefix } = splitTarName(name);
+  header.write(filename, 0, 100, "utf8");
+  header.write(octal(stat.mode & 0o777, 8), 100, 8, "ascii");
+  header.write(octal(0, 8), 108, 8, "ascii");
+  header.write(octal(0, 8), 116, 8, "ascii");
+  header.write(octal(size, 12), 124, 12, "ascii");
+  header.write(octal(Math.floor(stat.mtimeMs / 1000), 12), 136, 12, "ascii");
+  header.fill(0x20, 148, 156);
+  header.write("0", 156, 1, "ascii");
+  header.write("ustar", 257, 6, "ascii");
+  header.write("00", 263, 2, "ascii");
+  if (prefix) header.write(prefix, 345, 155, "utf8");
+  const checksum = [...header].reduce((total, value) => total + value, 0);
+  header.write(checksum.toString(8).padStart(6, "0"), 148, 6, "ascii");
+  header[154] = 0;
+  header[155] = 0x20;
+  return header;
+}
+
+function splitTarName(name) {
+  const cleanName = name.replace(/^\/+/, "");
+  if (Buffer.byteLength(cleanName) <= 100) return { filename: cleanName, prefix: "" };
+  const parts = cleanName.split("/");
+  const filename = parts.pop();
+  const prefix = parts.join("/");
+  if (Buffer.byteLength(filename) <= 100 && Buffer.byteLength(prefix) <= 155) {
+    return { filename, prefix };
+  }
+  throw new Error(`Arquivo com caminho muito longo para backup: ${cleanName}`);
+}
+
+function octal(value, length) {
+  const text = Math.max(0, Number(value) || 0).toString(8);
+  return `${text.padStart(length - 1, "0")}\0`;
 }
 
 function normalizeContentDates(items) {

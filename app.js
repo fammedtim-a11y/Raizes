@@ -1686,6 +1686,7 @@ function bindContentEditor(form) {
   const type = form.dataset.contentType;
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    window.raizesIsSavingContent = true;
     try {
       showContentMessage(form, "Salvando no servidor...");
       const item = await contentFromForm(type, form);
@@ -1694,12 +1695,14 @@ function bindContentEditor(form) {
       showContentMessage(form, `${type === "devotional" ? "Culto em Família" : "Treinamento"} salvo com sucesso.`);
     } catch (error) {
       showContentMessage(form, error.message || "Nao foi possivel salvar.", true);
+    } finally {
+      window.raizesIsSavingContent = false;
     }
   });
   form.querySelector("[data-content-clear]")?.addEventListener("click", () => clearContentForm(form));
   form.querySelector("[data-content-export-pdf]")?.addEventListener("click", async () => {
     try {
-      const item = await contentFromForm(type, form);
+      const item = await contentFromForm(type, form, { includeNewAttachments: false });
       await printContentPdf(type, item);
     } catch (error) {
       showContentMessage(form, error.message || "Nao foi possivel exportar o PDF.", true);
@@ -1718,7 +1721,8 @@ function bindContentEditor(form) {
   });
 }
 
-async function contentFromForm(type, form) {
+async function contentFromForm(type, form, options = {}) {
+  const includeNewAttachments = options.includeNewAttachments !== false;
   const data = Object.fromEntries(new FormData(form).entries());
   const existing = findContentItem(type, data.id);
   const createdAt = data.createdMonth ? `${data.createdMonth}-01T00:00:00.000Z` : existing?.createdAt || new Date().toISOString();
@@ -1756,7 +1760,9 @@ async function contentFromForm(type, form) {
       notes: String(data.notes || "").trim()
     };
     item.activityImage = await readOptionalImage(form.elements.activityImageFile, item.activityImage);
-    item.attachments = [...item.attachments, ...await readOptionalAttachments(form.elements.attachmentsFile)];
+    if (includeNewAttachments) {
+      item.attachments = [...item.attachments, ...await readOptionalAttachments(form.elements.attachmentsFile)];
+    }
   }
   item.cardImage = await readOptionalImage(form.elements.cardImageFile, item.cardImage);
   return item;
