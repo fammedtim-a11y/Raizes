@@ -412,7 +412,10 @@ function bindEvents() {
   });
 
   document.querySelectorAll("[data-manage-tab]").forEach((button) => {
-    button.addEventListener("click", () => setManageTab(button.dataset.manageTab));
+    button.addEventListener("click", () => {
+      setManageTab(button.dataset.manageTab);
+      button.closest("details")?.removeAttribute("open");
+    });
   });
 
   document.querySelectorAll("[data-lesson-rail-prev], [data-lesson-rail-next]").forEach((button) => {
@@ -473,6 +476,7 @@ function setTab(tabName) {
   els.trailsView?.classList.toggle("active", tabName === "trails");
   els.manageView?.classList.toggle("active", tabName === "manage");
   els.filterToolbar?.classList.toggle("hidden", !["study", "trails", "devotional", "training"].includes(tabName));
+  updateFilterVisibility(tabName);
   if (previousTab === "trails" && tabName !== "trails") stopTrailPlayback();
   if (tabName === "trails" && !state.trailsRendered) {
     setTimeout(() => {
@@ -480,6 +484,14 @@ function setTab(tabName) {
       state.trailsRendered = true;
     }, 0);
   }
+}
+
+function updateFilterVisibility(tabName) {
+  const devotionalFields = new Set(["search", "category", "month"]);
+  document.querySelectorAll("[data-filter-field]").forEach((field) => {
+    const visible = tabName !== "devotional" || devotionalFields.has(field.dataset.filterField);
+    field.classList.toggle("filter-hidden", !visible);
+  });
 }
 
 function stopTrailPlayback() {
@@ -787,6 +799,16 @@ function renderContentCard(item, active, typeLabel) {
   const cover = item.cardImage
     ? `<div class="lesson-cover custom-cover"><img src="${escapeHtml(item.cardImage)}" alt="" /></div>`
     : `<div class="lesson-cover"><span class="lesson-cover-book">${escapeHtml(typeLabel)}</span><span class="lesson-cover-principle">${escapeHtml(item.principle || item.description || item.title)}</span><span class="lesson-cover-ref">${escapeHtml(item.season || formatMonthYear(item.createdAt))}</span></div>`;
+  if (typeLabel === "Culto em Família") {
+    return `
+      <button class="lesson-card ${active ? "active" : ""}" style="--lesson-primary:${visual.primary};--lesson-soft:${visual.soft};--lesson-accent:${visual.accent}" type="button" data-content-id="${escapeHtml(item.id)}">
+        ${cover}
+        <strong>${escapeHtml(item.title || "Culto em Família")}</strong>
+        <span class="lesson-card-age">${escapeHtml(item.category || typeLabel)}</span>
+        <span class="lesson-card-verse">${escapeHtml(item.verse || "Versículo não informado")}</span>
+      </button>
+    `;
+  }
   return `
     <button class="lesson-card ${active ? "active" : ""}" style="--lesson-primary:${visual.primary};--lesson-soft:${visual.soft};--lesson-accent:${visual.accent}" type="button" data-content-id="${escapeHtml(item.id)}">
       ${cover}

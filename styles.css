@@ -436,11 +436,39 @@ h1 {
 
 .toolbar {
   display: grid;
-  grid-template-columns: minmax(220px, 1.2fr) minmax(170px, 0.8fr) minmax(140px, 0.6fr) auto auto;
-  gap: 12px;
+  grid-template-columns: minmax(240px, 1.35fr) repeat(5, minmax(130px, 0.7fr));
+  gap: 10px;
   margin: 18px 0;
-  padding: 14px;
-  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid rgba(45, 156, 255, 0.12);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.92), rgba(248,252,255,0.76)),
+    rgba(255,255,255,0.78);
+  box-shadow: 0 14px 34px rgba(31, 77, 117, 0.08);
+}
+
+.toolbar label {
+  gap: 7px;
+}
+
+.toolbar input,
+.toolbar select {
+  min-height: 44px;
+  border-radius: 10px;
+  border-color: rgba(119, 143, 174, 0.26);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.72);
+  font-size: 0.9rem;
+}
+
+.toolbar input[type="month"] {
+  max-width: 210px;
+  font-variant-numeric: tabular-nums;
+}
+
+.filter-hidden {
+  display: none !important;
 }
 
 label {
@@ -1832,22 +1860,36 @@ textarea:focus {
 }
 
 .manage-tab-group {
-  flex: 1.4;
-  display: flex;
-  gap: 8px;
-  align-items: center;
+  position: relative;
+  flex: 0 0 auto;
   padding: 6px;
   border: 1px solid rgba(45, 156, 255, 0.13);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.72);
 }
 
-.manage-tab-group > span {
-  padding: 0 8px;
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 1000;
-  text-transform: uppercase;
+.manage-tab-dropdown summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.manage-tab-dropdown summary::-webkit-details-marker {
+  display: none;
+}
+
+.manage-tab-submenu {
+  position: absolute;
+  z-index: 25;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  min-width: 190px;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid rgba(45, 156, 255, 0.16);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.98);
+  box-shadow: 0 18px 38px rgba(31, 77, 117, 0.18);
 }
 
 .manage-tab {
@@ -3900,11 +3942,13 @@ body.is-authenticated .visitor-only {
   .manage-tab-group {
     width: 100%;
     flex: 1 0 100%;
-    flex-wrap: wrap;
   }
 
-  .manage-tab-group > span {
-    width: 100%;
+  .manage-tab-submenu {
+    position: static;
+    min-width: 0;
+    margin-top: 6px;
+    box-shadow: none;
   }
 
   .home-view {

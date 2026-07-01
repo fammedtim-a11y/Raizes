@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Catálogo de Lições Bíblicas</title>
-    <link rel="stylesheet" href="styles.css?v=20260701-license-menu" />
+    <link rel="stylesheet" href="styles.css?v=20260701-menu-filters" />
   </head>
   <body>
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -20,27 +20,30 @@
         <div class="topbar-actions">
           <nav class="tabs nav-main" aria-label="Modos do catálogo">
             <details class="nav-menu">
-              <summary class="tab">Menu Pais</summary>
+              <summary class="tab">Pais</summary>
               <div class="nav-submenu">
                 <button class="tab" data-tab="devotional" data-min-access="simple" type="button">Culto em Família</button>
                 <button class="tab" data-tab="trails" data-min-access="leader" type="button">Trilhas</button>
               </div>
             </details>
             <details class="nav-menu">
-              <summary class="tab">Menu Voluntários</summary>
+              <summary class="tab">Voluntários</summary>
               <div class="nav-submenu">
+                <button class="tab" data-tab="trails" data-min-access="leader" type="button">Trilhas</button>
                 <button class="tab" data-tab="study" data-min-access="leader" type="button">Lições Bíblicas</button>
               </div>
             </details>
             <details class="nav-menu">
-              <summary class="tab">Menu Líderes</summary>
+              <summary class="tab">Líderes</summary>
               <div class="nav-submenu">
+                <button class="tab" data-tab="trails" data-min-access="leader" type="button">Trilhas</button>
                 <button class="tab" data-tab="training" data-min-access="prime" type="button">Treinamentos</button>
               </div>
             </details>
             <details class="nav-menu">
               <summary class="tab">Administração</summary>
               <div class="nav-submenu">
+                <button class="tab" data-tab="trails" data-min-access="leader" type="button">Trilhas</button>
                 <a class="tab member-only" href="perfil.html">Perfil</a>
                 <a class="tab" href="#contato">Contato</a>
                 <a class="tab admin-link admin-only" href="gerenciamento.html">Gerenciamento</a>
@@ -53,19 +56,19 @@
 
       <main>
         <section id="filterToolbar" class="toolbar" aria-label="Filtros do catálogo">
-          <label>
+          <label data-filter-field="search">
             <span>Buscar</span>
             <input id="searchInput" type="search" placeholder="Tema, categoria, versículo..." />
           </label>
-          <label>
+          <label data-filter-field="category">
             <span>Categoria</span>
             <select id="categoryFilter"></select>
           </label>
-          <label>
+          <label data-filter-field="age">
             <span>Idade</span>
             <select id="ageFilter"></select>
           </label>
-          <label>
+          <label data-filter-field="testament">
             <span>Testamento</span>
             <select id="testamentFilter">
               <option value="Todos">Todos</option>
@@ -73,7 +76,7 @@
               <option value="Novo Testamento">Novo Testamento</option>
             </select>
           </label>
-          <label>
+          <label data-filter-field="special">
             <span>Datas especiais</span>
             <select id="specialFilter">
               <option value="Todas">Todas</option>
@@ -84,7 +87,7 @@
               <option value="Dia das Criancas">Dia das Crianças</option>
             </select>
           </label>
-          <label>
+          <label data-filter-field="month">
             <span>Mês de inclusão</span>
             <input id="createdMonthFilter" type="month" />
           </label>
@@ -250,7 +253,7 @@
     </template>
 
     <script src="lessons-data.js?v=20260625"></script>
-    <script src="app.js?v=20260701-license-menu"></script>
-    <script src="auth.js?v=20260701-license-menu"></script>
+    <script src="app.js?v=20260701-menu-filters"></script>
+    <script src="auth.js?v=20260701-menu-filters"></script>
   </body>
 </html>
