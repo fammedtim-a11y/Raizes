@@ -51,7 +51,7 @@ function authShouldHoldAdminSession() {
 
 function userSignature(user) {
   if (!user) return "";
-  return [user.username, user.role, user.accessLevel, user.approved, user.active].join("|");
+  return [user.username, user.role, user.accessLevel, user.approved, user.active, user.licenseDaysRemaining].join("|");
 }
 
 function renderAuthSlots() {
@@ -61,10 +61,12 @@ function renderAuthSlots() {
 
   document.querySelectorAll(".auth-slot").forEach((slot) => {
     if (authState.user) {
+      const licenseText = userLicenseText(authState.user);
       slot.innerHTML = `
-        <span class="auth-name">${authEscapeHtml(authState.user.name || authState.user.username)}</span>
-        <a class="tab auth-profile" href="perfil.html">Perfil</a>
-        <a class="tab" href="index.html#contato">Contato</a>
+        <span class="auth-profile-summary">
+          <strong>${authEscapeHtml(authState.user.name || authState.user.username)}</strong>
+          ${licenseText ? `<small>${authEscapeHtml(licenseText)}</small>` : ""}
+        </span>
         <button class="tab auth-logout" type="button">Sair</button>
       `;
       slot.querySelector(".auth-logout").addEventListener("click", logout);
@@ -98,6 +100,11 @@ function bindAuthForms() {
     event.preventDefault();
     const result = await apiPost("/api/login", formData(loginForm));
     if (result.error) {
+      if (result.renewalRequired) {
+        setAuthMessage(`${result.error} `, true);
+        renderRenewalPaymentAction(result.paymentUrl || "https://pag.ae/81WaCzV4m");
+        return;
+      }
       setAuthMessage(result.error, true);
       return;
     }
@@ -209,6 +216,14 @@ async function loadAdminUsers() {
     button.addEventListener("click", () => adminAction(`/api/admin/users/${button.dataset.activate}/activate`, {}));
   });
 
+  list.querySelectorAll("[data-renew-license]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (window.confirm("Renovar a licenca deste usuario por mais 364 dias?")) {
+        adminAction(`/api/admin/users/${button.dataset.renewLicense}/renew-license`, {});
+      }
+    });
+  });
+
   list.querySelectorAll("[data-reset]").forEach((button) => {
     button.addEventListener("click", async () => {
       const password = window.prompt("Digite a nova senha de 6 digitos para este usuario:");
@@ -277,6 +292,7 @@ function renderAccessLogCard(log) {
 function renderAdminUserCard(user) {
   const accessLevel = user.accessLevel || "prime";
   const accessLabel = accessLevel === "simple" ? "Simples" : accessLevel === "leader" ? "Lideres" : "Prime";
+  const licenseText = user.role === "admin" ? "Acesso administrativo" : `${Number(user.licenseDaysRemaining || 0)} dias de acesso disponivel`;
   const status = user.role === "admin"
     ? "Administrador"
     : user.active === false
@@ -301,6 +317,7 @@ function renderAdminUserCard(user) {
     ${user.active === false
       ? `<button class="icon-button primary" type="button" data-activate="${authEscapeHtml(user.id)}">Reativar</button>`
       : `<button class="icon-button danger" type="button" data-deactivate="${authEscapeHtml(user.id)}">Desativar</button>`}
+    <button class="icon-button accent" type="button" data-renew-license="${authEscapeHtml(user.id)}">Renovar licença</button>
     <button class="icon-button" type="button" data-reset="${authEscapeHtml(user.id)}">Nova senha</button>
   `;
 
@@ -312,6 +329,8 @@ function renderAdminUserCard(user) {
         <small>Telefone: ${authEscapeHtml(user.phone || "Nao informado")}</small>
         <small>${authEscapeHtml(user.church || "Igreja nao informada")} - ${authEscapeHtml(user.address || "Endereco nao informado")}</small>
         <small>Status: ${status} - Categoria: ${accessLabel}</small>
+        <small>Licenca: ${authEscapeHtml(licenseText)}${user.licenseExpiresAt ? ` - vence em ${formatDate(user.licenseExpiresAt)}` : ""}</small>
+        ${user.renewalRequested ? "<em>Solicitou renovacao de licenca</em>" : ""}
         <small>Criado: ${formatDateTime(user.createdAt)} - Ultimo acesso: ${formatDateTime(user.lastAccessAt)}</small>
         ${user.resetRequested ? "<em>Solicitou redefinicao de senha</em>" : ""}
       </div>
@@ -321,7 +340,7 @@ function renderAdminUserCard(user) {
 }
 
 function exportUsersCsv(users) {
-  const headers = ["Nome", "CPF", "Email", "Telefone", "Igreja", "Endereco", "Status", "Categoria", "Criado em", "Aprovado em", "Ultimo login", "Ultimo acesso"];
+  const headers = ["Nome", "CPF", "Email", "Telefone", "Igreja", "Endereco", "Status", "Categoria", "Dias de acesso", "Vencimento da licenca", "Criado em", "Aprovado em", "Ultimo login", "Ultimo acesso"];
   const rows = users.map((user) => {
     const accessLevel = user.accessLevel === "simple" ? "Simples" : user.accessLevel === "leader" ? "Lideres" : "Prime";
     const status = user.role === "admin" ? "Administrador" : user.active === false ? "Desativado" : user.approved ? "Ativo" : "Aguardando aprovacao";
@@ -334,6 +353,8 @@ function exportUsersCsv(users) {
       user.address,
       status,
       accessLevel,
+      user.role === "admin" ? "Admin" : Number(user.licenseDaysRemaining || 0),
+      formatDate(user.licenseExpiresAt),
       formatDateTime(user.createdAt),
       formatDateTime(user.approvedAt),
       formatDateTime(user.lastLoginAt),
@@ -434,6 +455,31 @@ function formatDateTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleString("pt-BR");
+}
+
+function formatDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("pt-BR");
+}
+
+function userLicenseText(user) {
+  if (!user || user.role === "admin") return "Acesso administrativo";
+  const days = Number(user.licenseDaysRemaining || 0);
+  return `${days} ${days === 1 ? "dia" : "dias"} de acesso disponivel`;
+}
+
+function renderRenewalPaymentAction(paymentUrl) {
+  const el = document.querySelector("#authMessage");
+  if (!el) return;
+  const link = document.createElement("a");
+  link.className = "icon-button accent renewal-payment-link";
+  link.href = paymentUrl;
+  link.target = "_blank";
+  link.rel = "noreferrer";
+  link.textContent = "Renovar licença";
+  el.append(link);
 }
 
 async function adminAction(url, body) {

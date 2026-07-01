@@ -4,27 +4,48 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Catálogo de Lições Bíblicas</title>
-    <link rel="stylesheet" href="styles.css?v=20260630-content-youtube-players" />
+    <link rel="stylesheet" href="styles.css?v=20260701-license-menu" />
   </head>
   <body>
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
     <div class="app-shell">
       <header class="topbar">
-        <div class="brand">
+        <button class="brand brand-home-link" data-tab="home" type="button" aria-label="Ir para Home">
           <img class="brand-logo" src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
           <div>
             <h1>Catálogo de Lições Bíblicas</h1>
             <p>Raízes Kids | ensino cristão por faixa etária</p>
           </div>
-        </div>
+        </button>
         <div class="topbar-actions">
           <nav class="tabs nav-main" aria-label="Modos do catálogo">
-            <button class="tab active" data-tab="home" type="button">Home</button>
-            <button class="tab" data-tab="devotional" data-min-access="simple" type="button">Culto em Família</button>
-            <button class="tab" data-tab="trails" data-min-access="leader" type="button">Trilhas</button>
-            <button class="tab" data-tab="study" data-min-access="leader" type="button">Lições</button>
-            <button class="tab" data-tab="training" data-min-access="prime" type="button">Treinamentos</button>
-            <a class="tab admin-link admin-only" href="gerenciamento.html">Gerenciamento</a>
+            <details class="nav-menu">
+              <summary class="tab">Menu Pais</summary>
+              <div class="nav-submenu">
+                <button class="tab" data-tab="devotional" data-min-access="simple" type="button">Culto em Família</button>
+                <button class="tab" data-tab="trails" data-min-access="leader" type="button">Trilhas</button>
+              </div>
+            </details>
+            <details class="nav-menu">
+              <summary class="tab">Menu Voluntários</summary>
+              <div class="nav-submenu">
+                <button class="tab" data-tab="study" data-min-access="leader" type="button">Lições Bíblicas</button>
+              </div>
+            </details>
+            <details class="nav-menu">
+              <summary class="tab">Menu Líderes</summary>
+              <div class="nav-submenu">
+                <button class="tab" data-tab="training" data-min-access="prime" type="button">Treinamentos</button>
+              </div>
+            </details>
+            <details class="nav-menu">
+              <summary class="tab">Administração</summary>
+              <div class="nav-submenu">
+                <a class="tab member-only" href="perfil.html">Perfil</a>
+                <a class="tab" href="#contato">Contato</a>
+                <a class="tab admin-link admin-only" href="gerenciamento.html">Gerenciamento</a>
+              </div>
+            </details>
           </nav>
           <span class="auth-slot"></span>
         </div>
@@ -188,7 +209,7 @@
           <img src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
           <p>"Ensina a criança no caminho em que deve andar." (Provérbios 22:6)</p>
         </div>
-        <section class="site-info-section" aria-label="Informacoes do Raizes Kids">
+        <section id="contato" class="site-info-section" aria-label="Informacoes do Raizes Kids">
           <article id="sobre">
             <span class="home-kicker">Sobre</span>
             <h2>Sobre o Raizes Kids</h2>
@@ -229,7 +250,7 @@
     </template>
 
     <script src="lessons-data.js?v=20260625"></script>
-    <script src="app.js?v=20260630-general-backup"></script>
-    <script src="auth.js?v=20260630-general-backup"></script>
+    <script src="app.js?v=20260701-license-menu"></script>
+    <script src="auth.js?v=20260701-license-menu"></script>
   </body>
 </html>

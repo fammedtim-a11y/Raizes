@@ -390,7 +390,10 @@ function saveManualVideos() {
 
 function bindEvents() {
   els.tabs.forEach((tab) => {
-    tab.addEventListener("click", () => setTab(tab.dataset.tab));
+    tab.addEventListener("click", () => {
+      setTab(tab.dataset.tab);
+      tab.closest("details")?.removeAttribute("open");
+    });
   });
 
   document.querySelectorAll("[data-jump-tab]").forEach((button) => {
@@ -504,19 +507,23 @@ function setManageTab(tabName) {
 
 function applyAccessVisibility() {
   document.querySelectorAll("[data-tab='home']").forEach((el) => {
-    const visible = !state.authUser || canAccessLevel("prime");
-    el.classList.toggle("hidden", !visible);
+    el.classList.remove("hidden");
   });
   document.querySelectorAll("[data-min-access]").forEach((el) => {
     const visible = !state.authUser || canAccessLevel(el.dataset.minAccess);
     el.classList.toggle("hidden", !visible);
+  });
+  document.querySelectorAll(".nav-menu").forEach((menu) => {
+    const visibleItems = [...menu.querySelectorAll(".nav-submenu .tab")]
+      .some((item) => !item.classList.contains("hidden") && window.getComputedStyle(item).display !== "none");
+    menu.classList.toggle("hidden", !visibleItems);
   });
   if (state.authUser && !canAccessTab(state.tab)) setTab("devotional");
 }
 
 function canAccessTab(tabName) {
   if (!state.authUser || state.authUser.role === "admin") return true;
-  if (tabName === "home") return canAccessLevel("prime");
+  if (tabName === "home") return true;
   if (tabName === "devotional") return true;
   if (["study", "trails"].includes(tabName)) return canAccessLevel("leader");
   if (tabName === "training") return canAccessLevel("prime");

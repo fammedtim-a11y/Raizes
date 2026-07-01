@@ -1,30 +1,51 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20260630-content-youtube-players" />
+    <link rel="stylesheet" href="styles.css?v=20260701-license-menu" />
   </head>
   <body data-page="admin">
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
     <div class="app-shell">
       <header class="topbar">
-        <div class="brand">
+        <a class="brand brand-home-link" href="index.html" aria-label="Ir para Home">
           <img class="brand-logo" src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
           <div>
             <h1>Gerenciamento Raízes Kids</h1>
             <p>Cadastre lições, trilhas, imagens e exporte ebooks</p>
           </div>
-        </div>
+        </a>
         <div class="topbar-actions">
           <nav class="tabs nav-main" aria-label="Navegação administrativa">
-            <a class="tab" href="index.html">Home</a>
-            <a class="tab" href="index.html#devocional">Culto em Família</a>
-            <a class="tab" href="index.html#trilhas">Trilhas</a>
-            <a class="tab" href="index.html#licoes">Lições</a>
-            <a class="tab" href="index.html#treinamentos">Treinamentos</a>
-            <span class="tab active">Gerenciamento</span>
+            <details class="nav-menu">
+              <summary class="tab">Menu Pais</summary>
+              <div class="nav-submenu">
+                <a class="tab" href="index.html#devocional">Culto em Família</a>
+                <a class="tab" href="index.html#trilhas">Trilhas</a>
+              </div>
+            </details>
+            <details class="nav-menu">
+              <summary class="tab">Menu Voluntários</summary>
+              <div class="nav-submenu">
+                <a class="tab" href="index.html#licoes">Lições Bíblicas</a>
+              </div>
+            </details>
+            <details class="nav-menu">
+              <summary class="tab">Menu Líderes</summary>
+              <div class="nav-submenu">
+                <a class="tab" href="index.html#treinamentos">Treinamentos</a>
+              </div>
+            </details>
+            <details class="nav-menu">
+              <summary class="tab active">Administração</summary>
+              <div class="nav-submenu">
+                <a class="tab" href="perfil.html">Perfil</a>
+                <a class="tab" href="index.html#contato">Contato</a>
+                <span class="tab active">Gerenciamento</span>
+              </div>
+            </details>
           </nav>
           <span class="auth-slot"></span>
         </div>
@@ -406,7 +427,7 @@
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
     <script src="lessons-data.js?v=20260625"></script>
-    <script src="app.js?v=20260630-general-backup"></script>
-    <script src="auth.js?v=20260630-general-backup"></script>
+    <script src="app.js?v=20260701-license-menu"></script>
+    <script src="auth.js?v=20260701-license-menu"></script>
   </body>
 </html>

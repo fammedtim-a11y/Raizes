@@ -16,6 +16,8 @@ const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
 const ACCESS_LOG_FILE = path.join(DATA_DIR, "access-log.json");
 const SITE_INFO_FILE = path.join(DATA_DIR, "site-info.json");
 const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
+const LICENSE_DAYS = 364;
+const DAY_MS = 1000 * 60 * 60 * 24;
 const sessions = new Map();
 const revokedSessions = new Map();
 const loginAttempts = new Map();
@@ -370,6 +372,12 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  const renewMatch = url.pathname.match(/^\/api\/admin\/users\/([^/]+)\/renew-license$/);
+  if (req.method === "POST" && renewMatch) {
+    renewUserLicense(res, renewMatch[1]);
+    return;
+  }
+
   sendJson(res, 404, { error: "Rota não encontrada." });
 }
 
@@ -477,7 +485,32 @@ async function login(req, res) {
   }
 
   if (user.active === false) {
+    if (user.renewalRequested || (user.licenseExpiresAt && licenseDaysRemaining(user) <= 0)) {
+      sendJson(res, 403, {
+        error: "Sua licenca venceu. Renove o acesso para continuar usando o Raizes Kids.",
+        renewalRequired: true,
+        paymentUrl: "https://pag.ae/81WaCzV4m"
+      });
+      return;
+    }
     sendJson(res, 403, { error: "Seu acesso esta desativado. Fale com o administrador." });
+    return;
+  }
+
+  if (user.role !== "admin" && licenseDaysRemaining(user) <= 0) {
+    const users = readUsers();
+    const savedUser = users.find((item) => item.id === user.id);
+    if (savedUser) {
+      savedUser.active = false;
+      savedUser.renewalRequested = true;
+      savedUser.updatedAt = new Date().toISOString();
+      writeUsers(users);
+    }
+    sendJson(res, 403, {
+      error: "Sua licenca venceu. Renove o acesso para continuar usando o Raizes Kids.",
+      renewalRequired: true,
+      paymentUrl: "https://pag.ae/81WaCzV4m"
+    });
     return;
   }
 
@@ -581,6 +614,7 @@ function updateUserApproval(res, id, approved) {
     user.active = true;
     user.approvalNotice = true;
     user.approvedAt = new Date().toISOString();
+    ensureUserLicense(user);
   }
   user.updatedAt = new Date().toISOString();
   writeUsers(users);
@@ -595,10 +629,29 @@ function updateUserActive(res, id, active) {
     return;
   }
   user.active = active;
-  if (active) user.approved = true;
+  if (active) {
+    user.approved = true;
+    ensureUserLicense(user);
+  }
   user.updatedAt = new Date().toISOString();
   writeUsers(users);
   sendJson(res, 200, { user: publicAdminUser(user) });
+}
+
+function renewUserLicense(res, id) {
+  const users = readUsers();
+  const user = users.find((item) => item.id === id);
+  if (!user || user.role === "admin") {
+    sendJson(res, 404, { error: "Usuario nao encontrado." });
+    return;
+  }
+  addLicenseDays(user, LICENSE_DAYS);
+  user.active = true;
+  user.approved = true;
+  user.renewalRequested = false;
+  user.updatedAt = new Date().toISOString();
+  writeUsers(users);
+  sendJson(res, 200, { user: publicAdminUser(user), message: "Licenca renovada por 364 dias." });
 }
 
 async function adminResetPassword(req, res, id) {
@@ -672,6 +725,19 @@ function getSessionState(req) {
     sessions.delete(sessionId);
     writeSessions();
     return { user: null, message: "Seu acesso foi desativado. Fale com o administrador." };
+  }
+  if (user?.role !== "admin" && licenseDaysRemaining(user) <= 0) {
+    const users = readUsers();
+    const savedUser = users.find((item) => item.id === user.id);
+    if (savedUser) {
+      savedUser.active = false;
+      savedUser.renewalRequested = true;
+      savedUser.updatedAt = new Date().toISOString();
+      writeUsers(users);
+    }
+    sessions.delete(sessionId);
+    writeSessions();
+    return { user: null, message: "Sua licenca venceu. Renove o acesso para continuar usando o Raizes Kids." };
   }
   markUserAccess(user.id, { lastAccessAt: new Date().toISOString() });
   return { user, message: "" };
@@ -1161,10 +1227,44 @@ async function passwordResetRequest(req, res) {
 }
 
 function normalizeUser(user) {
-  return {
+  const normalized = {
     ...user,
     accessLevel: user.role === "admin" ? "prime" : user.accessLevel || "prime",
     phone: user.phone || ""
+  };
+  if (normalized.role === "admin") return normalized;
+  if (normalized.approved && normalized.active !== false && !normalized.licenseExpiresAt) {
+    normalized.licenseExpiresAt = new Date(Date.now() + LICENSE_DAYS * DAY_MS).toISOString();
+  }
+  return normalized;
+}
+
+function ensureUserLicense(user) {
+  if (user.role === "admin") return;
+  if (!user.licenseExpiresAt || licenseDaysRemaining(user) <= 0) {
+    user.licenseExpiresAt = new Date(Date.now() + LICENSE_DAYS * DAY_MS).toISOString();
+  }
+  user.renewalRequested = false;
+}
+
+function addLicenseDays(user, days) {
+  const currentExpiresAt = new Date(user.licenseExpiresAt || 0).getTime();
+  const base = Number.isFinite(currentExpiresAt) && currentExpiresAt > Date.now() ? currentExpiresAt : Date.now();
+  user.licenseExpiresAt = new Date(base + days * DAY_MS).toISOString();
+}
+
+function licenseDaysRemaining(user) {
+  if (!user || user.role === "admin") return 9999;
+  const expiresAt = new Date(user.licenseExpiresAt || 0).getTime();
+  if (!Number.isFinite(expiresAt) || expiresAt <= 0) return 0;
+  return Math.max(0, Math.ceil((expiresAt - Date.now()) / DAY_MS));
+}
+
+function publicLicenseFields(user) {
+  return {
+    licenseExpiresAt: user.role === "admin" ? "" : user.licenseExpiresAt || "",
+    licenseDaysRemaining: user.role === "admin" ? null : licenseDaysRemaining(user),
+    renewalRequested: Boolean(user.renewalRequested)
   };
 }
 
@@ -1204,7 +1304,7 @@ function readBody(req) {
 
 function publicUser(user) {
   if (!user) return null;
-  return { id: user.id, username: user.username, role: user.role, accessLevel: user.accessLevel || "prime", approved: user.approved, active: user.active !== false, name: user.name };
+  return { id: user.id, username: user.username, role: user.role, accessLevel: user.accessLevel || "prime", approved: user.approved, active: user.active !== false, name: user.name, ...publicLicenseFields(user) };
 }
 
 function publicProfileUser(user) {
@@ -1216,7 +1316,8 @@ function publicProfileUser(user) {
     email: user.email || "",
     phone: user.phone || "",
     address: user.address || "",
-    church: user.church || ""
+    church: user.church || "",
+    ...publicLicenseFields(user)
   };
 }
 
@@ -1234,6 +1335,8 @@ function publicAdminUser(user) {
     address: user.address,
     church: user.church,
     resetRequested: Boolean(user.resetRequested),
+    renewalRequested: Boolean(user.renewalRequested),
+    ...publicLicenseFields(user),
     createdAt: user.createdAt,
     approvedAt: user.approvedAt || "",
     updatedAt: user.updatedAt || "",
