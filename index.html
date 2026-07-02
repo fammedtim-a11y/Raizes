@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Catálogo de Lições Bíblicas</title>
-    <link rel="stylesheet" href="styles.css?v=20260702-menu-cards" />
+    <link rel="stylesheet" href="styles.css?v=20260702-ebf-tests" />
   </head>
   <body>
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -38,6 +38,12 @@
               <div class="nav-submenu">
                 <button class="tab" data-tab="training" data-min-access="prime" type="button">Treinamentos</button>
                 <button class="tab" data-tab="trails" data-min-access="leader" type="button">Trilhas</button>
+              </div>
+            </details>
+            <details class="nav-menu">
+              <summary class="tab">EBF</summary>
+              <div class="nav-submenu">
+                <button class="tab" data-tab="ebf" data-min-access="prime" type="button">EBF Completa</button>
               </div>
             </details>
             <details class="nav-menu">
@@ -109,6 +115,7 @@
                 <span><strong>Trilhas em vídeo</strong><small>Apoio visual para ensinar melhor.</small></span>
                 <span><strong>Culto em Família</strong><small>Continuidade da fé dentro de casa.</small></span>
                 <span><strong>EBF completa</strong><small>Organização para eventos especiais.</small></span>
+                <span><strong>Novidades toda semana</strong><small>Conteúdos novos para manter o ministério em movimento.</small></span>
               </div>
             </div>
             <aside class="home-login-panel visitor-only" aria-label="Acesso ao conteúdo completo">
@@ -133,12 +140,11 @@
               <h2>Escolha a turma e comece a preparar a aula</h2>
             </div>
             <div class="age-grid">
-              <button class="age-card yellow" type="button" data-age-select="Berçário: 0 a 2 anos"><span>👶</span><strong>Berçário</strong><em>0 a 2 anos</em></button>
-              <button class="age-card green" type="button" data-age-select="Maternal: 3 a 4 anos"><span>🌿</span><strong>Maternal</strong><em>3 a 4 anos</em></button>
-              <button class="age-card blue" type="button" data-age-select="Jardim: 5 a 6 anos"><span>📘</span><strong>Jardim</strong><em>5 a 6 anos</em></button>
-              <button class="age-card purple" type="button" data-age-select="Primários: 7 a 8 anos"><span>✨</span><strong>Primários</strong><em>7 a 8 anos</em></button>
-              <button class="age-card red" type="button" data-age-select="Pré-Juniores: 9 a 10 anos"><span>🔥</span><strong>Pré-Juniores</strong><em>9 a 10 anos</em></button>
-              <button class="age-card orange" type="button" data-age-select="Juniores: 11 e 12 anos"><span>🏆</span><strong>Juniores</strong><em>11 e 12 anos</em></button>
+              <button class="age-card yellow" type="button" data-age-select="0 a 2 anos - Berçário"><span>👶</span><strong>Berçário</strong><em>0 a 2 anos</em></button>
+              <button class="age-card green" type="button" data-age-select="3 a 4 anos - Maternal"><span>🌿</span><strong>Maternal</strong><em>3 a 4 anos</em></button>
+              <button class="age-card blue" type="button" data-age-select="5 a 6 anos - Jardim"><span>📘</span><strong>Jardim</strong><em>5 a 6 anos</em></button>
+              <button class="age-card purple" type="button" data-age-select="7 a 10 anos - Primários"><span>✨</span><strong>Primários</strong><em>7 a 10 anos</em></button>
+              <button class="age-card orange" type="button" data-age-select="11 a 12 anos - Juniores"><span>🏆</span><strong>Juniores</strong><em>11 a 12 anos</em></button>
             </div>
           </section>
         </section>
@@ -205,11 +211,22 @@
           <article class="lesson-reader" id="trainingReader"></article>
         </section>
 
+        <section id="ebfView" class="view content-layout ebf-view" aria-label="EBF Completa">
+          <aside class="lesson-list" aria-label="Lista de EBF">
+            <div class="list-heading">
+              <strong>EBF Completa</strong>
+              <span id="ebfCount"></span>
+            </div>
+            <div id="ebfList"></div>
+          </aside>
+          <article class="lesson-reader" id="ebfReader"></article>
+        </section>
+
       </main>
       <footer class="site-footer">
         <div class="site-footer-brand">
           <img src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
-          <p>"Ensina a criança no caminho em que deve andar." (Provérbios 22:6)</p>
+          <p>"Se o dom é servir, sirva; se é ensinar, ensine." (Romanos 12:7)</p>
         </div>
         <section id="contato" class="site-info-section" aria-label="Informacoes do Raizes Kids">
           <article id="sobre">
@@ -220,9 +237,9 @@
           <article id="contato">
             <span class="home-kicker">Contato</span>
             <h2>Fale conosco</h2>
-            <p>Email: <a data-site-link="email" data-site-info="contactEmail" href="mailto:raizes@gmail.com">raizes@gmail.com</a></p>
+            <p>Email: <a data-site-link="email" data-site-info="contactEmail" href="mailto:raizes.r12@gmail.com">raizes.r12@gmail.com</a></p>
             <p>WhatsApp: <a id="whatsapp" data-site-link="whatsapp" data-site-info="whatsapp" href="https://wa.me/5531971773756">31 97177-3756</a></p>
-            <p>Instagram: <a id="instagram" data-site-link="instagram" data-site-info="instagram" href="https://instagram.com/raizeskids">@raizeskids</a></p>
+            <p>Instagram: <a id="instagram" data-site-link="instagram" data-site-info="instagram" href="https://instagram.com/raizes_r12">@raizes_r12</a></p>
           </article>
         </section>
       </footer>
@@ -251,8 +268,8 @@
       <div class="section-timeline"></div>
     </template>
 
-    <script src="lessons-data.js?v=20260625"></script>
-    <script src="app.js?v=20260702-menu-cards"></script>
-    <script src="auth.js?v=20260702-menu-cards"></script>
+    <script src="lessons-data.js?v=20260702-ebf-tests"></script>
+    <script src="app.js?v=20260702-ebf-tests"></script>
+    <script src="auth.js?v=20260702-ebf-tests"></script>
   </body>
 </html>

@@ -19,6 +19,33 @@ const AGE_ALIASES = {
   "9 a 10": "Pré-Juniores: 9 a 10 anos",
   "11 e 12": "Juniores: 11 e 12 anos"
 };
+
+AGE_GROUPS.splice(0, AGE_GROUPS.length,
+  "0 a 2 anos - Berçário",
+  "3 a 4 anos - Maternal",
+  "5 a 6 anos - Jardim",
+  "7 a 10 anos - Primários",
+  "11 a 12 anos - Juniores"
+);
+Object.assign(AGE_ALIASES, {
+  "1 e 2": "0 a 2 anos - Berçário",
+  "0 a 2": "0 a 2 anos - Berçário",
+  "Berçário: 0 a 2 anos": "0 a 2 anos - Berçário",
+  "3 e 4": "3 a 4 anos - Maternal",
+  "3 a 4": "3 a 4 anos - Maternal",
+  "Maternal: 3 a 4 anos": "3 a 4 anos - Maternal",
+  "5 e 6": "5 a 6 anos - Jardim",
+  "5 a 6": "5 a 6 anos - Jardim",
+  "Jardim: 5 a 6 anos": "5 a 6 anos - Jardim",
+  "7 a 10": "7 a 10 anos - Primários",
+  "7 a 8": "7 a 10 anos - Primários",
+  "9 a 10": "7 a 10 anos - Primários",
+  "Primários: 7 a 8 anos": "7 a 10 anos - Primários",
+  "Pré-Juniores: 9 a 10 anos": "7 a 10 anos - Primários",
+  "11 e 12": "11 a 12 anos - Juniores",
+  "11 a 12": "11 a 12 anos - Juniores",
+  "Juniores: 11 e 12 anos": "11 a 12 anos - Juniores"
+});
 const CATEGORIES = [
   "Deus Pai",
   "Deus Filho",
@@ -63,6 +90,12 @@ const TRAINING_FIELDS = [
   ["notes", "Orientações ao líder", "📝"]
 ];
 
+const EBF_FIELDS = [
+  ["content", "Conteúdo da EBF", "🎪"],
+  ["schedule", "Programação", "🗓️"],
+  ["notes", "Orientações", "📝"]
+];
+
 const DATA_VERSION = window.RAIZES_LESSONS_VERSION || "manual-v1";
 const DEFAULT_LESSONS = Array.isArray(window.RAIZES_LESSONS_DATA) ? window.RAIZES_LESSONS_DATA : [];
 
@@ -82,10 +115,12 @@ const state = {
   lessons: loadLessons(),
   devotionals: loadCollection("raizes-devotionals", []),
   trainings: loadCollection("raizes-trainings", []),
+  ebfs: loadCollection("raizes-ebf", []),
   manualVideos: loadManualVideos(),
   activeId: null,
   activeDevotionalId: null,
   activeTrainingId: null,
+  activeEbfId: null,
   activeVideoId: null,
   tab: "home",
   manageTab: "lessons",
@@ -110,6 +145,7 @@ const els = {
   homeView: $("#homeView"),
   devotionalView: $("#devotionalView"),
   trainingView: $("#trainingView"),
+  ebfView: $("#ebfView"),
   studyView: $("#studyView"),
   trailsView: $("#trailsView"),
   manageView: $("#manageView"),
@@ -192,10 +228,10 @@ function init() {
   state.activeId = state.lessons[0]?.id || null;
   render();
   if (isAdminPage) {
-    setManageTab(location.hash === "#trilhas" ? "trails" : location.hash === "#devocionais" ? "devotionals" : location.hash === "#treinamentos" ? "trainings" : location.hash === "#usuarios" ? "users" : location.hash === "#acessos" ? "access" : location.hash === "#contato" ? "contact" : "lessons");
+    setManageTab(location.hash === "#trilhas" ? "trails" : location.hash === "#devocionais" ? "devotionals" : location.hash === "#treinamentos" ? "trainings" : location.hash === "#ebf" ? "ebf" : location.hash === "#usuarios" ? "users" : location.hash === "#acessos" ? "access" : location.hash === "#contato" ? "contact" : "lessons");
     loadIntoForm(getActiveLesson());
   } else {
-    const initialTab = location.hash === "#trilhas" ? "trails" : location.hash === "#licoes" ? "study" : location.hash === "#treinamentos" ? "training" : location.hash === "#devocional" ? "devotional" : "home";
+    const initialTab = location.hash === "#trilhas" ? "trails" : location.hash === "#licoes" ? "study" : location.hash === "#treinamentos" ? "training" : location.hash === "#devocional" ? "devotional" : location.hash === "#ebf" ? "ebf" : "home";
     setTab(initialTab);
   }
   drawSky();
@@ -307,7 +343,8 @@ async function syncLessonsFromServer() {
 async function syncContentFromServer() {
   await Promise.all([
     syncCollectionFromServer("/api/devotionals", "devotionals", "raizes-devotionals"),
-    syncCollectionFromServer("/api/trainings", "trainings", "raizes-trainings")
+    syncCollectionFromServer("/api/trainings", "trainings", "raizes-trainings"),
+    syncCollectionFromServer("/api/ebf", "ebfs", "raizes-ebf")
   ]);
   state.activeDevotionalId = state.devotionals.some((item) => item.id === state.activeDevotionalId)
     ? state.activeDevotionalId
@@ -315,8 +352,12 @@ async function syncContentFromServer() {
   state.activeTrainingId = state.trainings.some((item) => item.id === state.activeTrainingId)
     ? state.activeTrainingId
     : state.trainings[0]?.id || null;
+  state.activeEbfId = state.ebfs.some((item) => item.id === state.activeEbfId)
+    ? state.activeEbfId
+    : state.ebfs[0]?.id || null;
   renderDevotionals();
   renderTrainings();
+  renderEbfs();
   renderContentAdminLists();
 }
 
@@ -436,10 +477,7 @@ function bindEvents() {
   });
 
   const refreshFilteredViews = debounce(() => {
-    renderList();
-    renderLessonAdminList();
-    renderTrailAdminList();
-    if (state.trailsRendered) renderTrails();
+    renderActiveFilteredView();
   }, 120);
   [els.search, els.categoryFilter, els.ageFilter, els.testamentFilter, els.specialFilter, els.createdMonthFilter].filter(Boolean).forEach((el) => {
     el.addEventListener("input", refreshFilteredViews);
@@ -477,14 +515,16 @@ function setTab(tabName) {
   if (!canAccessTab(tabName)) tabName = state.authUser ? "devotional" : "home";
   const previousTab = state.tab;
   state.tab = tabName;
+  if (previousTab !== tabName) resetFilters();
   els.tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.tab === tabName));
   els.homeView?.classList.toggle("active", tabName === "home");
   els.devotionalView?.classList.toggle("active", tabName === "devotional");
   els.trainingView?.classList.toggle("active", tabName === "training");
+  els.ebfView?.classList.toggle("active", tabName === "ebf");
   els.studyView?.classList.toggle("active", tabName === "study");
   els.trailsView?.classList.toggle("active", tabName === "trails");
   els.manageView?.classList.toggle("active", tabName === "manage");
-  els.filterToolbar?.classList.toggle("hidden", !["study", "trails", "devotional", "training"].includes(tabName));
+  els.filterToolbar?.classList.toggle("hidden", !["study", "trails", "devotional", "training", "ebf"].includes(tabName));
   updateFilterVisibility(tabName);
   if (previousTab === "trails" && tabName !== "trails") stopTrailPlayback();
   if (tabName === "trails" && !state.trailsRendered) {
@@ -493,14 +533,24 @@ function setTab(tabName) {
       state.trailsRendered = true;
     }, 0);
   }
+  renderActiveFilteredView();
 }
 
 function updateFilterVisibility(tabName) {
-  const devotionalFields = new Set(["search", "category", "month"]);
+  const contentFields = new Set(["search", "category", "month"]);
   document.querySelectorAll("[data-filter-field]").forEach((field) => {
-    const visible = tabName !== "devotional" || devotionalFields.has(field.dataset.filterField);
+    const visible = !["devotional", "training", "ebf"].includes(tabName) || contentFields.has(field.dataset.filterField);
     field.classList.toggle("filter-hidden", !visible);
   });
+}
+
+function resetFilters() {
+  if (els.search) els.search.value = "";
+  if (els.categoryFilter) els.categoryFilter.value = "Todas";
+  if (els.ageFilter) els.ageFilter.value = "Todas";
+  if (els.testamentFilter) els.testamentFilter.value = "Todos";
+  if (els.specialFilter) els.specialFilter.value = "Todas";
+  if (els.createdMonthFilter) els.createdMonthFilter.value = "";
 }
 
 function stopTrailPlayback() {
@@ -519,6 +569,7 @@ function setManageTab(tabName) {
   $("#devotionalManagePanel")?.classList.toggle("active", tabName === "devotionals");
   $("#trailManagePanel")?.classList.toggle("active", tabName === "trails");
   $("#trainingManagePanel")?.classList.toggle("active", tabName === "trainings");
+  $("#ebfManagePanel")?.classList.toggle("active", tabName === "ebf");
   $("#userManagePanel")?.classList.toggle("active", tabName === "users");
   $("#accessManagePanel")?.classList.toggle("active", tabName === "access");
   $("#contactManagePanel")?.classList.toggle("active", tabName === "contact");
@@ -531,7 +582,7 @@ function applyAccessVisibility() {
     el.classList.remove("hidden");
   });
   document.querySelectorAll("[data-min-access]").forEach((el) => {
-    const visible = !state.authUser || canAccessLevel(el.dataset.minAccess);
+    const visible = !state.authUser || (state.authUser.accessLevel === "test" && el.dataset.tab === "ebf" ? false : canAccessLevel(el.dataset.minAccess));
     el.classList.toggle("hidden", !visible);
   });
   document.querySelectorAll(".nav-menu").forEach((menu) => {
@@ -545,15 +596,17 @@ function applyAccessVisibility() {
 function canAccessTab(tabName) {
   if (!state.authUser || state.authUser.role === "admin") return true;
   if (tabName === "home") return true;
+  if (state.authUser.accessLevel === "test") return ["devotional", "trails", "study", "training"].includes(tabName);
   if (tabName === "devotional") return true;
   if (["study", "trails"].includes(tabName)) return canAccessLevel("leader");
   if (tabName === "training") return canAccessLevel("prime");
+  if (tabName === "ebf") return canAccessLevel("prime");
   return canAccessLevel("prime");
 }
 
 function canAccessLevel(required) {
   if (!state.authUser || state.authUser.role === "admin") return true;
-  const order = { simple: 1, leader: 2, prime: 3 };
+  const order = { simple: 1, test: 3, leader: 2, prime: 3 };
   const current = order[state.authUser.accessLevel || "prime"] || 1;
   return current >= (order[required] || 1);
 }
@@ -571,13 +624,38 @@ function render() {
   fillVideoLessonOptions();
   renderList();
   renderReader();
+  renderDevotionals();
+  renderTrainings();
+  renderEbfs();
   renderLessonAdminList();
   renderTrailAdminList();
   renderVideoAdminList();
 }
 
+function renderActiveFilteredView() {
+  if (state.tab === "devotional") {
+    renderDevotionals();
+    return;
+  }
+  if (state.tab === "training") {
+    renderTrainings();
+    return;
+  }
+  if (state.tab === "ebf") {
+    renderEbfs();
+    return;
+  }
+  if (state.tab === "trails") {
+    renderTrailAdminList();
+    if (state.trailsRendered) renderTrails();
+    return;
+  }
+  renderList();
+  renderLessonAdminList();
+}
+
 function fillFilters() {
-  const contentCategories = [...state.devotionals, ...state.trainings].map((item) => item.category).filter(Boolean);
+  const contentCategories = [...state.devotionals, ...state.trainings, ...state.ebfs].map((item) => item.category).filter(Boolean);
   const categories = unique([...CATEGORIES, ...state.lessons.map((lesson) => lesson.category).filter(Boolean), ...contentCategories]);
   if (els.categoryFilter) fillSelect(els.categoryFilter, ["Todas", ...categories]);
   if (els.ageFilter) fillSelect(els.ageFilter, ["Todas", ...AGE_GROUPS]);
@@ -635,13 +713,10 @@ function renderLessonCard(lesson, locked) {
       type="button"
       data-id="${escapeHtml(lesson.id)}">
       ${renderLessonCover(lesson, visual)}
-      <span class="lesson-card-topic">${escapeHtml(visual.label)}</span>
       <strong>${escapeHtml(lesson.title)}</strong>
-      <span class="lesson-card-age">${escapeHtml(formatLessonAge(lesson.age))}</span>
-      <span class="lesson-card-verse">${escapeHtml(lesson.verse || "Sem versículo informado")}</span>
+      <span class="lesson-card-verse">${escapeHtml(lesson.category || "Sem categoria")}</span>
+      <span class="lesson-card-age">${escapeHtml(ageText(lesson.age))}</span>
       <span class="lesson-meta">
-        <span class="pill">${escapeHtml(lesson.category)}</span>
-        <span class="pill">${escapeHtml(ageText(lesson.age))}</span>
         ${locked ? '<span class="pill lock-pill">🔒 Bloqueado</span>' : ""}
       </span>
     </button>
@@ -757,6 +832,21 @@ function renderTrainings() {
   });
 }
 
+function renderEbfs() {
+  renderContentArea({
+    items: state.ebfs,
+    activeKey: "activeEbfId",
+    listSelector: "#ebfList",
+    countSelector: "#ebfCount",
+    readerSelector: "#ebfReader",
+    emptyTitle: "Nenhuma EBF cadastrada",
+    emptyText: "Cadastre materiais completos de EBF no gerenciamento para usuarios Prime.",
+    typeLabel: "EBF Completa",
+    fields: EBF_FIELDS,
+    onChange: renderEbfs
+  });
+}
+
 function renderContentArea(config) {
   const list = document.querySelector(config.listSelector);
   const count = document.querySelector(config.countSelector);
@@ -785,7 +875,7 @@ function filteredContentItems(items) {
   const term = normalize(els.search?.value || "");
   const category = els.categoryFilter?.value || "Todas";
   const createdMonth = els.createdMonthFilter?.value || "";
-  return items.filter((item) => {
+  const filtered = items.filter((item) => {
     const content = normalize([
       item.title,
       item.category,
@@ -801,6 +891,11 @@ function filteredContentItems(items) {
     const matchesCreatedMonth = !createdMonth || lessonMonthKey(item.createdAt) === createdMonth;
     return matchesTerm && matchesCategory && matchesCreatedMonth;
   });
+  return isTestUser() ? filtered.slice(0, 1) : filtered;
+}
+
+function isTestUser() {
+  return state.authUser?.accessLevel === "test" && state.authUser.role !== "admin";
 }
 
 function renderContentCard(item, active, typeLabel) {
@@ -814,7 +909,7 @@ function renderContentCard(item, active, typeLabel) {
         ${cover}
         <strong class="devotional-card-title">${escapeHtml(item.title || "Culto em Família")}</strong>
         <span class="devotional-card-category">${escapeHtml(item.category || "Sem categoria")}</span>
-        <span class="devotional-card-verse">${escapeHtml(item.verse || "Versículo não informado")}</span>
+        <span class="devotional-card-verse">${escapeHtml(item.bibleText || item.verse || "Texto bíblico não informado")}</span>
       </button>
     `;
   }
@@ -823,8 +918,8 @@ function renderContentCard(item, active, typeLabel) {
       ${cover}
       <span class="lesson-card-topic">${escapeHtml(item.category || typeLabel)}</span>
       <strong>${escapeHtml(item.title)}</strong>
-      <span class="lesson-card-age">${escapeHtml(item.season || formatMonthYear(item.createdAt))}</span>
-      <span class="lesson-card-verse">${escapeHtml(item.verse || item.principle || "Conteúdo de apoio")}</span>
+      <span class="lesson-card-age">${escapeHtml(item.description || item.season || formatMonthYear(item.createdAt))}</span>
+      <span class="lesson-card-verse">${escapeHtml(item.bibleText || item.verse || item.principle || "Conteúdo de apoio")}</span>
     </button>
   `;
 }
@@ -976,7 +1071,7 @@ function filteredLessons() {
   const special = els.specialFilter?.value || "Todas";
   const createdMonth = els.createdMonthFilter?.value || "";
 
-  return state.lessons.filter((lesson) => {
+  const filtered = state.lessons.filter((lesson) => {
     const content = normalize([
       lesson.title,
       lesson.category,
@@ -993,6 +1088,7 @@ function filteredLessons() {
     const matchesCreatedMonth = !createdMonth || lessonMonthKey(lesson.createdAt) === createdMonth;
     return matchesTerm && matchesCategory && matchesAge && matchesTestament && matchesSpecial && matchesCreatedMonth;
   });
+  return isTestUser() ? filtered.filter((lesson) => lesson.testOnly || lesson.source === "pais-import-20260702") : filtered;
 }
 
 function lessonMonthKey(value) {
@@ -1702,16 +1798,23 @@ function renderTrails() {
 function renderContentAdminLists() {
   renderContentAdminList("devotional", state.devotionals, "#devotionalAdminList");
   renderContentAdminList("training", state.trainings, "#trainingAdminList");
+  renderContentAdminList("ebf", state.ebfs, "#ebfAdminList");
+}
+
+function contentTypeConfig(type) {
+  if (type === "devotional") return { key: "devotionals", cache: "raizes-devotionals", url: "/api/admin/devotionals", label: "Culto em Família", emptyName: "culto em família", form: "#devotionalForm" };
+  if (type === "ebf") return { key: "ebfs", cache: "raizes-ebf", url: "/api/admin/ebf", label: "EBF Completa", emptyName: "EBF", form: "#ebfForm" };
+  return { key: "trainings", cache: "raizes-trainings", url: "/api/admin/trainings", label: "Treinamento", emptyName: "treinamento", form: "#trainingForm" };
 }
 
 function renderContentAdminList(type, items, selector) {
   const list = document.querySelector(selector);
   if (!list) return;
   if (!items.length) {
-    list.innerHTML = `<p class="muted-line">Nenhum ${type === "devotional" ? "culto em família" : "treinamento"} cadastrado ainda.</p>`;
+    list.innerHTML = `<p class="muted-line">Nenhum ${contentTypeConfig(type).emptyName} cadastrado ainda.</p>`;
     return;
   }
-  list.innerHTML = items.map((item) => renderContentCard(item, false, type === "devotional" ? "Culto em Família" : "Treinamento").replace("data-content-id", `data-admin-${type}-id`)).join("");
+  list.innerHTML = items.map((item) => renderContentCard(item, false, contentTypeConfig(type).label).replace("data-content-id", `data-admin-${type}-id`)).join("");
   list.querySelectorAll(`[data-admin-${type}-id]`).forEach((card) => {
     card.addEventListener("click", () => {
       const item = items.find((entry) => entry.id === card.getAttribute(`data-admin-${type}-id`));
@@ -1730,7 +1833,7 @@ function bindContentEditor(form) {
       const item = await contentFromForm(type, form);
       await saveContentCollection(type, item);
       clearContentForm(form);
-      showContentMessage(form, `${type === "devotional" ? "Culto em Família" : "Treinamento"} salvo com sucesso.`);
+      showContentMessage(form, `${contentTypeConfig(type).label} salvo com sucesso.`);
     } catch (error) {
       showContentMessage(form, error.message || "Nao foi possivel salvar.", true);
     } finally {
@@ -1749,12 +1852,13 @@ function bindContentEditor(form) {
   form.querySelector("[data-content-delete]")?.addEventListener("click", async () => {
     const id = form.elements.id.value;
     if (!id || !window.confirm("Excluir este item?")) return;
-    const key = type === "devotional" ? "devotionals" : "trainings";
+    const key = contentTypeConfig(type).key;
     state[key] = state[key].filter((item) => item.id !== id);
     await postContentCollection(type);
     clearContentForm(form);
     renderDevotionals();
     renderTrainings();
+    renderEbfs();
     renderContentAdminLists();
   });
 }
@@ -1771,7 +1875,7 @@ async function contentFromForm(type, form, options = {}) {
     ...(existing || {}),
     id: data.id || crypto.randomUUID(),
     title: String(data.title || "").trim(),
-    category: String(data.category || (type === "devotional" ? "Família" : "Treinamento")).trim(),
+    category: String(data.category || (type === "devotional" ? "Família" : type === "ebf" ? "EBF Completa" : "Treinamento")).trim(),
     season: String(data.season || "").trim(),
     createdAt,
     cardImage: removeCardImage ? "" : existing?.cardImage || "",
@@ -1790,6 +1894,17 @@ async function contentFromForm(type, form, options = {}) {
       activity: String(data.activity || "").trim()
     };
     item.activityImage = await readOptionalImage(form.elements.activityImageFile, item.activityImage);
+  } else if (type === "ebf") {
+    item.description = String(data.description || "").trim();
+    item.sections = {
+      content: String(data.content || "").trim(),
+      schedule: String(data.schedule || "").trim(),
+      notes: String(data.notes || "").trim()
+    };
+    item.activityImage = await readOptionalImage(form.elements.activityImageFile, item.activityImage);
+    if (includeNewAttachments) {
+      item.attachments = [...item.attachments, ...await readOptionalAttachments(form.elements.attachmentsFile)];
+    }
   } else {
     item.youtubeUrl = String(data.youtubeUrl || "").trim();
     item.description = String(data.description || "").trim();
@@ -1807,20 +1922,20 @@ async function contentFromForm(type, form, options = {}) {
 }
 
 async function saveContentCollection(type, item) {
-  const key = type === "devotional" ? "devotionals" : "trainings";
+  const key = contentTypeConfig(type).key;
   const index = state[key].findIndex((entry) => entry.id === item.id);
   if (index >= 0) state[key][index] = item;
   else state[key].unshift(item);
   await postContentCollection(type);
   renderDevotionals();
   renderTrainings();
+  renderEbfs();
   renderContentAdminLists();
   if (state.trailsRendered) renderTrails();
 }
 
 async function postContentCollection(type) {
-  const key = type === "devotional" ? "devotionals" : "trainings";
-  const url = type === "devotional" ? "/api/admin/devotionals" : "/api/admin/trainings";
+  const { key, url, cache } = contentTypeConfig(type);
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -1829,16 +1944,16 @@ async function postContentCollection(type) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || "Falha ao salvar no servidor.");
   if (Array.isArray(data[key])) state[key] = normalizeContentItems(data[key]);
-  saveCollectionCache(type === "devotional" ? "raizes-devotionals" : "raizes-trainings", state[key]);
+  saveCollectionCache(cache, state[key]);
 }
 
 function findContentItem(type, id) {
-  const key = type === "devotional" ? "devotionals" : "trainings";
+  const key = contentTypeConfig(type).key;
   return state[key].find((item) => item.id === id);
 }
 
 function loadContentIntoForm(type, item) {
-  const form = document.querySelector(type === "devotional" ? "#devotionalForm" : "#trainingForm");
+  const form = document.querySelector(contentTypeConfig(type).form);
   if (!form) return;
   form.reset();
   form.elements.id.value = item.id || "";
@@ -1853,6 +1968,12 @@ function loadContentIntoForm(type, item) {
     form.elements.devotional.value = item.sections?.devotional || "";
     form.elements.prayer.value = item.sections?.prayer || "";
     form.elements.activity.value = item.sections?.activity || "";
+  } else if (type === "ebf") {
+    form.elements.description.value = item.description || "";
+    form.elements.content.value = item.sections?.content || "";
+    form.elements.schedule.value = item.sections?.schedule || "";
+    form.elements.notes.value = item.sections?.notes || "";
+    renderCurrentAttachments(form, item.attachments || []);
   } else {
     form.elements.youtubeUrl.value = item.youtubeUrl || "";
     form.elements.description.value = item.description || "";
@@ -1916,9 +2037,10 @@ async function printContentPdf(type, item) {
 
 function buildContentPdfHtml(type, item) {
   const isTraining = type === "training";
-  const fields = isTraining ? TRAINING_FIELDS : DEVOTIONAL_FIELDS;
-  const theme = categoryTheme(item.category || (isTraining ? "Treinamento" : "Família"));
-  const typeLabel = isTraining ? "Treinamento" : "Culto em Família";
+  const isEbf = type === "ebf";
+  const fields = isEbf ? EBF_FIELDS : isTraining ? TRAINING_FIELDS : DEVOTIONAL_FIELDS;
+  const theme = categoryTheme(item.category || (isEbf ? "EBF Completa" : isTraining ? "Treinamento" : "Família"));
+  const typeLabel = isEbf ? "EBF Completa" : isTraining ? "Treinamento" : "Culto em Família";
   return `
     <article class="ebook">
       <section class="ebook-cover">
@@ -2028,13 +2150,10 @@ function renderTrailCard(video) {
         <span>${locked ? "🔒" : "▶"}</span>
       </button>
       <div class="trail-content">
-        <div class="lesson-meta">
-          <span class="pill">${escapeHtml(video.category || "Trilha")}</span>
-          <span class="pill">${escapeHtml(video.age ? ageText(video.age) : "Todas as idades")}</span>
-          ${locked ? '<span class="pill lock-pill">Bloqueado</span>' : ""}
-        </div>
+        <span class="trail-category-line">${escapeHtml(video.category || "Trilha")}</span>
         <h3>${escapeHtml(video.title)}</h3>
         <p>${escapeHtml(video.description || video.lessonTitle || "Vídeo de apoio para a lição.")}</p>
+        ${locked ? '<span class="pill lock-pill">Bloqueado</span>' : ""}
         <div class="trail-actions">
           <button class="icon-button" type="button" data-play-video="${escapeHtml(video.id)}">${locked ? "Ver bloqueio" : "Assistir"}</button>
           ${watchActions}
@@ -2196,7 +2315,7 @@ function filteredVideos() {
     return linkedMatch && matchesTerm && matchesCategory && matchesAge;
   });
 
-  return videos;
+  return isTestUser() ? videos.slice(0, 1) : videos;
 }
 
 function allVideos() {

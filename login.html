@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes Kids | Acesso</title>
-    <link rel="stylesheet" href="styles.css?v=20260702-menu-cards" />
+    <link rel="stylesheet" href="styles.css?v=20260702-ebf-tests" />
   </head>
   <body class="auth-page">
     <main class="auth-shell">
@@ -13,6 +13,7 @@
         <div class="auth-tabs">
           <button class="manage-tab active" type="button" data-auth-tab="login">Entrar</button>
           <button class="manage-tab" type="button" data-auth-tab="register">Cadastrar</button>
+          <button class="manage-tab" type="button" data-auth-tab="test">Cadastro/Teste</button>
           <button class="manage-tab" type="button" data-auth-tab="reset">Redefinir senha</button>
         </div>
 
@@ -37,9 +38,25 @@
           <label><span>Telefone</span><input name="phone" inputmode="tel" required /></label>
           <label><span>Endereço</span><input name="address" required /></label>
           <label><span>Igreja que pertence</span><input name="church" required /></label>
+          <label><span>Cidade da Igreja</span><input name="churchCity" required /></label>
           <label><span>Senha de 6 dígitos</span><input name="password" type="password" inputmode="numeric" minlength="6" maxlength="6" required /></label>
           <label><span>Confirmar senha</span><input name="confirmPassword" type="password" inputmode="numeric" minlength="6" maxlength="6" required /></label>
           <button class="icon-button primary" type="submit">Enviar para aprovação</button>
+        </form>
+
+        <form id="testRegisterForm" class="auth-form" data-auth-panel="test">
+          <h1>Criar cadastro teste</h1>
+          <p>Liberação imediata por 3 dias para conhecer o sistema.</p>
+          <label><span>Nome completo</span><input name="name" required /></label>
+          <label><span>CPF</span><input name="cpf" inputmode="numeric" required /></label>
+          <label><span>Email</span><input name="email" type="email" required /></label>
+          <label><span>Telefone</span><input name="phone" inputmode="tel" required /></label>
+          <label><span>Endereço</span><input name="address" required /></label>
+          <label><span>Igreja que pertence</span><input name="church" required /></label>
+          <label><span>Cidade da Igreja</span><input name="churchCity" required /></label>
+          <label><span>Senha de 6 dígitos</span><input name="password" type="password" inputmode="numeric" minlength="6" maxlength="6" required /></label>
+          <label><span>Confirmar senha</span><input name="confirmPassword" type="password" inputmode="numeric" minlength="6" maxlength="6" required /></label>
+          <button class="icon-button primary" type="submit">Liberar teste agora</button>
         </form>
 
         <form id="resetForm" class="auth-form" data-auth-panel="reset">
@@ -57,6 +74,6 @@
         <a class="auth-back" href="index.html">Voltar para o site</a>
       </section>
     </main>
-    <script src="auth.js?v=20260702-menu-cards"></script>
+    <script src="auth.js?v=20260702-ebf-tests"></script>
   </body>
 </html>

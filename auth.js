@@ -92,6 +92,7 @@ function bindAuthTabs() {
 function bindAuthForms() {
   const loginForm = document.querySelector("#loginForm");
   const registerForm = document.querySelector("#registerForm");
+  const testRegisterForm = document.querySelector("#testRegisterForm");
   const resetForm = document.querySelector("#resetForm");
   const profileForm = document.querySelector("#profileForm");
   const siteInfoForm = document.querySelector("#siteInfoForm");
@@ -121,6 +122,21 @@ function bindAuthForms() {
       registerForm.reset();
       sessionStorage.setItem("raizes-auth-notice", result.message || "Cadastro enviado para aprovacao.");
       window.location.href = "vendas.html";
+    }
+  });
+
+  testRegisterForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const payload = formData(testRegisterForm);
+    const result = await apiPost("/api/register-test", payload);
+    setAuthMessage(result.error || result.message || "Cadastro teste liberado.", Boolean(result.error));
+    if (!result.error) {
+      const loginResult = await apiPost("/api/login", { username: payload.cpf, password: payload.password });
+      if (loginResult.error) {
+        testRegisterForm.reset();
+        return;
+      }
+      window.location.href = "index.html";
     }
   });
 
@@ -175,7 +191,7 @@ async function loadProfile(form) {
 }
 
 function fillProfileForm(form, user) {
-  ["username", "name", "email", "phone", "address", "church"].forEach((key) => {
+  ["username", "name", "email", "phone", "address", "church", "churchCity"].forEach((key) => {
     if (form.elements[key]) form.elements[key].value = user?.[key] || "";
   });
 }
@@ -291,7 +307,7 @@ function renderAccessLogCard(log) {
 
 function renderAdminUserCard(user) {
   const accessLevel = user.accessLevel || "prime";
-  const accessLabel = accessLevel === "simple" ? "Simples" : accessLevel === "leader" ? "Lideres" : "Prime";
+  const accessLabel = accessLevel === "simple" ? "Simples" : accessLevel === "test" ? "Teste" : accessLevel === "leader" ? "Lideres" : "Prime";
   const licenseText = user.role === "admin" ? "Acesso administrativo" : `${Number(user.licenseDaysRemaining || 0)} dias de acesso disponivel`;
   const status = user.role === "admin"
     ? "Administrador"
@@ -306,6 +322,7 @@ function renderAdminUserCard(user) {
       <span>Categoria</span>
       <select data-access-level="${authEscapeHtml(user.id)}">
         <option value="simple" ${accessLevel === "simple" ? "selected" : ""}>Simples</option>
+        <option value="test" ${accessLevel === "test" ? "selected" : ""}>Teste</option>
         <option value="leader" ${accessLevel === "leader" ? "selected" : ""}>Lideres</option>
         <option value="prime" ${accessLevel === "prime" ? "selected" : ""}>Prime</option>
       </select>
@@ -327,7 +344,7 @@ function renderAdminUserCard(user) {
         <strong>${authEscapeHtml(user.name || user.username)}</strong>
         <span>${authEscapeHtml(user.username)} - ${authEscapeHtml(user.email || "Sem email")}</span>
         <small>Telefone: ${authEscapeHtml(user.phone || "Nao informado")}</small>
-        <small>${authEscapeHtml(user.church || "Igreja nao informada")} - ${authEscapeHtml(user.address || "Endereco nao informado")}</small>
+        <small>${authEscapeHtml(user.church || "Igreja nao informada")} - ${authEscapeHtml(user.churchCity || "Cidade nao informada")} - ${authEscapeHtml(user.address || "Endereco nao informado")}</small>
         <small>Status: ${status} - Categoria: ${accessLabel}</small>
         <small>Licenca: ${authEscapeHtml(licenseText)}${user.licenseExpiresAt ? ` - vence em ${formatDate(user.licenseExpiresAt)}` : ""}</small>
         ${user.renewalRequested ? "<em>Solicitou renovacao de licenca</em>" : ""}
@@ -340,9 +357,9 @@ function renderAdminUserCard(user) {
 }
 
 function exportUsersCsv(users) {
-  const headers = ["Nome", "CPF", "Email", "Telefone", "Igreja", "Endereco", "Status", "Categoria", "Dias de acesso", "Vencimento da licenca", "Criado em", "Aprovado em", "Ultimo login", "Ultimo acesso"];
+  const headers = ["Nome", "CPF", "Email", "Telefone", "Igreja", "Cidade da Igreja", "Endereco", "Status", "Categoria", "Dias de acesso", "Vencimento da licenca", "Criado em", "Aprovado em", "Ultimo login", "Ultimo acesso"];
   const rows = users.map((user) => {
-    const accessLevel = user.accessLevel === "simple" ? "Simples" : user.accessLevel === "leader" ? "Lideres" : "Prime";
+    const accessLevel = user.accessLevel === "simple" ? "Simples" : user.accessLevel === "test" ? "Teste" : user.accessLevel === "leader" ? "Lideres" : "Prime";
     const status = user.role === "admin" ? "Administrador" : user.active === false ? "Desativado" : user.approved ? "Ativo" : "Aguardando aprovacao";
     return [
       user.name,
@@ -350,6 +367,7 @@ function exportUsersCsv(users) {
       user.email,
       user.phone,
       user.church,
+      user.churchCity,
       user.address,
       status,
       accessLevel,

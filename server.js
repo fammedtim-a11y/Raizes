@@ -4,6 +4,7 @@ const path = require("path");
 const crypto = require("crypto");
 const zlib = require("zlib");
 const { seededDevotionals, seededTrainings } = require("./seed-content");
+const { importedLessons, seededEbfs } = require("./seed-imports");
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
@@ -12,6 +13,7 @@ const USERS_FILE = path.join(DATA_DIR, "users.json");
 const LESSONS_FILE = path.join(DATA_DIR, "lessons.json");
 const DEVOTIONALS_FILE = path.join(DATA_DIR, "devotionals.json");
 const TRAININGS_FILE = path.join(DATA_DIR, "trainings.json");
+const EBFS_FILE = path.join(DATA_DIR, "ebf.json");
 const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
 const ACCESS_LOG_FILE = path.join(DATA_DIR, "access-log.json");
 const SITE_INFO_FILE = path.join(DATA_DIR, "site-info.json");
@@ -89,9 +91,9 @@ const mimeTypes = {
 
 const defaultSiteInfo = {
   about: "Raizes Kids e uma plataforma criada para facilitar a vida de lideres e discipuladores de criancas, reunindo licoes, trilhas, cultos em familia e materiais de apoio em um so lugar.",
-  contactEmail: "raizes@gmail.com",
+  contactEmail: "raizes.r12@gmail.com",
   whatsapp: "31971773756",
-  instagram: "@raizeskids"
+  instagram: "@raizes_r12"
 };
 
 const ageAliases = {
@@ -106,6 +108,26 @@ const ageAliases = {
   "9 a 10": "Pré-Juniores: 9 a 10 anos",
   "11 e 12": "Juniores: 11 e 12 anos"
 };
+
+Object.assign(ageAliases, {
+  "1 e 2": "0 a 2 anos - BerÃ§Ã¡rio",
+  "0 a 2": "0 a 2 anos - BerÃ§Ã¡rio",
+  "BerÃ§Ã¡rio: 0 a 2 anos": "0 a 2 anos - BerÃ§Ã¡rio",
+  "3 e 4": "3 a 4 anos - Maternal",
+  "3 a 4": "3 a 4 anos - Maternal",
+  "Maternal: 3 a 4 anos": "3 a 4 anos - Maternal",
+  "5 e 6": "5 a 6 anos - Jardim",
+  "5 a 6": "5 a 6 anos - Jardim",
+  "Jardim: 5 a 6 anos": "5 a 6 anos - Jardim",
+  "7 a 10": "7 a 10 anos - PrimÃ¡rios",
+  "7 a 8": "7 a 10 anos - PrimÃ¡rios",
+  "9 a 10": "7 a 10 anos - PrimÃ¡rios",
+  "PrimÃ¡rios: 7 a 8 anos": "7 a 10 anos - PrimÃ¡rios",
+  "PrÃ©-Juniores: 9 a 10 anos": "7 a 10 anos - PrimÃ¡rios",
+  "11 e 12": "11 a 12 anos - Juniores",
+  "11 a 12": "11 a 12 anos - Juniores",
+  "Juniores: 11 e 12 anos": "11 a 12 anos - Juniores"
+});
 
 const initialDevotionals = seededDevotionals.length ? seededDevotionals : [
   {
@@ -128,6 +150,7 @@ const initialDevotionals = seededDevotionals.length ? seededDevotionals : [
 ];
 
 const initialTrainings = seededTrainings;
+const initialEbfs = seededEbfs;
 
 ensureData();
 
@@ -158,19 +181,36 @@ function ensureData() {
   if (!fs.existsSync(USERS_FILE)) {
     writeUsers(initialUsers);
   }
+  if (!fs.existsSync(LESSONS_FILE) && importedLessons.length) {
+    writeLessons(importedLessons);
+  }
   if (!fs.existsSync(DEVOTIONALS_FILE)) {
     writeDevotionals(initialDevotionals);
   }
   if (!fs.existsSync(TRAININGS_FILE)) {
     writeTrainings(initialTrainings);
   }
+  if (!fs.existsSync(EBFS_FILE)) {
+    writeEbfs(initialEbfs);
+  }
   mergeSeedContent();
+  applyUserAdministrationUpdates();
+  applySiteInfoContactUpdates();
   loadSessions();
 }
 
 function mergeSeedContent() {
+  mergeLessonSeeds();
   mergeSeedFile(DEVOTIONALS_FILE, seededDevotionals, writeDevotionals);
   mergeSeedFile(TRAININGS_FILE, seededTrainings, writeTrainings);
+  mergeSeedFile(EBFS_FILE, seededEbfs, writeEbfs);
+}
+
+function mergeLessonSeeds() {
+  if (!importedLessons.length || !fs.existsSync(LESSONS_FILE)) return;
+  const current = readLessonsRaw();
+  const merged = addMissingImportedLessons(current);
+  if (merged.changed) writeLessons(merged.lessons);
 }
 
 function mergeSeedFile(filePath, seedItems, writeFn) {
@@ -199,6 +239,44 @@ function mergeSeedFile(filePath, seedItems, writeFn) {
   } catch {
     writeFn(seedItems);
   }
+}
+
+function applyUserAdministrationUpdates() {
+  const users = readUsers();
+  const before = JSON.stringify(users);
+  const removeUsernames = new Set(["00000000022", "04797262648"]);
+  const keptUsers = users.filter((user) => !removeUsernames.has(user.username));
+  const adminUsernames = new Set(["08047232657", "08692663654"]);
+  keptUsers.forEach((user) => {
+    if (adminUsernames.has(user.username)) {
+      user.role = "admin";
+      user.accessLevel = "prime";
+      user.approved = true;
+      user.active = true;
+    }
+    if (user.username === "349326076" && !user.licensePatch20260702) {
+      user.licenseExpiresAt = new Date(Date.now() + DAY_MS).toISOString();
+      user.approved = true;
+      user.active = true;
+      user.licensePatch20260702 = true;
+    }
+    if (user.username === "11111111111" && !user.licensePatch20260702) {
+      user.licenseExpiresAt = new Date(Date.now() + 2 * DAY_MS).toISOString();
+      user.approved = true;
+      user.active = true;
+      user.licensePatch20260702 = true;
+    }
+  });
+  if (JSON.stringify(keptUsers) !== before) writeUsers(keptUsers);
+}
+
+function applySiteInfoContactUpdates() {
+  const info = readSiteInfo();
+  const next = { ...info };
+  if (!next.contactEmail || next.contactEmail === "raizes@gmail.com") next.contactEmail = defaultSiteInfo.contactEmail;
+  if (!next.whatsapp || onlyDigits(next.whatsapp) === "31971773756") next.whatsapp = defaultSiteInfo.whatsapp;
+  if (!next.instagram || next.instagram === "@raizeskids") next.instagram = defaultSiteInfo.instagram;
+  if (JSON.stringify(next) !== JSON.stringify(info)) writeSiteInfo(next);
 }
 
 function shouldRefreshSeedItem(item) {
@@ -238,6 +316,11 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (req.method === "GET" && url.pathname === "/api/ebf") {
+    sendJson(res, 200, { ebfs: readEbfs() });
+    return;
+  }
+
   if (req.method === "GET" && url.pathname === "/api/site-info") {
     sendJson(res, 200, { info: readSiteInfo() });
     return;
@@ -255,6 +338,11 @@ async function handleApi(req, res, url) {
 
   if (req.method === "POST" && url.pathname === "/api/register") {
     await register(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/register-test") {
+    await registerTest(req, res);
     return;
   }
 
@@ -334,6 +422,16 @@ async function handleApi(req, res, url) {
 
   if (req.method === "POST" && url.pathname === "/api/admin/trainings") {
     await updateTrainings(req, res);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/admin/ebf") {
+    sendJson(res, 200, { ebfs: readEbfs() });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/admin/ebf") {
+    await updateEbfs(req, res);
     return;
   }
 
@@ -554,7 +652,7 @@ async function register(req, res) {
   const password = String(body.password || "");
   const confirmPassword = String(body.confirmPassword || "");
 
-  if (!body.name || !username || !body.email || !body.phone || !body.address || !body.church) {
+  if (!body.name || !username || !body.email || !body.phone || !body.address || !body.church || !body.churchCity) {
     sendJson(res, 400, { error: "Preencha todos os dados do cadastro." });
     return;
   }
@@ -581,6 +679,7 @@ async function register(req, res) {
     phone: onlyDigits(body.phone || ""),
     address: cleanText(body.address),
     church: cleanText(body.church),
+    churchCity: cleanText(body.churchCity),
     resetRequested: false,
     createdAt: new Date().toISOString(),
     passwordHash: hashPassword(password)
@@ -600,6 +699,50 @@ async function passwordResetRequest(req, res) {
     writeUsers(users);
   }
   sendJson(res, 200, { ok: true, message: "Se o usuário existir, o pedido será enviado ao administrador." });
+}
+
+async function registerTest(req, res) {
+  const body = await readBody(req);
+  const username = onlyDigits(body.cpf || "");
+  const password = String(body.password || "");
+  const confirmPassword = String(body.confirmPassword || "");
+
+  if (!body.name || !username || !body.email || !body.phone || !body.address || !body.church || !body.churchCity) {
+    sendJson(res, 400, { error: "Preencha todos os dados do cadastro teste." });
+    return;
+  }
+  if (!/^\d{6}$/.test(password) || password !== confirmPassword) {
+    sendJson(res, 400, { error: "A senha precisa ter 6 dÃ­gitos e a confirmaÃ§Ã£o deve ser igual." });
+    return;
+  }
+
+  const users = readUsers();
+  if (users.some((user) => user.username === username)) {
+    sendJson(res, 409, { error: "CPF jÃ¡ cadastrado." });
+    return;
+  }
+
+  users.push({
+    id: crypto.randomUUID(),
+    username,
+    role: "user",
+    accessLevel: "test",
+    approved: true,
+    active: true,
+    name: cleanText(body.name),
+    email: cleanText(body.email),
+    phone: onlyDigits(body.phone || ""),
+    address: cleanText(body.address),
+    church: cleanText(body.church),
+    churchCity: cleanText(body.churchCity),
+    resetRequested: false,
+    createdAt: new Date().toISOString(),
+    approvedAt: new Date().toISOString(),
+    licenseExpiresAt: new Date(Date.now() + 3 * DAY_MS).toISOString(),
+    passwordHash: hashPassword(password)
+  });
+  writeUsers(users);
+  sendJson(res, 201, { ok: true, message: "Cadastro teste liberado por 3 dias. Entre com seu CPF e senha." });
 }
 
 function updateUserApproval(res, id, approved) {
@@ -677,7 +820,7 @@ async function adminResetPassword(req, res, id) {
 async function updateUserAccess(req, res, id) {
   const body = await readBody(req);
   const accessLevel = String(body.accessLevel || "");
-  if (!["simple", "leader", "prime"].includes(accessLevel)) {
+  if (!["simple", "test", "leader", "prime"].includes(accessLevel)) {
     sendJson(res, 400, { error: "Categoria de usuario invalida." });
     return;
   }
@@ -854,12 +997,30 @@ function writeSiteInfo(info) {
 
 function readLessons() {
   if (!fs.existsSync(LESSONS_FILE)) return null;
-  const parsed = JSON.parse(fs.readFileSync(LESSONS_FILE, "utf8"));
-  return Array.isArray(parsed) ? normalizeLessonAges(parsed) : [];
+  const merged = addMissingImportedLessons(readLessonsRaw());
+  if (merged.changed) writeLessons(merged.lessons);
+  return merged.lessons;
 }
 
 function writeLessons(lessons) {
   fs.writeFileSync(LESSONS_FILE, JSON.stringify(lessons, null, 2), "utf8");
+}
+
+function readLessonsRaw() {
+  const parsed = JSON.parse(fs.readFileSync(LESSONS_FILE, "utf8"));
+  return Array.isArray(parsed) ? normalizeLessonAges(parsed) : [];
+}
+
+function addMissingImportedLessons(lessons) {
+  if (!importedLessons.length) return { lessons, changed: false };
+  const byId = new Map(lessons.map((lesson) => [lesson.id, lesson]));
+  let changed = false;
+  importedLessons.forEach((seed) => {
+    if (byId.has(seed.id)) return;
+    byId.set(seed.id, { ...seed, age: normalizeAgeLabel(seed.age) });
+    changed = true;
+  });
+  return { lessons: [...byId.values()], changed };
 }
 
 function readDevotionals() {
@@ -880,6 +1041,16 @@ function readTrainings() {
 
 function writeTrainings(trainings) {
   fs.writeFileSync(TRAININGS_FILE, JSON.stringify(trainings, null, 2), "utf8");
+}
+
+function readEbfs() {
+  if (!fs.existsSync(EBFS_FILE)) return initialEbfs;
+  const parsed = JSON.parse(fs.readFileSync(EBFS_FILE, "utf8"));
+  return Array.isArray(parsed) ? normalizeContentDates(parsed) : [];
+}
+
+function writeEbfs(ebfs) {
+  fs.writeFileSync(EBFS_FILE, JSON.stringify(ebfs, null, 2), "utf8");
 }
 
 async function updateLessons(req, res) {
@@ -925,6 +1096,22 @@ async function updateTrainings(req, res) {
     const stored = persistContentFiles(trainings, "training");
     writeTrainings(stored);
     sendJson(res, 200, { ok: true, trainings: stored, savedAt: new Date().toISOString() });
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Nao foi possivel salvar os arquivos." });
+  }
+}
+
+async function updateEbfs(req, res) {
+  const body = await readBody(req);
+  const ebfs = Array.isArray(body.ebfs) ? body.ebfs : null;
+  if (!ebfs) {
+    sendJson(res, 400, { error: "Lista de EBF invalida." });
+    return;
+  }
+  try {
+    const stored = persistContentFiles(ebfs, "ebf");
+    writeEbfs(stored);
+    sendJson(res, 200, { ok: true, ebfs: stored, savedAt: new Date().toISOString() });
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Nao foi possivel salvar os arquivos." });
   }
@@ -1102,7 +1289,7 @@ function normalizeLessonAges(lessons) {
 
 function normalizeAgeLabel(age) {
   const value = String(age || "").trim();
-  return ageAliases[value] || value || "Berçário: 0 a 2 anos";
+  return ageAliases[value] || value || "0 a 2 anos - Berçário";
 }
 
 function storeDataImage(value, prefix) {
@@ -1164,8 +1351,8 @@ async function updateProfile(req, res) {
   }
 
   const body = await readBody(req);
-  if (!body.name || !body.email || !body.phone || !body.address || !body.church) {
-    sendJson(res, 400, { error: "Preencha nome, email, telefone, endereco e igreja." });
+  if (!body.name || !body.email || !body.phone || !body.address || !body.church || !body.churchCity) {
+    sendJson(res, 400, { error: "Preencha nome, email, telefone, endereco, igreja e cidade da igreja." });
     return;
   }
 
@@ -1181,6 +1368,7 @@ async function updateProfile(req, res) {
   user.phone = onlyDigits(body.phone || "");
   user.address = cleanText(body.address);
   user.church = cleanText(body.church);
+  user.churchCity = cleanText(body.churchCity);
   user.updatedAt = new Date().toISOString();
   writeUsers(users);
   sendJson(res, 200, { ok: true, user: publicProfileUser(user), message: "Perfil atualizado." });
@@ -1230,7 +1418,8 @@ function normalizeUser(user) {
   const normalized = {
     ...user,
     accessLevel: user.role === "admin" ? "prime" : user.accessLevel || "prime",
-    phone: user.phone || ""
+    phone: user.phone || "",
+    churchCity: user.churchCity || ""
   };
   if (normalized.role === "admin") return normalized;
   if (normalized.approved && normalized.active !== false && !normalized.licenseExpiresAt) {
@@ -1317,6 +1506,7 @@ function publicProfileUser(user) {
     phone: user.phone || "",
     address: user.address || "",
     church: user.church || "",
+    churchCity: user.churchCity || "",
     ...publicLicenseFields(user)
   };
 }
@@ -1334,6 +1524,7 @@ function publicAdminUser(user) {
     phone: user.phone || "",
     address: user.address,
     church: user.church,
+    churchCity: user.churchCity || "",
     resetRequested: Boolean(user.resetRequested),
     renewalRequested: Boolean(user.renewalRequested),
     ...publicLicenseFields(user),
