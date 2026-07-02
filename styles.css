@@ -370,7 +370,7 @@ h1 {
 }
 
 .nav-main {
-  width: min(100%, 760px);
+  width: min(100%, 920px);
   align-items: center;
 }
 
@@ -514,6 +514,44 @@ textarea {
   padding: 11px 12px;
   resize: vertical;
   line-height: 1.5;
+}
+
+.rich-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid rgba(45, 156, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.rich-toolbar button,
+.rich-toolbar select,
+.rich-toolbar input[type="color"] {
+  width: auto;
+  min-height: 34px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.rich-toolbar button {
+  padding: 0 10px;
+  border: 1px solid rgba(45, 156, 255, 0.18);
+  color: #15456d;
+  background: #fff;
+}
+
+.rich-toolbar select {
+  max-width: 110px;
+  padding: 0 8px;
+}
+
+.rich-toolbar input[type="color"] {
+  width: 42px;
+  padding: 3px;
 }
 
 input:focus,
@@ -1640,8 +1678,8 @@ textarea:focus {
 .home-copy h2 {
   max-width: 760px;
   color: #15456d;
-  font-size: clamp(2.2rem, 5vw, 4.8rem);
-  line-height: 0.95;
+  font-size: clamp(1.8rem, 4vw, 3.45rem);
+  line-height: 1;
 }
 
 .home-copy p {
@@ -3384,6 +3422,11 @@ textarea,
 /* Layout definitivo da exportacao do livro.
    Este bloco fica depois dos estilos antigos para impedir que regras da tela desalinem o PDF. */
 @media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
   body.ebook-printing {
     width: auto !important;
     min-width: 0 !important;
@@ -3426,20 +3469,26 @@ textarea,
   body.ebook-printing .ebook-cover,
   body.ebook-printing .ebook-toc,
   body.ebook-printing .ebook-lesson {
-    width: 100% !important;
+    position: relative !important;
+    width: 210mm !important;
     max-width: none !important;
     margin: 0 !important;
-    background: #fff !important;
+    min-height: 297mm !important;
+    background-color: #fff !important;
+    background-repeat: no-repeat !important;
+    background-position: center top !important;
+    background-size: 210mm 297mm !important;
     box-shadow: none !important;
   }
 
   body.ebook-printing .ebook-cover {
     display: grid !important;
-    min-height: 250mm !important;
+    min-height: 297mm !important;
     align-content: center !important;
     justify-items: center !important;
-    padding: 26mm 16mm !important;
-    border: 0.9mm solid rgba(216, 167, 47, 0.72) !important;
+    padding: 76mm 22mm 30mm !important;
+    border: 0 !important;
+    background-image: url("assets/page-models/pagina-1.png") !important;
     text-align: center !important;
     break-after: page;
     page-break-after: always;
@@ -3460,7 +3509,9 @@ textarea,
   }
 
   body.ebook-printing .ebook-toc {
-    padding: 0 !important;
+    min-height: 297mm !important;
+    padding: 24mm 22mm 30mm !important;
+    background-image: url("assets/page-models/pagina-2.png") !important;
     break-after: page;
     page-break-after: always;
   }
@@ -3486,10 +3537,11 @@ textarea,
 
   body.ebook-printing .ebook-lesson {
     display: block !important;
-    min-height: 0 !important;
-    padding: 0 !important;
+    min-height: 297mm !important;
+    padding: 24mm 22mm 34mm !important;
     border: 0 !important;
     border-radius: 0 !important;
+    background-image: url("assets/page-models/pagina-2.png") !important;
     break-before: page;
     page-break-before: always;
   }
@@ -3567,6 +3619,34 @@ textarea,
     max-width: 100% !important;
     max-height: 150mm !important;
     margin: 3mm auto 0 !important;
+  }
+
+  body.ebook-printing .ebook-final-footer {
+    position: absolute !important;
+    right: 18mm !important;
+    bottom: 10mm !important;
+    left: 18mm !important;
+    display: grid !important;
+    grid-template-columns: 20mm minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 4mm !important;
+    align-items: center !important;
+    padding-top: 2mm !important;
+    border-top: 0.25mm solid rgba(31, 77, 117, 0.16) !important;
+    color: #31506f !important;
+    font-size: 6.8pt !important;
+    line-height: 1.25 !important;
+  }
+
+  body.ebook-printing .ebook-final-footer img {
+    width: 18mm !important;
+    max-height: 10mm !important;
+    object-fit: contain !important;
+  }
+
+  body.ebook-printing .ebook-final-footer strong {
+    display: inline !important;
+    color: #15456d !important;
+    font-weight: 900 !important;
   }
 }
 

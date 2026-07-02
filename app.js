@@ -224,6 +224,7 @@ function init() {
   if (els.sectionFields) renderSectionFields();
   fillFilters();
   bindEvents();
+  enhanceRichTextEditors();
   applyAccessVisibility();
   state.activeId = state.lessons[0]?.id || null;
   render();
@@ -509,6 +510,61 @@ function bindEvents() {
   els.importJson?.addEventListener("change", importJson);
   document.querySelectorAll(".content-editor").forEach((form) => bindContentEditor(form));
   window.addEventListener("resize", debounce(drawSky, 160));
+}
+
+function enhanceRichTextEditors() {
+  document.querySelectorAll("textarea").forEach((textarea) => {
+    if (textarea.dataset.richEditorReady) return;
+    textarea.dataset.richEditorReady = "true";
+    const toolbar = document.createElement("div");
+    toolbar.className = "rich-toolbar";
+    toolbar.innerHTML = `
+      <button type="button" data-rich="strong" title="Negrito">B</button>
+      <button type="button" data-rich="em" title="Itálico"><i>I</i></button>
+      <button type="button" data-rich="u" title="Sublinhado"><u>U</u></button>
+      <button type="button" data-rich="upper" title="Caixa alta">AA</button>
+      <button type="button" data-rich="lower" title="Caixa baixa">aa</button>
+      <select data-rich-size title="Tamanho da fonte">
+        <option value="">Tamanho</option>
+        <option value="12">12</option>
+        <option value="14">14</option>
+        <option value="16">16</option>
+        <option value="18">18</option>
+        <option value="20">20</option>
+        <option value="24">24</option>
+      </select>
+      <input type="color" data-rich-color title="Cor da fonte" value="#213047" />
+      <button type="button" data-rich="clear" title="Remover formatação">Limpar</button>
+    `;
+    textarea.parentElement?.insertBefore(toolbar, textarea);
+    toolbar.addEventListener("click", (event) => {
+      const action = event.target.closest("[data-rich]")?.dataset.rich;
+      if (action) applyRichAction(textarea, action);
+    });
+    toolbar.querySelector("[data-rich-size]")?.addEventListener("change", (event) => {
+      const size = event.target.value;
+      if (size) applyRichAction(textarea, "span", `font-size:${size}px;`);
+      event.target.value = "";
+    });
+    toolbar.querySelector("[data-rich-color]")?.addEventListener("input", (event) => {
+      applyRichAction(textarea, "span", `color:${event.target.value};`);
+    });
+  });
+}
+
+function applyRichAction(textarea, action, style = "") {
+  const start = textarea.selectionStart ?? 0;
+  const end = textarea.selectionEnd ?? start;
+  const selected = textarea.value.slice(start, end) || "texto";
+  let replacement = selected;
+  if (action === "upper") replacement = selected.toLocaleUpperCase("pt-BR");
+  else if (action === "lower") replacement = selected.toLocaleLowerCase("pt-BR");
+  else if (action === "clear") replacement = stripRichTags(selected);
+  else if (action === "span") replacement = `<span style="${style}">${selected}</span>`;
+  else replacement = `<${action}>${selected}</${action}>`;
+  textarea.setRangeText(replacement, start, end, "end");
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  textarea.focus();
 }
 
 function setTab(tabName) {
@@ -951,7 +1007,7 @@ function renderContentReader(item, config) {
     </header>
     <div class="section-timeline">
       ${linkedVideo}
-      ${item.principle ? `<section class="lesson-section"><div class="section-icon">🌱</div><div class="section-body"><h3>Princípio</h3><p>${escapeHtml(item.principle)}</p></div></section>` : ""}
+      ${item.principle ? `<section class="lesson-section"><div class="section-icon">🌱</div><div class="section-body"><h3>Princípio</h3><p>${richTextToHtml(item.principle)}</p></div></section>` : ""}
       ${config.fields.map(([key, label, emoji]) => {
         const text = item.sections?.[key]?.trim();
         if (!text) return "";
@@ -1029,7 +1085,7 @@ function trimTrailingUrlPunctuation(url) {
 }
 
 function formatLessonTextFragment(value) {
-  return escapeHtml(value).replace(/\n/g, "<br>");
+  return richTextToHtml(value).replace(/\n/g, "<br>");
 }
 
 // Mantem o acervo visivel para visitantes, mas protege o conteudo completo.
@@ -1057,9 +1113,18 @@ function renderLockedReader(lesson) {
   `;
 }
 
-function printCurrentLesson() {
-  document.body.classList.remove("ebook-printing");
-  if (els.ebookPrintArea) els.ebookPrintArea.innerHTML = "";
+async function printCurrentLesson() {
+  const lesson = getActiveLesson();
+  if (!lesson || !els.ebookPrintArea) return;
+  els.ebookPrintArea.innerHTML = buildEbookHtml([lesson], { title: lesson.title, hideToc: true });
+  document.body.classList.add("ebook-printing");
+  await waitForEbookLayout();
+  const cleanup = () => {
+    document.body.classList.remove("ebook-printing");
+    els.ebookPrintArea.innerHTML = "";
+    window.removeEventListener("afterprint", cleanup);
+  };
+  window.addEventListener("afterprint", cleanup);
   window.print();
 }
 
@@ -2069,13 +2134,13 @@ function buildContentPdfHtml(type, item) {
           ${item.principle ? `
             <section class="ebook-section">
               <h3>🌱 Princípio</h3>
-              <p>${escapeHtml(item.principle)}</p>
+              <p>${richTextToHtml(item.principle)}</p>
             </section>
           ` : ""}
           ${item.bibleText ? `
             <section class="ebook-section">
               <h3>📖 Texto bíblico</h3>
-              <p>${escapeHtml(item.bibleText)}</p>
+              <p>${richTextToHtml(item.bibleText)}</p>
             </section>
           ` : ""}
           ${fields.map(([key, label, emoji]) => {
@@ -2084,7 +2149,7 @@ function buildContentPdfHtml(type, item) {
             return `
               <section class="ebook-section">
                 <h3>${emoji} ${label}</h3>
-                <p>${linkify(escapeHtml(text))}</p>
+                <p>${linkify(richTextToHtml(text))}</p>
               </section>
             `;
           }).join("")}
@@ -2095,6 +2160,7 @@ function buildContentPdfHtml(type, item) {
             </section>
           ` : ""}
         </div>
+        ${buildEbookFinalFooter()}
       </section>
     </article>
   `;
@@ -2467,20 +2533,12 @@ function waitForEbookLayout() {
   }));
 }
 
-function buildEbookHtml(lessons) {
+function buildEbookHtml(lessons, options = {}) {
   const category = els.categoryFilter.value === "Todas" ? "Todas as categorias" : els.categoryFilter.value;
   const age = els.ageFilter.value === "Todas" ? "Todas as idades" : els.ageFilter.value;
   const today = new Date().toLocaleDateString("pt-BR");
-
-  return `
-    <article class="ebook">
-      <section class="ebook-cover">
-        <p>Raízes Kids</p>
-        <h1>Catálogo de Lições Bíblicas</h1>
-        <div class="ebook-cover-line"></div>
-        <span>${escapeHtml(category)} · ${escapeHtml(age)}</span>
-        <small>${lessons.length} lição(ões) · ${today}</small>
-      </section>
+  const title = options.title || "Catálogo de Lições Bíblicas";
+  const toc = options.hideToc ? "" : `
       <section class="ebook-toc">
         <h2>Sumário</h2>
         ${lessons.map((lesson, index) => `
@@ -2490,13 +2548,24 @@ function buildEbookHtml(lessons) {
             <em>${escapeHtml(lesson.category)} · ${escapeHtml(ageText(lesson.age))}</em>
           </div>
         `).join("")}
+      </section>`;
+
+  return `
+    <article class="ebook">
+      <section class="ebook-cover">
+        <p>Raízes Kids</p>
+        <h1>${escapeHtml(title)}</h1>
+        <div class="ebook-cover-line"></div>
+        <span>${escapeHtml(category)} · ${escapeHtml(age)}</span>
+        <small>${lessons.length} lição(ões) · ${today}</small>
       </section>
-      ${lessons.map((lesson, index) => buildEbookLessonHtml(lesson, index + 1)).join("")}
+      ${toc}
+      ${lessons.map((lesson, index) => buildEbookLessonHtml(lesson, index + 1, index === lessons.length - 1)).join("")}
     </article>
   `;
 }
 
-function buildEbookLessonHtml(lesson, number) {
+function buildEbookLessonHtml(lesson, number, isLast = false) {
   const theme = categoryTheme(lesson.category);
   return `
     <section class="ebook-lesson" style="--theme:${theme.primary};--theme-soft:${theme.soft}">
@@ -2515,7 +2584,7 @@ function buildEbookLessonHtml(lesson, number) {
           return `
             <section class="ebook-section">
               <h3>${emoji} ${label}</h3>
-              <p>${linkify(escapeHtml(text))}</p>
+              <p>${linkify(richTextToHtml(text))}</p>
             </section>
           `;
         }).join("")}
@@ -2526,7 +2595,18 @@ function buildEbookLessonHtml(lesson, number) {
           </section>
         ` : ""}
       </div>
+      ${isLast ? buildEbookFinalFooter() : ""}
     </section>
+  `;
+}
+
+function buildEbookFinalFooter() {
+  return `
+    <footer class="ebook-final-footer">
+      <img src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
+      <span><strong>Sobre</strong> Plataforma para apoiar líderes e discipuladores de crianças com lições, trilhas, cultos em família, treinamentos e EBF.</span>
+      <span><strong>Contato</strong> raizes.r12@gmail.com | (31) 97177-3756 | @raizes_r12</span>
+    </footer>
   `;
 }
 
@@ -2556,6 +2636,25 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function stripRichTags(value) {
+  return String(value || "")
+    .replace(/<\/?(strong|b|em|i|u)>/gi, "")
+    .replace(/<span\s+style="(?:font-size:(?:12|14|16|18|20|24)px;|color:#[0-9a-fA-F]{6};){1,2}">/gi, "")
+    .replace(/<\/span>/gi, "");
+}
+
+function richTextToHtml(value) {
+  return escapeHtml(value)
+    .replace(/&lt;(strong|b)&gt;/gi, "<strong>")
+    .replace(/&lt;\/(strong|b)&gt;/gi, "</strong>")
+    .replace(/&lt;(em|i)&gt;/gi, "<em>")
+    .replace(/&lt;\/(em|i)&gt;/gi, "</em>")
+    .replace(/&lt;u&gt;/gi, "<u>")
+    .replace(/&lt;\/u&gt;/gi, "</u>")
+    .replace(/&lt;span style=&quot;((?:font-size:(?:12|14|16|18|20|24)px;|color:#[0-9a-fA-F]{6};){1,2})&quot;&gt;/g, '<span style="$1">')
+    .replace(/&lt;\/span&gt;/g, "</span>");
 }
 
 function linkify(text) {
