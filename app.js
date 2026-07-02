@@ -389,6 +389,15 @@ function saveManualVideos() {
 }
 
 function bindEvents() {
+  document.querySelectorAll(".nav-menu").forEach((menu) => {
+    menu.addEventListener("toggle", () => {
+      if (!menu.open) return;
+      document.querySelectorAll(".nav-menu[open]").forEach((openMenu) => {
+        if (openMenu !== menu) openMenu.removeAttribute("open");
+      });
+    });
+  });
+
   els.tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
       setTab(tab.dataset.tab);
@@ -801,11 +810,11 @@ function renderContentCard(item, active, typeLabel) {
     : `<div class="lesson-cover"><span class="lesson-cover-book">${escapeHtml(typeLabel)}</span><span class="lesson-cover-principle">${escapeHtml(item.principle || item.description || item.title)}</span><span class="lesson-cover-ref">${escapeHtml(item.season || formatMonthYear(item.createdAt))}</span></div>`;
   if (typeLabel === "Culto em Família") {
     return `
-      <button class="lesson-card ${active ? "active" : ""}" style="--lesson-primary:${visual.primary};--lesson-soft:${visual.soft};--lesson-accent:${visual.accent}" type="button" data-content-id="${escapeHtml(item.id)}">
+      <button class="lesson-card devotional-card ${active ? "active" : ""}" style="--lesson-primary:${visual.primary};--lesson-soft:${visual.soft};--lesson-accent:${visual.accent}" type="button" data-content-id="${escapeHtml(item.id)}">
         ${cover}
-        <strong>${escapeHtml(item.title || "Culto em Família")}</strong>
-        <span class="lesson-card-age">${escapeHtml(item.category || typeLabel)}</span>
-        <span class="lesson-card-verse">${escapeHtml(item.verse || "Versículo não informado")}</span>
+        <strong class="devotional-card-title">${escapeHtml(item.title || "Culto em Família")}</strong>
+        <span class="devotional-card-category">${escapeHtml(item.category || "Sem categoria")}</span>
+        <span class="devotional-card-verse">${escapeHtml(item.verse || "Versículo não informado")}</span>
       </button>
     `;
   }

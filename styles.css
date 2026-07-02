@@ -284,6 +284,8 @@ svg {
 }
 
 .topbar {
+  position: relative;
+  z-index: 80;
   display: grid;
   grid-template-columns: minmax(220px, auto) minmax(0, 1fr);
   align-items: center;
@@ -291,13 +293,17 @@ svg {
   gap: 20px;
   padding: 18px 20px;
   border-radius: 8px;
+  overflow: visible;
 }
 
 .topbar-actions {
+  position: relative;
+  z-index: 90;
   display: grid;
   justify-items: end;
   gap: 8px;
   min-width: 0;
+  overflow: visible;
 }
 
 .brand {
@@ -348,6 +354,8 @@ h1 {
 }
 
 .tabs {
+  position: relative;
+  z-index: 90;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
@@ -358,6 +366,7 @@ h1 {
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(246, 252, 255, 0.68)),
     rgba(255, 255, 255, 0.58);
+  overflow: visible;
 }
 
 .nav-main {
@@ -395,6 +404,10 @@ h1 {
   position: relative;
 }
 
+.nav-menu[open] {
+  z-index: 110;
+}
+
 .nav-menu summary {
   list-style: none;
   cursor: pointer;
@@ -406,7 +419,7 @@ h1 {
 
 .nav-submenu {
   position: absolute;
-  z-index: 30;
+  z-index: 120;
   top: calc(100% + 8px);
   right: 0;
   display: grid;
@@ -726,6 +739,43 @@ textarea:focus {
   line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.devotional-card .devotional-card-title,
+.devotional-card .devotional-card-category,
+.devotional-card .devotional-card-verse {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.devotional-card .devotional-card-title {
+  color: var(--ink);
+  font-size: 0.98rem;
+  font-weight: 1000;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.devotional-card .devotional-card-category {
+  color: #7b641c;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.devotional-card .devotional-card-verse {
+  color: var(--lesson-primary, #15456d);
+  font-size: 0.84rem;
+  font-weight: 1000;
+  line-height: 1.25;
   white-space: nowrap;
 }
 
