@@ -93,7 +93,8 @@ const defaultSiteInfo = {
   about: "Raizes Kids e uma plataforma criada para facilitar a vida de lideres e discipuladores de criancas, reunindo licoes, trilhas, cultos em familia e materiais de apoio em um so lugar.",
   contactEmail: "raizes.r12@gmail.com",
   whatsapp: "31971773756",
-  instagram: "@raizes_r12"
+  instagram: "@raizes_r12",
+  siteUrl: "https://raizes-fic9.onrender.com/"
 };
 
 const ageAliases = {
@@ -1381,6 +1382,7 @@ async function updateSiteInfo(req, res) {
     contactEmail: normalizeEmail(body.contactEmail || defaultSiteInfo.contactEmail),
     whatsapp: onlyDigits(body.whatsapp || defaultSiteInfo.whatsapp),
     instagram: cleanText(body.instagram || defaultSiteInfo.instagram),
+    siteUrl: cleanText(body.siteUrl || defaultSiteInfo.siteUrl),
     updatedAt: new Date().toISOString()
   };
   writeSiteInfo(info);

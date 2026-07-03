@@ -509,6 +509,7 @@ function bindEvents() {
   els.exportJson?.addEventListener("click", exportJson);
   els.importJson?.addEventListener("change", importJson);
   document.querySelectorAll(".content-editor").forEach((form) => bindContentEditor(form));
+  document.addEventListener("submit", syncAllRichTextEditors, true);
   window.addEventListener("resize", debounce(drawSky, 160));
 }
 
@@ -516,6 +517,7 @@ function enhanceRichTextEditors() {
   document.querySelectorAll("textarea").forEach((textarea) => {
     if (textarea.dataset.richEditorReady) return;
     textarea.dataset.richEditorReady = "true";
+    textarea.classList.add("rich-source");
     const toolbar = document.createElement("div");
     toolbar.className = "rich-toolbar";
     toolbar.innerHTML = `
@@ -524,6 +526,16 @@ function enhanceRichTextEditors() {
       <button type="button" data-rich="u" title="Sublinhado"><u>U</u></button>
       <button type="button" data-rich="upper" title="Caixa alta">AA</button>
       <button type="button" data-rich="lower" title="Caixa baixa">aa</button>
+      <button type="button" data-rich="insertUnorderedList" title="Marcadores">• Lista</button>
+      <button type="button" data-rich="insertOrderedList" title="Lista numerada">1. Lista</button>
+      <select data-rich-font title="Fonte">
+        <option value="">Fonte</option>
+        <option value="Arial">Arial</option>
+        <option value="Georgia">Georgia</option>
+        <option value="Nunito">Nunito</option>
+        <option value="Poppins">Poppins</option>
+        <option value="Times New Roman">Times</option>
+      </select>
       <select data-rich-size title="Tamanho da fonte">
         <option value="">Tamanho</option>
         <option value="12">12</option>
@@ -536,35 +548,138 @@ function enhanceRichTextEditors() {
       <input type="color" data-rich-color title="Cor da fonte" value="#213047" />
       <button type="button" data-rich="clear" title="Remover formatação">Limpar</button>
     `;
+    const surface = document.createElement("div");
+    surface.className = "rich-surface";
+    surface.contentEditable = "true";
+    surface.dataset.richFor = textarea.id || textarea.name || crypto.randomUUID();
+    surface.innerHTML = richTextToHtml(textarea.value);
+    textarea.dataset.richFor = surface.dataset.richFor;
     textarea.parentElement?.insertBefore(toolbar, textarea);
+    textarea.parentElement?.insertBefore(surface, textarea);
+    surface.addEventListener("input", () => syncRichSurfaceToTextarea(surface, textarea));
+    surface.addEventListener("blur", () => syncRichSurfaceToTextarea(surface, textarea));
     toolbar.addEventListener("click", (event) => {
       const action = event.target.closest("[data-rich]")?.dataset.rich;
-      if (action) applyRichAction(textarea, action);
+      if (action) applyRichAction(surface, textarea, action);
     });
     toolbar.querySelector("[data-rich-size]")?.addEventListener("change", (event) => {
       const size = event.target.value;
-      if (size) applyRichAction(textarea, "span", `font-size:${size}px;`);
+      if (size) applyRichAction(surface, textarea, "fontSize", size);
+      event.target.value = "";
+    });
+    toolbar.querySelector("[data-rich-font]")?.addEventListener("change", (event) => {
+      const font = event.target.value;
+      if (font) applyRichAction(surface, textarea, "fontName", font);
       event.target.value = "";
     });
     toolbar.querySelector("[data-rich-color]")?.addEventListener("input", (event) => {
-      applyRichAction(textarea, "span", `color:${event.target.value};`);
+      applyRichAction(surface, textarea, "foreColor", event.target.value);
     });
   });
 }
 
-function applyRichAction(textarea, action, style = "") {
-  const start = textarea.selectionStart ?? 0;
-  const end = textarea.selectionEnd ?? start;
-  const selected = textarea.value.slice(start, end) || "texto";
-  let replacement = selected;
-  if (action === "upper") replacement = selected.toLocaleUpperCase("pt-BR");
-  else if (action === "lower") replacement = selected.toLocaleLowerCase("pt-BR");
-  else if (action === "clear") replacement = stripRichTags(selected);
-  else if (action === "span") replacement = `<span style="${style}">${selected}</span>`;
-  else replacement = `<${action}>${selected}</${action}>`;
-  textarea.setRangeText(replacement, start, end, "end");
+function applyRichAction(surface, textarea, action, value = null) {
+  surface.focus();
+  const selection = window.getSelection();
+  if ((action === "upper" || action === "lower") && selection?.toString()) {
+    const selected = selection.toString();
+    const replacement = action === "upper" ? selected.toLocaleUpperCase("pt-BR") : selected.toLocaleLowerCase("pt-BR");
+    document.execCommand("insertText", false, replacement);
+  } else if (action === "clear") {
+    document.execCommand("removeFormat", false, null);
+  } else if (action === "fontSize") {
+    document.execCommand("fontSize", false, richFontSizeCommand(value));
+  } else if (["strong", "em", "u", "insertUnorderedList", "insertOrderedList", "fontName", "foreColor"].includes(action)) {
+    const command = action === "strong" ? "bold" : action === "em" ? "italic" : action === "u" ? "underline" : action;
+    document.execCommand(command, false, value);
+  }
+  normalizeRichSurface(surface);
+  syncRichSurfaceToTextarea(surface, textarea);
+}
+
+function syncRichSurfaceToTextarea(surface, textarea) {
+  textarea.value = normalizeRichHtml(surface.innerHTML);
   textarea.dispatchEvent(new Event("input", { bubbles: true }));
-  textarea.focus();
+}
+
+function syncAllRichTextEditors() {
+  document.querySelectorAll("textarea.rich-source").forEach((textarea) => {
+    const surface = findRichSurface(textarea);
+    if (surface) syncRichSurfaceToTextarea(surface, textarea);
+  });
+}
+
+function refreshRichTextEditors(scope = document) {
+  scope.querySelectorAll?.("textarea.rich-source").forEach((textarea) => {
+    const surface = findRichSurface(textarea);
+    if (surface) surface.innerHTML = richTextToHtml(textarea.value);
+  });
+}
+
+function findRichSurface(textarea) {
+  const key = textarea.dataset.richFor || "";
+  return [...(textarea.parentElement?.querySelectorAll(".rich-surface") || [])].find((surface) => surface.dataset.richFor === key);
+}
+
+function normalizeRichSurface(surface) {
+  surface.querySelectorAll("font[size]").forEach((font) => {
+    const span = document.createElement("span");
+    span.style.fontSize = richFontSizePx(font.getAttribute("size"));
+    span.innerHTML = font.innerHTML;
+    font.replaceWith(span);
+  });
+  surface.querySelectorAll("font[color]").forEach((font) => {
+    const span = document.createElement("span");
+    span.style.color = font.getAttribute("color") || "";
+    span.innerHTML = font.innerHTML;
+    font.replaceWith(span);
+  });
+  surface.querySelectorAll("font[face]").forEach((font) => {
+    const span = document.createElement("span");
+    span.style.fontFamily = font.getAttribute("face") || "";
+    span.innerHTML = font.innerHTML;
+    font.replaceWith(span);
+  });
+}
+
+function normalizeRichHtml(html) {
+  const template = document.createElement("template");
+  template.innerHTML = html || "";
+  template.content.querySelectorAll("script, style, iframe, object, embed").forEach((node) => node.remove());
+  template.content.querySelectorAll("*").forEach((node) => {
+    [...node.attributes].forEach((attribute) => {
+      if (attribute.name !== "style" && !["href", "target", "rel"].includes(attribute.name)) node.removeAttribute(attribute.name);
+    });
+    if (node.hasAttribute("style")) {
+      const allowed = [];
+      const style = node.getAttribute("style") || "";
+      style.split(";").forEach((part) => {
+        const [property, rawValue] = part.split(":").map((item) => item?.trim());
+        if (!property || !rawValue) return;
+        if (["color", "font-size", "font-family"].includes(property)) allowed.push(`${property}:${rawValue}`);
+      });
+      if (allowed.length) node.setAttribute("style", `${allowed.join(";")};`);
+      else node.removeAttribute("style");
+    }
+  });
+  return template.innerHTML
+    .replace(/<div><br><\/div>/g, "<br>")
+    .replace(/<div>/g, "<br>")
+    .replace(/<\/div>/g, "")
+    .trim();
+}
+
+function richFontSizeCommand(value) {
+  const px = Number(value);
+  if (px <= 12) return "2";
+  if (px <= 14) return "3";
+  if (px <= 18) return "4";
+  if (px <= 20) return "5";
+  return "6";
+}
+
+function richFontSizePx(size) {
+  return ({ 1: "10px", 2: "12px", 3: "14px", 4: "18px", 5: "20px", 6: "24px", 7: "28px" })[size] || "16px";
 }
 
 function setTab(tabName) {
@@ -925,6 +1040,9 @@ function renderContentArea(config) {
     });
   });
   reader.innerHTML = renderContentReader(active, config);
+  reader.querySelector("[data-export-content-pdf]")?.addEventListener("click", () => {
+    printContentPdf(contentTypeFromLabel(config.typeLabel), active);
+  });
 }
 
 function filteredContentItems(items) {
@@ -1003,6 +1121,7 @@ function renderContentReader(item, config) {
           ${item.bibleText ? `<span class="reader-chip">${escapeHtml(item.bibleText)}</span>` : ""}
         </div>
         ${item.verse ? `<p class="reader-verse"><span>Versículo</span><strong>${escapeHtml(item.verse)}</strong></p>` : ""}
+        ${config.typeLabel === "EBF Completa" ? '<button class="icon-button accent" type="button" data-export-content-pdf>Exportar PDF</button>' : ""}
       </div>
     </header>
     <div class="section-timeline">
@@ -1223,6 +1342,7 @@ async function saveFromForm(event) {
 }
 
 async function persistLessonFromForm() {
+  syncAllRichTextEditors();
   if (!els.form?.reportValidity()) return null;
   await waitForLessonImages();
   const id = els.lessonId.value || crypto.randomUUID();
@@ -1297,6 +1417,7 @@ function loadIntoForm(lesson) {
   SECTIONS.forEach(([key]) => {
     $(`#section-${key}`).value = lesson.sections?.[key] || "";
   });
+  refreshRichTextEditors(els.form);
 }
 
 function clearForm(options = {}) {
@@ -1313,6 +1434,7 @@ function clearForm(options = {}) {
   SECTIONS.forEach(([key]) => {
     $(`#section-${key}`).value = "";
   });
+  refreshRichTextEditors(els.form);
   if (options.confirm) showActionMessage("lesson", "Formulário de lição limpo.");
 }
 
@@ -1872,6 +1994,12 @@ function contentTypeConfig(type) {
   return { key: "trainings", cache: "raizes-trainings", url: "/api/admin/trainings", label: "Treinamento", emptyName: "treinamento", form: "#trainingForm" };
 }
 
+function contentTypeFromLabel(label) {
+  if (label === "EBF Completa") return "ebf";
+  if (label === "Culto em Família") return "devotional";
+  return "training";
+}
+
 function renderContentAdminList(type, items, selector) {
   const list = document.querySelector(selector);
   if (!list) return;
@@ -1929,6 +2057,7 @@ function bindContentEditor(form) {
 }
 
 async function contentFromForm(type, form, options = {}) {
+  syncAllRichTextEditors();
   const includeNewAttachments = options.includeNewAttachments !== false;
   const data = Object.fromEntries(new FormData(form).entries());
   const existing = findContentItem(type, data.id);
@@ -2046,6 +2175,7 @@ function loadContentIntoForm(type, item) {
     form.elements.notes.value = item.sections?.notes || "";
     renderCurrentAttachments(form, item.attachments || []);
   }
+  refreshRichTextEditors(form);
   form.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -2053,6 +2183,7 @@ function clearContentForm(form) {
   form.reset();
   form.elements.id.value = "";
   renderCurrentAttachments(form, []);
+  refreshRichTextEditors(form);
 }
 
 function renderCurrentAttachments(form, attachments) {
@@ -2109,6 +2240,7 @@ function buildContentPdfHtml(type, item) {
   return `
     <article class="ebook">
       <section class="ebook-cover">
+        ${buildPageModelImage(1)}
         <p>Raízes Kids</p>
         <h1>${escapeHtml(typeLabel)}</h1>
         <div class="ebook-cover-line"></div>
@@ -2116,6 +2248,7 @@ function buildContentPdfHtml(type, item) {
         <small>${escapeHtml(item.category || typeLabel)} · ${escapeHtml(item.season || formatMonthYear(item.createdAt))}</small>
       </section>
       <section class="ebook-lesson" style="--theme:${theme.primary};--theme-soft:${theme.soft}">
+        ${buildPageModelImage(2)}
         <header class="ebook-lesson-header">
           <span>${theme.emoji}</span>
           <div>
@@ -2134,13 +2267,13 @@ function buildContentPdfHtml(type, item) {
           ${item.principle ? `
             <section class="ebook-section">
               <h3>🌱 Princípio</h3>
-              <p>${richTextToHtml(item.principle)}</p>
+              <div class="ebook-copy">${richTextToHtml(item.principle)}</div>
             </section>
           ` : ""}
           ${item.bibleText ? `
             <section class="ebook-section">
               <h3>📖 Texto bíblico</h3>
-              <p>${richTextToHtml(item.bibleText)}</p>
+              <div class="ebook-copy">${richTextToHtml(item.bibleText)}</div>
             </section>
           ` : ""}
           ${fields.map(([key, label, emoji]) => {
@@ -2149,7 +2282,7 @@ function buildContentPdfHtml(type, item) {
             return `
               <section class="ebook-section">
                 <h3>${emoji} ${label}</h3>
-                <p>${linkify(richTextToHtml(text))}</p>
+                <div class="ebook-copy">${linkify(richTextToHtml(text))}</div>
               </section>
             `;
           }).join("")}
@@ -2540,6 +2673,7 @@ function buildEbookHtml(lessons, options = {}) {
   const title = options.title || "Catálogo de Lições Bíblicas";
   const toc = options.hideToc ? "" : `
       <section class="ebook-toc">
+        ${buildPageModelImage(2)}
         <h2>Sumário</h2>
         ${lessons.map((lesson, index) => `
           <div class="ebook-toc-row">
@@ -2553,6 +2687,7 @@ function buildEbookHtml(lessons, options = {}) {
   return `
     <article class="ebook">
       <section class="ebook-cover">
+        ${buildPageModelImage(1)}
         <p>Raízes Kids</p>
         <h1>${escapeHtml(title)}</h1>
         <div class="ebook-cover-line"></div>
@@ -2569,6 +2704,7 @@ function buildEbookLessonHtml(lesson, number, isLast = false) {
   const theme = categoryTheme(lesson.category);
   return `
     <section class="ebook-lesson" style="--theme:${theme.primary};--theme-soft:${theme.soft}">
+      ${buildPageModelImage(2)}
       <header class="ebook-lesson-header">
         <span>${String(number).padStart(2, "0")}</span>
         <div>
@@ -2584,7 +2720,7 @@ function buildEbookLessonHtml(lesson, number, isLast = false) {
           return `
             <section class="ebook-section">
               <h3>${emoji} ${label}</h3>
-              <p>${linkify(richTextToHtml(text))}</p>
+              <div class="ebook-copy">${linkify(richTextToHtml(text))}</div>
             </section>
           `;
         }).join("")}
@@ -2608,6 +2744,11 @@ function buildEbookFinalFooter() {
       <span><strong>Contato</strong> raizes.r12@gmail.com | (31) 97177-3756 | @raizes_r12</span>
     </footer>
   `;
+}
+
+function buildPageModelImage(page) {
+  const src = page === 1 ? "assets/page-models/pagina-1.png" : "assets/page-models/pagina-2.png";
+  return `<img class="ebook-page-model" src="${src}" alt="" aria-hidden="true" />`;
 }
 
 function getActiveLesson() {
@@ -2653,7 +2794,10 @@ function richTextToHtml(value) {
     .replace(/&lt;\/(em|i)&gt;/gi, "</em>")
     .replace(/&lt;u&gt;/gi, "<u>")
     .replace(/&lt;\/u&gt;/gi, "</u>")
-    .replace(/&lt;span style=&quot;((?:font-size:(?:12|14|16|18|20|24)px;|color:#[0-9a-fA-F]{6};){1,2})&quot;&gt;/g, '<span style="$1">')
+    .replace(/&lt;(ul|ol|li)&gt;/gi, "<$1>")
+    .replace(/&lt;\/(ul|ol|li)&gt;/gi, "</$1>")
+    .replace(/&lt;br\s*\/?&gt;/gi, "<br>")
+    .replace(/&lt;span style=&quot;((?:(?:font-size:(?:10|12|14|16|18|20|24|28)px;)|(?:color:#[0-9a-fA-F]{3,6};)|(?:font-family:[A-Za-z0-9 ,'-]+;)){1,3})&quot;&gt;/g, '<span style="$1">')
     .replace(/&lt;\/span&gt;/g, "</span>");
 }
 

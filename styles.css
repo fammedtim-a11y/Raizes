@@ -554,6 +554,34 @@ textarea {
   padding: 3px;
 }
 
+.rich-source {
+  display: none !important;
+}
+
+.rich-surface {
+  width: 100%;
+  min-height: 140px;
+  padding: 12px 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.94);
+  line-height: 1.55;
+  outline: none;
+  overflow: auto;
+}
+
+.rich-surface:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(55, 119, 168, 0.16);
+}
+
+.rich-surface ul,
+.rich-surface ol {
+  margin: 0.5rem 0 0.5rem 1.2rem;
+  padding-left: 1rem;
+}
+
 input:focus,
 select:focus,
 textarea:focus {
@@ -3474,10 +3502,8 @@ textarea,
     max-width: none !important;
     margin: 0 !important;
     min-height: 297mm !important;
+    overflow: hidden !important;
     background-color: #fff !important;
-    background-repeat: no-repeat !important;
-    background-position: center top !important;
-    background-size: 210mm 297mm !important;
     box-shadow: none !important;
   }
 
@@ -3486,9 +3512,8 @@ textarea,
     min-height: 297mm !important;
     align-content: center !important;
     justify-items: center !important;
-    padding: 76mm 22mm 30mm !important;
+    padding: 82mm 24mm 34mm !important;
     border: 0 !important;
-    background-image: url("assets/page-models/pagina-1.png") !important;
     text-align: center !important;
     break-after: page;
     page-break-after: always;
@@ -3504,14 +3529,13 @@ textarea,
 
   body.ebook-printing .ebook-cover h1 {
     max-width: 155mm !important;
-    font-size: 32pt !important;
+    font-size: 30pt !important;
     line-height: 1.08 !important;
   }
 
   body.ebook-printing .ebook-toc {
     min-height: 297mm !important;
-    padding: 24mm 22mm 30mm !important;
-    background-image: url("assets/page-models/pagina-2.png") !important;
+    padding: 30mm 25mm 34mm !important;
     break-after: page;
     page-break-after: always;
   }
@@ -3538,10 +3562,9 @@ textarea,
   body.ebook-printing .ebook-lesson {
     display: block !important;
     min-height: 297mm !important;
-    padding: 24mm 22mm 34mm !important;
+    padding: 30mm 25mm 38mm !important;
     border: 0 !important;
     border-radius: 0 !important;
-    background-image: url("assets/page-models/pagina-2.png") !important;
     break-before: page;
     page-break-before: always;
   }
@@ -3608,11 +3631,23 @@ textarea,
     page-break-after: avoid;
   }
 
-  body.ebook-printing .ebook-section p {
+  body.ebook-printing .ebook-section p,
+  body.ebook-printing .ebook-copy {
     margin: 0 !important;
     font-size: 9.2pt !important;
     line-height: 1.46 !important;
     white-space: pre-line !important;
+  }
+
+  body.ebook-printing .ebook-copy ul,
+  body.ebook-printing .ebook-copy ol {
+    margin: 2mm 0 2mm 5mm !important;
+    padding-left: 4mm !important;
+    white-space: normal !important;
+  }
+
+  body.ebook-printing .ebook-copy li {
+    margin-bottom: 1mm !important;
   }
 
   body.ebook-printing .ebook-activity-image {
@@ -3647,6 +3682,24 @@ textarea,
     display: inline !important;
     color: #15456d !important;
     font-weight: 900 !important;
+  }
+
+  body.ebook-printing .ebook-page-model {
+    position: absolute !important;
+    inset: 5mm !important;
+    z-index: 0 !important;
+    width: 200mm !important;
+    height: 287mm !important;
+    max-width: none !important;
+    object-fit: fill !important;
+    pointer-events: none !important;
+  }
+
+  body.ebook-printing .ebook-cover > :not(.ebook-page-model),
+  body.ebook-printing .ebook-toc > :not(.ebook-page-model),
+  body.ebook-printing .ebook-lesson > :not(.ebook-page-model) {
+    position: relative !important;
+    z-index: 1 !important;
   }
 }
 

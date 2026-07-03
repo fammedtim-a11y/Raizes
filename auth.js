@@ -421,7 +421,7 @@ async function loadAdminSiteInfo() {
 window.loadAdminSiteInfo = loadAdminSiteInfo;
 
 function fillSiteInfoForm(form, info) {
-  ["about", "contactEmail", "whatsapp", "instagram"].forEach((key) => {
+  ["about", "contactEmail", "whatsapp", "instagram", "siteUrl"].forEach((key) => {
     if (form.elements[key]) form.elements[key].value = info?.[key] || "";
   });
 }
@@ -442,6 +442,10 @@ function applySiteInfo(info) {
   document.querySelectorAll("[data-site-link='instagram']").forEach((el) => {
     const handle = String(info?.instagram || "").replace(/^@/, "");
     el.href = handle ? `https://instagram.com/${handle}` : "#instagram";
+  });
+  document.querySelectorAll("[data-site-link='siteUrl']").forEach((el) => {
+    const siteUrl = info?.siteUrl || "https://raizes-fic9.onrender.com/";
+    el.href = siteUrl;
   });
 }
 
