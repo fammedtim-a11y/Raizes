@@ -1121,8 +1121,8 @@ function renderContentReader(item, config) {
           ${item.bibleText ? `<span class="reader-chip">${escapeHtml(item.bibleText)}</span>` : ""}
         </div>
         ${item.verse ? `<p class="reader-verse"><span>Versículo</span><strong>${escapeHtml(item.verse)}</strong></p>` : ""}
-        ${config.typeLabel === "EBF Completa" ? '<button class="icon-button accent" type="button" data-export-content-pdf>Exportar PDF</button>' : ""}
       </div>
+      ${config.typeLabel === "EBF Completa" ? '<div class="reader-hero-actions"><button class="icon-button accent" type="button" data-export-content-pdf>Exportar PDF</button></div>' : ""}
     </header>
     <div class="section-timeline">
       ${linkedVideo}
@@ -2748,7 +2748,7 @@ function buildEbookFinalFooter() {
 
 function buildPageModelImage(page) {
   const src = page === 1 ? "assets/page-models/pagina-1.png" : "assets/page-models/pagina-2.png";
-  return `<img class="ebook-page-model" src="${src}" alt="" aria-hidden="true" />`;
+  return `<img class="ebook-page-model ebook-page-model-${page}" src="${src}" alt="" aria-hidden="true" />`;
 }
 
 function getActiveLesson() {
