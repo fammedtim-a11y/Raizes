@@ -2297,7 +2297,7 @@ function buildContentPdfHtml(type, item) {
         <small>${escapeHtml(item.season || formatMonthYear(item.createdAt))}</small>
       </section>
       <section class="ebook-lesson" style="--theme:${theme.primary};--theme-soft:${theme.soft}">
-        ${buildPageModelImage(2)}
+        ${buildPdfPageBrand()}
         <header class="ebook-lesson-header">
           <span>${theme.emoji}</span>
           <div>
@@ -2726,7 +2726,7 @@ function buildEbookHtml(lessons, options = {}) {
   const coverAge = options.hideToc ? ageText(coverLesson.age, age) : `${age} - ${today}`;
   const toc = options.hideToc ? "" : `
       <section class="ebook-toc">
-        ${buildPageModelImage(2)}
+        ${buildPdfPageBrand()}
         <h2>Sumário</h2>
         ${lessons.map((lesson, index) => `
           <div class="ebook-toc-row">
@@ -2758,7 +2758,7 @@ function buildEbookLessonHtml(lesson, number, isLast = false) {
   const theme = categoryTheme(lesson.category);
   return `
     <section class="ebook-lesson" style="--theme:${theme.primary};--theme-soft:${theme.soft}">
-      ${buildPageModelImage(2)}
+      ${buildPdfPageBrand()}
       <header class="ebook-lesson-header">
         <span>${String(number).padStart(2, "0")}</span>
         <div>
@@ -2814,6 +2814,10 @@ function buildEbookFinalFooter() {
       <span><strong>Contato</strong> raizes.r12@gmail.com | (31) 97177-3756 | @raizes_r12</span>
     </footer>
   `;
+}
+
+function buildPdfPageBrand() {
+  return `<div class="ebook-page-brand" aria-hidden="true"><img src="assets/logo-raizes-kids.png" alt="" /></div>`;
 }
 
 function buildPageModelImage(page) {
