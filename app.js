@@ -2836,18 +2836,76 @@ function stripRichTags(value) {
 }
 
 function richTextToHtml(value) {
-  return escapeHtml(value)
-    .replace(/&lt;(strong|b)&gt;/gi, "<strong>")
-    .replace(/&lt;\/(strong|b)&gt;/gi, "</strong>")
-    .replace(/&lt;(em|i)&gt;/gi, "<em>")
-    .replace(/&lt;\/(em|i)&gt;/gi, "</em>")
-    .replace(/&lt;u&gt;/gi, "<u>")
-    .replace(/&lt;\/u&gt;/gi, "</u>")
-    .replace(/&lt;(ul|ol|li)&gt;/gi, "<$1>")
-    .replace(/&lt;\/(ul|ol|li)&gt;/gi, "</$1>")
-    .replace(/&lt;br\s*\/?&gt;/gi, "<br>")
-    .replace(/&lt;span style=&quot;((?:(?:font-size:(?:10|12|14|16|18|20|24|28)px;)|(?:color:#[0-9a-fA-F]{3,6};)|(?:font-family:[A-Za-z0-9 ,'-]+;)){1,3})&quot;&gt;/g, '<span style="$1">')
-    .replace(/&lt;\/span&gt;/g, "</span>");
+  const source = String(value || "");
+  if (!/<\/?[a-z][\s\S]*>/i.test(source) && !/&nbsp;/i.test(source)) {
+    return escapeHtml(source);
+  }
+  return sanitizeRichHtml(source);
+}
+
+// O editor visual salva HTML simples. Esta funcao permite apenas marcas de
+// formatacao esperadas e remove qualquer atributo/tag fora da lista segura.
+function sanitizeRichHtml(value) {
+  const template = document.createElement("template");
+  template.innerHTML = String(value || "");
+  return [...template.content.childNodes].map(sanitizeRichNode).join("");
+}
+
+function sanitizeRichNode(node) {
+  if (node.nodeType === Node.TEXT_NODE) return escapeHtml(node.textContent || "");
+  if (node.nodeType !== Node.ELEMENT_NODE) return "";
+
+  const tag = node.tagName.toLowerCase();
+  const children = [...node.childNodes].map(sanitizeRichNode).join("");
+  const tagMap = { b: "strong", strong: "strong", i: "em", em: "em", u: "u", ul: "ul", ol: "ol", li: "li", br: "br", p: "p", div: "div" };
+  if (tag === "span") {
+    const style = sanitizeRichStyle(node);
+    return style ? `<span style="${style}">${children}</span>` : children;
+  }
+  if (tag === "font") {
+    const style = sanitizeLegacyFontStyle(node);
+    return style ? `<span style="${style}">${children}</span>` : children;
+  }
+  if (tag === "br") return "<br>";
+  if (!tagMap[tag]) return children;
+  return `<${tagMap[tag]}>${children}</${tagMap[tag]}>`;
+}
+
+function sanitizeRichStyle(element) {
+  const styles = [];
+  const color = sanitizeCssColor(element.style.color);
+  const fontSize = sanitizeCssSize(element.style.fontSize);
+  const fontFamily = sanitizeCssFont(element.style.fontFamily);
+  if (color) styles.push(`color:${color}`);
+  if (fontSize) styles.push(`font-size:${fontSize}`);
+  if (fontFamily) styles.push(`font-family:${fontFamily}`);
+  return styles.length ? `${styles.join(";")};` : "";
+}
+
+function sanitizeLegacyFontStyle(element) {
+  const styles = [];
+  const color = sanitizeCssColor(element.getAttribute("color") || element.style.color);
+  const face = sanitizeCssFont(element.getAttribute("face") || element.style.fontFamily);
+  if (color) styles.push(`color:${color}`);
+  if (face) styles.push(`font-family:${face}`);
+  return styles.length ? `${styles.join(";")};` : "";
+}
+
+function sanitizeCssColor(value) {
+  const color = String(value || "").trim();
+  if (/^#[0-9a-f]{3,8}$/i.test(color)) return color;
+  if (/^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)$/i.test(color)) return color;
+  return "";
+}
+
+function sanitizeCssSize(value) {
+  const size = String(value || "").trim();
+  return /^(10|12|14|16|18|20|24|28)px$/i.test(size) ? size : "";
+}
+
+function sanitizeCssFont(value) {
+  const font = String(value || "").replace(/["']/g, "").trim();
+  return /^(Arial|Georgia|Nunito|Poppins|Times New Roman)$/i.test(font) ? font : "";
 }
 
 function linkify(text) {
