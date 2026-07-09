@@ -2291,10 +2291,10 @@ function buildContentPdfHtml(type, item) {
       <section class="ebook-cover">
         ${buildPageModelImage(1)}
         <p>Raízes Kids</p>
-        <h1>${escapeHtml(typeLabel)}</h1>
-        <div class="ebook-cover-line"></div>
-        <span>${escapeHtml(item.title)}</span>
-        <small>${escapeHtml(item.category || typeLabel)} · ${escapeHtml(item.season || formatMonthYear(item.createdAt))}</small>
+        <h1>${escapeHtml(item.title || typeLabel)}</h1>
+        <span>${escapeHtml(item.category || typeLabel)}</span>
+        <strong>${escapeHtml(item.bibleText || item.verse || item.description || "Conteudo de apoio")}</strong>
+        <small>${escapeHtml(item.season || formatMonthYear(item.createdAt))}</small>
       </section>
       <section class="ebook-lesson" style="--theme:${theme.primary};--theme-soft:${theme.soft}">
         ${buildPageModelImage(2)}
@@ -2720,6 +2720,10 @@ function buildEbookHtml(lessons, options = {}) {
   const age = els.ageFilter.value === "Todas" ? "Todas as idades" : els.ageFilter.value;
   const today = new Date().toLocaleDateString("pt-BR");
   const title = options.title || "Catálogo de Lições Bíblicas";
+  const coverLesson = lessons[0] || {};
+  const coverCategory = options.hideToc ? coverLesson.category || category : category;
+  const coverVerse = options.hideToc ? coverLesson.verse || "Versiculo nao informado" : `${lessons.length} licao(oes)`;
+  const coverAge = options.hideToc ? ageText(coverLesson.age, age) : `${age} - ${today}`;
   const toc = options.hideToc ? "" : `
       <section class="ebook-toc">
         ${buildPageModelImage(2)}
@@ -2740,8 +2744,9 @@ function buildEbookHtml(lessons, options = {}) {
         <p>Raízes Kids</p>
         <h1>${escapeHtml(title)}</h1>
         <div class="ebook-cover-line"></div>
-        <span>${escapeHtml(category)} · ${escapeHtml(age)}</span>
-        <small>${lessons.length} lição(ões) · ${today}</small>
+        <span>${escapeHtml(coverCategory)}</span>
+        <strong>${escapeHtml(coverVerse)}</strong>
+        <small>${escapeHtml(coverAge)}</small>
       </section>
       ${toc}
       ${lessons.map((lesson, index) => buildEbookLessonHtml(lesson, index + 1, index === lessons.length - 1)).join("")}

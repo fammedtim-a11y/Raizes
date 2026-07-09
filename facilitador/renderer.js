@@ -50,6 +50,34 @@ const fieldsByType = {
   ]
 };
 
+const editorsByType = {
+  lesson: [
+    ["objectives", "Objetivos da licao"],
+    ["welcome", "Recepcao e acolhimento"],
+    ["icebreaker", "Quebra-gelo"],
+    ["openingPrayer", "Oracao inicial"],
+    ["worshipOffering", "Louvor e oferta"],
+    ["bibleLesson", "Licao biblica"],
+    ["practice", "Aplicacao pratica"],
+    ["memoryVerse", "Memorizacao do versiculo"],
+    ["activity", "Atividade"],
+    ["finalPrayer", "Oracao final"],
+    ["snack", "Lanche"]
+  ],
+  trail: [
+    ["descriptionText", "Descricao detalhada"]
+  ],
+  training: [
+    ["content", "Conteudo do treinamento"],
+    ["notes", "Observacoes"]
+  ],
+  ebf: [
+    ["content", "Conteudo da EBF"],
+    ["schedule", "Programacao"],
+    ["notes", "Observacoes"]
+  ]
+};
+
 const els = {
   baseUrl: document.querySelector("#baseUrl"),
   loginForm: document.querySelector("#loginForm"),
@@ -60,7 +88,7 @@ const els = {
   contentType: document.querySelector("#contentType"),
   contentForm: document.querySelector("#contentForm"),
   dynamicFields: document.querySelector("#dynamicFields"),
-  richEditor: document.querySelector("#richEditor"),
+  editorSections: document.querySelector("#editorSections"),
   saveMessage: document.querySelector("#saveMessage"),
   saveButton: document.querySelector("#saveButton"),
   cardImage: document.querySelector("#cardImage"),
@@ -105,18 +133,18 @@ function bindEvents() {
     if (action) applyRichAction(action);
   });
   document.querySelector("#fontName").addEventListener("change", (event) => {
+    activeEditor().focus();
     if (event.target.value) document.execCommand("fontName", false, event.target.value);
     event.target.value = "";
-    els.richEditor.focus();
   });
   document.querySelector("#fontSize").addEventListener("change", (event) => {
+    activeEditor().focus();
     if (event.target.value) applyFontSize(event.target.value);
     event.target.value = "";
-    els.richEditor.focus();
   });
   document.querySelector("#fontColor").addEventListener("input", (event) => {
+    activeEditor().focus();
     document.execCommand("foreColor", false, event.target.value);
-    els.richEditor.focus();
   });
 }
 
@@ -131,6 +159,7 @@ async function login(event) {
     });
     if (data.user?.role !== "admin") throw new Error("Este acesso nao e administrador.");
     state.loggedIn = true;
+    document.body.classList.add("logged-in");
     els.sessionStatus.textContent = `${data.user.name || data.user.username} conectado`;
     setMessage(els.loginMessage, "Login administrativo confirmado.");
   } catch (error) {
@@ -142,9 +171,18 @@ async function login(event) {
 function renderFields() {
   const type = els.contentType.value;
   els.dynamicFields.innerHTML = fieldsByType[type].map(renderField).join("");
-  els.richEditor.innerHTML = "";
+  els.editorSections.innerHTML = editorsByType[type].map(renderEditorField).join("");
   els.activityImageBox.style.display = type === "trail" ? "none" : "grid";
   els.attachmentsBox.style.display = ["training", "ebf"].includes(type) ? "grid" : "none";
+}
+
+function renderEditorField([name, label]) {
+  return `
+    <label class="editor-field">
+      <span>${label}</span>
+      <div class="rich-surface" contenteditable="true" data-editor="${name}"></div>
+    </label>
+  `;
 }
 
 function renderField([name, label, placeholder, type, required]) {
@@ -185,7 +223,9 @@ async function saveContent(event) {
     });
     setMessage(els.saveMessage, `Salvo com sucesso. Total agora: ${result.count}.`);
     els.contentForm.reset();
-    els.richEditor.innerHTML = "";
+    els.editorSections.querySelectorAll("[data-editor]").forEach((editor) => {
+      editor.innerHTML = "";
+    });
     clearMedia();
   } catch (error) {
     setMessage(els.saveMessage, error.message || "Nao foi possivel salvar.", true);
@@ -209,11 +249,7 @@ function buildItem(type) {
       cardImage: state.cardImage,
       activityImage: state.activityImage,
       createdAt,
-      sections: {
-        story: withYoutube(els.richEditor.innerHTML, data.youtubeUrl),
-        objective: data.principle || "",
-        activity: ""
-      }
+      sections: withYoutubeInSection(editorValues(), "bibleLesson", data.youtubeUrl)
     };
   }
   if (type === "trail") {
@@ -225,7 +261,7 @@ function buildItem(type) {
       youtubeId: youtubeId(data.url),
       category: data.category,
       age: data.age,
-      description: data.description || textFromHtml(els.richEditor.innerHTML),
+      description: data.description || textFromHtml(editorValue("descriptionText")),
       playlist: data.playlist,
       season: data.season,
       featured: true,
@@ -247,8 +283,8 @@ function buildItem(type) {
       activityImage: state.activityImage,
       attachments: state.attachments,
       sections: {
-        content: withYoutube(els.richEditor.innerHTML, data.youtubeUrl),
-        notes: ""
+        content: withYoutube(editorValue("content"), data.youtubeUrl),
+        notes: editorValue("notes")
       }
     };
   }
@@ -263,15 +299,16 @@ function buildItem(type) {
     activityImage: state.activityImage,
     attachments: state.attachments,
     sections: {
-      content: els.richEditor.innerHTML,
-      schedule: "",
-      notes: ""
+      content: editorValue("content"),
+      schedule: editorValue("schedule"),
+      notes: editorValue("notes")
     }
   };
 }
 
 function applyRichAction(action) {
-  els.richEditor.focus();
+  const editor = activeEditor();
+  editor.focus();
   if (action === "upper" || action === "lower") {
     const selection = window.getSelection();
     const selected = selection?.toString() || "";
@@ -285,10 +322,28 @@ function applyRichAction(action) {
 
 function applyFontSize(size) {
   document.execCommand("fontSize", false, "3");
-  els.richEditor.querySelectorAll("font[size='3']").forEach((font) => {
+  activeEditor().querySelectorAll("font[size='3']").forEach((font) => {
     font.removeAttribute("size");
     font.style.fontSize = `${size}px`;
   });
+}
+
+function activeEditor() {
+  const selected = document.activeElement?.matches?.("[data-editor]") ? document.activeElement : null;
+  return selected || els.editorSections.querySelector("[data-editor]");
+}
+
+function editorValue(name) {
+  return els.editorSections.querySelector(`[data-editor="${name}"]`)?.innerHTML || "";
+}
+
+function editorValues() {
+  return Object.fromEntries([...els.editorSections.querySelectorAll("[data-editor]")].map((editor) => [editor.dataset.editor, editor.innerHTML]));
+}
+
+function withYoutubeInSection(sections, key, url) {
+  if (!url) return sections;
+  return { ...sections, [key]: withYoutube(sections[key] || "", url) };
 }
 
 async function readImageFile(file) {

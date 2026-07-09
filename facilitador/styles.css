@@ -114,6 +114,14 @@ h3 {
   gap: 18px;
 }
 
+body.logged-in .layout {
+  grid-template-columns: 1fr;
+}
+
+body.logged-in .login-panel {
+  display: none;
+}
+
 .panel {
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid var(--line);
@@ -267,7 +275,7 @@ form {
 }
 
 .rich-surface {
-  min-height: 180px;
+  min-height: 150px;
   max-height: 360px;
   overflow: auto;
   padding: 14px;
@@ -276,6 +284,27 @@ form {
   border: 1px solid #ceddea;
   border-radius: 14px;
   outline: none;
+}
+
+.editor-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.editor-field {
+  display: grid;
+  gap: 8px;
+}
+
+.editor-field span {
+  color: #34445e;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.editor-field .rich-surface {
+  min-height: 160px;
 }
 
 .file-box {
@@ -335,7 +364,8 @@ form {
 
   .form-grid,
   .media-grid,
-  .preview-area {
+  .preview-area,
+  .editor-sections {
     grid-template-columns: 1fr;
   }
 
