@@ -1,6 +1,6 @@
 {
   "appId": "com.raizeskids.facilitador",
-  "productName": "Facilitador Raizes Kids",
+  "productName": "Raizes Kids - Gestão",
   "directories": {
     "output": "dist-facilitador"
   },
@@ -25,6 +25,6 @@
     "allowToChangeInstallationDirectory": true,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "Facilitador Raizes Kids"
+    "shortcutName": "Raizes Kids - Gestão"
   }
 }

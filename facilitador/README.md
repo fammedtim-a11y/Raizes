@@ -1,11 +1,11 @@
-# Facilitador Raizes Kids
+# Raizes Kids - Gestão
 
 Aplicativo Windows para administradores incluirem conteudos no sistema principal sem usar a tela completa de gerenciamento.
 
 ## Como usar
 
-1. Instale o aplicativo gerado em `dist-facilitador/Facilitador Raizes Kids Setup 1.0.0.exe`.
-2. Abra o Facilitador Raizes Kids.
+1. Instale o aplicativo gerado em `dist-facilitador/Raizes Kids - Gestão Setup 1.0.0.exe`.
+2. Abra o Raizes Kids - Gestão.
 3. Informe o endereco do sistema, por padrao `https://raizes-fic9.onrender.com`.
 4. Entre com usuario e senha de administrador.
 5. Escolha o tipo de conteudo: Licao Biblica, Trilha, Treinamento ou EBF Completa.

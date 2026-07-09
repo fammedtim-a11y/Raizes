@@ -570,6 +570,9 @@ function enhanceRichTextEditors() {
     surface.className = "rich-surface";
     surface.contentEditable = "true";
     surface.dataset.richFor = textarea.id || textarea.name || crypto.randomUUID();
+    if (Number(textarea.getAttribute("rows") || 0) >= 4) {
+      surface.dataset.largeText = "true";
+    }
     surface.innerHTML = richTextToHtml(textarea.value);
     textarea.dataset.richFor = surface.dataset.richFor;
     textarea.parentElement?.insertBefore(toolbar, textarea);

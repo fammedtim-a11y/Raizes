@@ -11,7 +11,7 @@ function createWindow() {
     height: 820,
     minWidth: 980,
     minHeight: 680,
-    title: "Facilitador Raizes Kids",
+    title: "Raizes Kids - Gestão",
     backgroundColor: "#f6fbff",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),

@@ -568,7 +568,16 @@ textarea {
   background: rgba(255, 255, 255, 0.94);
   line-height: 1.55;
   outline: none;
-  overflow: auto;
+  overflow: hidden auto;
+}
+
+.rich-surface[data-large-text="true"],
+.editor textarea[rows="4"],
+.editor textarea[rows="5"],
+.editor textarea[rows="8"] {
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .rich-surface:focus {

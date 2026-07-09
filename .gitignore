@@ -2,6 +2,7 @@ data/
 node_modules/
 .electron-builder-cache/
 dist-facilitador*/
+dist-gestao*/
 .env
 npm-debug.log*
 __pycache__/
