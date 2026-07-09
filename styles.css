@@ -3679,18 +3679,21 @@ textarea,
   body.ebook-printing .ebook-section {
     display: block !important;
     width: 100% !important;
-    margin: 0 0 4.5mm !important;
-    padding: 3.8mm 4.2mm !important;
-    border: 0.3mm solid rgba(31, 77, 117, 0.13) !important;
-    border-left: 1.05mm solid var(--theme, #1f4d75) !important;
-    border-radius: 1.5mm !important;
-    background: #fff !important;
+    margin: 0 0 4.2mm !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
     break-inside: auto;
     page-break-inside: auto;
   }
 
   body.ebook-printing .ebook-section h3 {
-    margin: 0 0 2mm !important;
+    display: block !important;
+    margin: 0 0 1.8mm !important;
+    padding: 2mm 0 1.8mm 3mm !important;
+    border-left: 1mm solid var(--theme, #1f4d75) !important;
+    background: rgba(255, 255, 255, 0.92) !important;
     font-size: 10.5pt !important;
     line-height: 1.25 !important;
     break-after: avoid;
@@ -3699,10 +3702,31 @@ textarea,
 
   body.ebook-printing .ebook-section p,
   body.ebook-printing .ebook-copy {
-    margin: 0 !important;
+    display: block !important;
+    margin: 0 0 2.2mm !important;
+    padding: 0 0 0 3mm !important;
+    border-left: 0.35mm solid rgba(31, 77, 117, 0.16) !important;
     font-size: 9.2pt !important;
     line-height: 1.46 !important;
     white-space: pre-line !important;
+    background: transparent !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+    widows: 3;
+    orphans: 3;
+  }
+
+  body.ebook-printing .ebook-section .ebook-copy:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  body.ebook-printing .ebook-copy div,
+  body.ebook-printing .ebook-copy p,
+  body.ebook-printing .ebook-copy span,
+  body.ebook-printing .ebook-copy strong,
+  body.ebook-printing .ebook-copy em {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
   }
 
   body.ebook-printing .ebook-copy ul,
@@ -3725,23 +3749,23 @@ textarea,
   body.ebook-printing .ebook-final-footer {
     position: absolute !important;
     right: 35mm !important;
-    bottom: 35mm !important;
+    bottom: 41mm !important;
     left: 35mm !important;
     display: grid !important;
-    grid-template-columns: 24mm minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-template-columns: 22mm minmax(0, 1.12fr) minmax(0, 0.88fr) !important;
     gap: 3mm !important;
     align-items: center !important;
-    min-height: 20mm !important;
+    min-height: 18mm !important;
     padding-top: 3mm !important;
     border-top: 0.35mm solid rgba(31, 77, 117, 0.22) !important;
     color: #31506f !important;
-    font-size: 8.5pt !important;
+    font-size: 7.8pt !important;
     line-height: 1.22 !important;
   }
 
   body.ebook-printing .ebook-final-footer img {
-    width: 22mm !important;
-    max-height: 16mm !important;
+    width: 20mm !important;
+    max-height: 14mm !important;
     object-fit: contain !important;
   }
 

@@ -2316,13 +2316,13 @@ function buildContentPdfHtml(type, item) {
           ${item.principle ? `
             <section class="ebook-section">
               <h3>🌱 Princípio</h3>
-              <div class="ebook-copy">${richTextToHtml(item.principle)}</div>
+              ${buildPdfCopyFragments(item.principle)}
             </section>
           ` : ""}
           ${item.bibleText ? `
             <section class="ebook-section">
               <h3>📖 Texto bíblico</h3>
-              <div class="ebook-copy">${richTextToHtml(item.bibleText)}</div>
+              ${buildPdfCopyFragments(item.bibleText)}
             </section>
           ` : ""}
           ${fields.map(([key, label, emoji]) => {
@@ -2331,7 +2331,7 @@ function buildContentPdfHtml(type, item) {
             return `
               <section class="ebook-section">
                 <h3>${emoji} ${label}</h3>
-                <div class="ebook-copy">${linkify(richTextToHtml(text))}</div>
+                ${buildPdfCopyFragments(text)}
               </section>
             `;
           }).join("")}
@@ -2774,7 +2774,7 @@ function buildEbookLessonHtml(lesson, number, isLast = false) {
           return `
             <section class="ebook-section">
               <h3>${emoji} ${label}</h3>
-              <div class="ebook-copy">${linkify(richTextToHtml(text))}</div>
+              ${buildPdfCopyFragments(text)}
             </section>
           `;
         }).join("")}
@@ -2788,6 +2788,22 @@ function buildEbookLessonHtml(lesson, number, isLast = false) {
       ${isLast ? buildEbookFinalFooter() : ""}
     </section>
   `;
+}
+
+function buildPdfCopyFragments(text) {
+  return splitPdfTextFragments(text)
+    .map((fragment) => `<div class="ebook-copy">${linkify(richTextToHtml(fragment))}</div>`)
+    .join("");
+}
+
+function splitPdfTextFragments(text) {
+  const source = String(text || "").trim();
+  if (!source) return [];
+  const paragraphBlocks = source.split(/\n{2,}/).map((part) => part.trim()).filter(Boolean);
+  if (paragraphBlocks.length > 1) return paragraphBlocks;
+  const lineBlocks = source.split(/\n/).map((part) => part.trim()).filter(Boolean);
+  if (source.length > 700 && lineBlocks.length > 1) return lineBlocks;
+  return [source];
 }
 
 function buildEbookFinalFooter() {
