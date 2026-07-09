@@ -14,6 +14,7 @@ const LESSONS_FILE = path.join(DATA_DIR, "lessons.json");
 const DEVOTIONALS_FILE = path.join(DATA_DIR, "devotionals.json");
 const TRAININGS_FILE = path.join(DATA_DIR, "trainings.json");
 const EBFS_FILE = path.join(DATA_DIR, "ebf.json");
+const VIDEOS_FILE = path.join(DATA_DIR, "videos.json");
 const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
 const ACCESS_LOG_FILE = path.join(DATA_DIR, "access-log.json");
 const SITE_INFO_FILE = path.join(DATA_DIR, "site-info.json");
@@ -152,6 +153,7 @@ const initialDevotionals = seededDevotionals.length ? seededDevotionals : [
 
 const initialTrainings = seededTrainings;
 const initialEbfs = seededEbfs;
+const initialVideos = [];
 
 ensureData();
 
@@ -193,6 +195,9 @@ function ensureData() {
   }
   if (!fs.existsSync(EBFS_FILE)) {
     writeEbfs(initialEbfs);
+  }
+  if (!fs.existsSync(VIDEOS_FILE)) {
+    writeManualVideos(initialVideos);
   }
   mergeSeedContent();
   applyUserAdministrationUpdates();
@@ -322,6 +327,11 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (req.method === "GET" && url.pathname === "/api/videos") {
+    sendJson(res, 200, { videos: readManualVideos() });
+    return;
+  }
+
   if (req.method === "GET" && url.pathname === "/api/site-info") {
     sendJson(res, 200, { info: readSiteInfo() });
     return;
@@ -433,6 +443,16 @@ async function handleApi(req, res, url) {
 
   if (req.method === "POST" && url.pathname === "/api/admin/ebf") {
     await updateEbfs(req, res);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/admin/videos") {
+    sendJson(res, 200, { videos: readManualVideos() });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/admin/videos") {
+    await updateManualVideos(req, res);
     return;
   }
 
@@ -1054,6 +1074,16 @@ function writeEbfs(ebfs) {
   fs.writeFileSync(EBFS_FILE, JSON.stringify(ebfs, null, 2), "utf8");
 }
 
+function readManualVideos() {
+  if (!fs.existsSync(VIDEOS_FILE)) return initialVideos;
+  const parsed = JSON.parse(fs.readFileSync(VIDEOS_FILE, "utf8"));
+  return Array.isArray(parsed) ? normalizeManualVideos(parsed) : [];
+}
+
+function writeManualVideos(videos) {
+  fs.writeFileSync(VIDEOS_FILE, JSON.stringify(normalizeManualVideos(videos), null, 2), "utf8");
+}
+
 async function updateLessons(req, res) {
   const body = await readBody(req);
   const lessons = Array.isArray(body.lessons) ? body.lessons : null;
@@ -1116,6 +1146,17 @@ async function updateEbfs(req, res) {
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Nao foi possivel salvar os arquivos." });
   }
+}
+
+async function updateManualVideos(req, res) {
+  const body = await readBody(req);
+  const videos = Array.isArray(body.videos) ? body.videos : null;
+  if (!videos) {
+    sendJson(res, 400, { error: "Lista de trilhas invalida." });
+    return;
+  }
+  writeManualVideos(videos);
+  sendJson(res, 200, { ok: true, videos: readManualVideos(), savedAt: new Date().toISOString() });
 }
 
 function sendSystemBackup(res) {
@@ -1286,6 +1327,15 @@ function persistAttachment(attachment, prefix) {
 
 function normalizeLessonAges(lessons) {
   return lessons.map((lesson) => ({ ...lesson, age: normalizeAgeLabel(lesson.age) }));
+}
+
+function normalizeManualVideos(videos) {
+  return videos.map((video) => ({
+    ...video,
+    source: "manual",
+    age: video.age ? normalizeAgeLabel(video.age) : "",
+    createdAt: video.createdAt || new Date().toISOString()
+  }));
 }
 
 function normalizeAgeLabel(age) {

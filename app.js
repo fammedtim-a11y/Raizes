@@ -345,7 +345,8 @@ async function syncContentFromServer() {
   await Promise.all([
     syncCollectionFromServer("/api/devotionals", "devotionals", "raizes-devotionals"),
     syncCollectionFromServer("/api/trainings", "trainings", "raizes-trainings"),
-    syncCollectionFromServer("/api/ebf", "ebfs", "raizes-ebf")
+    syncCollectionFromServer("/api/ebf", "ebfs", "raizes-ebf"),
+    syncManualVideosFromServer()
   ]);
   state.activeDevotionalId = state.devotionals.some((item) => item.id === state.activeDevotionalId)
     ? state.activeDevotionalId
@@ -360,6 +361,23 @@ async function syncContentFromServer() {
   renderTrainings();
   renderEbfs();
   renderContentAdminLists();
+}
+
+async function syncManualVideosFromServer() {
+  try {
+    const response = await fetch("/api/videos", { cache: "no-store" });
+    if (!response.ok) return;
+    const data = await response.json();
+    if (!Array.isArray(data.videos)) return;
+    state.manualVideos = data.videos.map((video) => ({
+      ...video,
+      source: "manual",
+      age: video.age ? normalizeAgeLabel(video.age) : ""
+    }));
+    saveManualVideos();
+  } catch {
+    // Se a conexao falhar, mantemos as trilhas manuais do cache local.
+  }
 }
 
 async function syncCollectionFromServer(url, stateKey, cacheKey) {
@@ -1620,20 +1638,25 @@ function fillVideoLessonOptions() {
   els.videoLesson.value = [...els.videoLesson.options].some((option) => option.value === current) ? current : "";
 }
 
-function saveVideoFromForm(event) {
+async function saveVideoFromForm(event) {
   event.preventDefault();
-  const video = persistVideoFromForm();
-  if (!video) return;
-  clearVideoForm();
-  state.trailsRendered = true;
-  renderTrails();
-  renderTrailAdminList();
-  renderVideoAdminList();
-  showActionMessage("video", `Vídeo "${video.title}" salvo com sucesso.`);
-  return video;
+  try {
+    const video = await persistVideoFromForm();
+    if (!video) return null;
+    clearVideoForm();
+    state.trailsRendered = true;
+    renderTrails();
+    renderTrailAdminList();
+    renderVideoAdminList();
+    showActionMessage("video", `Vídeo "${video.title}" salvo com sucesso.`);
+    return video;
+  } catch (error) {
+    showActionMessage("video", error.message || "Nao foi possivel salvar a trilha no servidor.", true);
+    return null;
+  }
 }
 
-function persistVideoFromForm() {
+async function persistVideoFromForm() {
   if (!els.videoForm?.reportValidity()) return null;
   const url = els.videoUrl.value.trim();
   const youtubeId = getYouTubeId(url);
@@ -1669,11 +1692,31 @@ function persistVideoFromForm() {
   }
 
   saveManualVideos();
+  await saveManualVideosToServer();
   state.trailsRendered = true;
   renderTrails();
   renderTrailAdminList();
   renderVideoAdminList();
   return video;
+}
+
+async function saveManualVideosToServer() {
+  if (!isAdminPage) return;
+  const response = await fetch("/api/admin/videos", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ videos: state.manualVideos })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Nao foi possivel salvar a trilha no servidor.");
+  if (Array.isArray(data.videos)) {
+    state.manualVideos = data.videos.map((video) => ({
+      ...video,
+      source: "manual",
+      age: video.age ? normalizeAgeLabel(video.age) : ""
+    }));
+    saveManualVideos();
+  }
 }
 
 function moveVideoInForm(direction) {
@@ -1727,7 +1770,7 @@ function clearVideoForm(options = {}) {
   if (options.confirm) showActionMessage("video", "Formulário de vídeo limpo.");
 }
 
-function deleteCurrentVideo() {
+async function deleteCurrentVideo() {
   const id = els.videoId.value;
   if (!id) {
     showActionMessage("video", "Selecione um vídeo manual para excluir.", true);
@@ -1742,6 +1785,12 @@ function deleteCurrentVideo() {
   if (!confirmed) return;
   state.manualVideos = state.manualVideos.filter((item) => item.id !== id);
   saveManualVideos();
+  try {
+    await saveManualVideosToServer();
+  } catch (error) {
+    showActionMessage("video", error.message || "Nao foi possivel excluir a trilha no servidor.", true);
+    return;
+  }
   clearVideoForm();
   state.trailsRendered = true;
   renderTrails();

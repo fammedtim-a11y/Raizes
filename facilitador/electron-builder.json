@@ -1,0 +1,30 @@
+{
+  "appId": "com.raizeskids.facilitador",
+  "productName": "Facilitador Raizes Kids",
+  "directories": {
+    "output": "dist-facilitador"
+  },
+  "files": [
+    "facilitador/**/*",
+    "assets/logo-raizes-kids.png",
+    "package.json"
+  ],
+  "win": {
+    "signAndEditExecutable": false,
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      }
+    ]
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Facilitador Raizes Kids"
+  }
+}

@@ -1,5 +1,7 @@
 data/
 node_modules/
+.electron-builder-cache/
+dist-facilitador/
 .env
 npm-debug.log*
 __pycache__/

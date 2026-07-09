@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Facilitador Raizes Kids</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="app-shell">
+    <div class="brand">
+      <img src="../assets/logo-raizes-kids.png" alt="Raizes Kids" />
+      <div>
+        <p class="eyebrow">Gerenciamento externo</p>
+        <h1>Facilitador Raizes Kids</h1>
+        <p>Inclua conteudos no sistema principal sem entrar na tela completa de edicao.</p>
+      </div>
+    </div>
+    <div id="sessionStatus" class="status-pill">Aguardando login</div>
+  </header>
+
+  <main class="layout">
+    <aside class="panel login-panel">
+      <h2>Acesso administrativo</h2>
+      <form id="loginForm">
+        <label>
+          Endereco do sistema
+          <input id="baseUrl" name="baseUrl" value="https://raizes-fic9.onrender.com" autocomplete="url" />
+        </label>
+        <label>
+          CPF ou usuario
+          <input id="username" name="username" autocomplete="username" required />
+        </label>
+        <label>
+          Senha
+          <input id="password" name="password" type="password" autocomplete="current-password" required />
+        </label>
+        <button type="submit" class="primary-action">Entrar como administrador</button>
+      </form>
+      <p id="loginMessage" class="message"></p>
+    </aside>
+
+    <section class="panel form-panel">
+      <div class="content-topline">
+        <div>
+          <h2>Novo conteudo</h2>
+          <p>Escolha o tipo e preencha somente os campos que deseja publicar.</p>
+        </div>
+        <label class="type-picker">
+          Tipo
+          <select id="contentType">
+            <option value="lesson">Licao Biblica</option>
+            <option value="trail">Trilha</option>
+            <option value="training">Treinamento</option>
+            <option value="ebf">EBF Completa</option>
+          </select>
+        </label>
+      </div>
+
+      <form id="contentForm" class="content-form">
+        <div id="dynamicFields" class="form-grid"></div>
+        <section id="editorBlock" class="editor-block">
+          <div class="section-title">
+            <h3>Texto formatado</h3>
+            <p>Use quando o conteudo precisar de explicacao, roteiro ou observacoes.</p>
+          </div>
+          <div class="rich-toolbar" aria-label="Ferramentas de formatacao">
+            <button type="button" data-rich="bold" title="Negrito">B</button>
+            <button type="button" data-rich="italic" title="Italico"><i>I</i></button>
+            <button type="button" data-rich="underline" title="Sublinhado"><u>U</u></button>
+            <button type="button" data-rich="upper" title="Caixa alta">AA</button>
+            <button type="button" data-rich="lower" title="Caixa baixa">aa</button>
+            <button type="button" data-rich="insertUnorderedList" title="Marcadores">Lista</button>
+            <button type="button" data-rich="insertOrderedList" title="Numeracao">1. Lista</button>
+            <select id="fontName" title="Fonte">
+              <option value="">Fonte</option>
+              <option value="Arial">Arial</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Nunito">Nunito</option>
+              <option value="Poppins">Poppins</option>
+              <option value="Times New Roman">Times</option>
+            </select>
+            <select id="fontSize" title="Tamanho">
+              <option value="">Tamanho</option>
+              <option value="12">12</option>
+              <option value="14">14</option>
+              <option value="16">16</option>
+              <option value="18">18</option>
+              <option value="20">20</option>
+              <option value="24">24</option>
+            </select>
+            <input id="fontColor" type="color" value="#213047" title="Cor da fonte" />
+            <button type="button" data-rich="removeFormat" title="Limpar formatacao">Limpar</button>
+          </div>
+          <div id="richEditor" class="rich-surface" contenteditable="true"></div>
+        </section>
+
+        <div class="media-grid">
+          <label class="file-box" id="cardImageBox">
+            Imagem do card
+            <input id="cardImage" type="file" accept="image/*" />
+            <span>JPG, PNG ou WebP</span>
+          </label>
+          <label class="file-box" id="activityImageBox">
+            Imagem de atividade
+            <input id="activityImage" type="file" accept="image/*" />
+            <span>Opcional para licoes, treinamentos e EBF</span>
+          </label>
+          <label class="file-box" id="attachmentsBox">
+            Anexos
+            <input id="attachments" type="file" multiple />
+            <span>PDF, Excel, Word e outros arquivos de apoio</span>
+          </label>
+        </div>
+
+        <div id="previewArea" class="preview-area"></div>
+        <button id="saveButton" type="submit" class="primary-action wide">Salvar no sistema principal</button>
+      </form>
+      <p id="saveMessage" class="message"></p>
+    </section>
+  </main>
+
+  <script src="./renderer.js"></script>
+</body>
+</html>
