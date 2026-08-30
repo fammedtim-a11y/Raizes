@@ -159,6 +159,53 @@
   justify-content: flex-end;
 }
 
+.communication-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.communication-grid h3 {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-family: var(--title-font);
+}
+
+.communication-recipient-card,
+.communication-campaign-card {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid rgba(45, 156, 255, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.communication-recipient-card strong,
+.communication-campaign-card strong {
+  color: var(--ink);
+}
+
+.communication-recipient-card span,
+.communication-recipient-card small,
+.communication-campaign-card span,
+.communication-campaign-card small {
+  color: var(--muted);
+}
+
+.communication-link-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 760px) {
+  .communication-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .profile-card {
   width: min(760px, 100%);
 }
@@ -651,6 +698,19 @@ textarea:focus {
   display: inline-flex !important;
 }
 
+.master-only {
+  display: none !important;
+}
+
+.master-only.visible {
+  display: initial !important;
+}
+
+button.master-only.visible,
+.manage-tab.master-only.visible {
+  display: inline-flex !important;
+}
+
 .auth-slot {
   display: inline-flex;
   align-items: center;
@@ -671,6 +731,151 @@ textarea:focus {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.notification-bell {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 10px 24px rgba(45, 156, 255, 0.18);
+  cursor: pointer;
+}
+
+.notification-bell span {
+  font-size: 1.25rem;
+}
+
+.notification-bell strong {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--energy-red);
+  color: #fff;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.notification-bell:not(.has-news) strong {
+  background: #aab5c4;
+}
+
+.news-home-section {
+  display: grid;
+  gap: 18px;
+  margin-top: 26px;
+}
+
+.news-home-list,
+.news-drawer-list {
+  display: grid;
+  gap: 14px;
+}
+
+.news-home-list {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.news-card {
+  display: grid;
+  gap: 14px;
+  align-content: space-between;
+  padding: 18px;
+  border: 1px solid rgba(45, 156, 255, 0.18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 14px 32px rgba(33, 48, 71, 0.09);
+}
+
+.news-card.featured {
+  border-color: rgba(255, 217, 61, 0.8);
+  background: linear-gradient(135deg, #fff 0%, #fff9d7 100%);
+}
+
+.news-card.seen {
+  opacity: 0.72;
+}
+
+.news-card h3 {
+  margin: 8px 0 6px;
+  font-family: var(--title-font);
+  color: var(--ink);
+}
+
+.news-card p,
+.news-card small {
+  margin: 0;
+  color: var(--muted);
+}
+
+.news-type {
+  display: inline-flex;
+  width: fit-content;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(41, 199, 201, 0.14);
+  color: #087d80;
+  font-weight: 900;
+  font-size: 0.78rem;
+}
+
+.news-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(33, 48, 71, 0.32);
+}
+
+.news-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 90;
+  width: min(420px, calc(100vw - 24px));
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 16px;
+  padding: 22px;
+  background: #fff;
+  box-shadow: -22px 0 48px rgba(33, 48, 71, 0.18);
+  transform: translateX(105%);
+  transition: transform 0.22s ease;
+  overflow-y: auto;
+}
+
+.news-drawer.open {
+  transform: translateX(0);
+}
+
+.news-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.news-drawer-header h2 {
+  margin: 0;
+  font-family: var(--title-font);
+  color: var(--ink);
+}
+
+.news-admin-card small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
 }
 
 #studyView {
@@ -4479,5 +4684,536 @@ body.is-authenticated .visitor-only {
   .auth-tabs {
     display: grid;
     grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile-first safety layer: keeps the page inside the viewport and favors vertical scrolling. */
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img,
+video,
+iframe,
+canvas {
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea,
+a,
+summary {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.brand,
+.topbar,
+.topbar-actions,
+.toolbar,
+.view,
+.home-hero,
+.lesson-list,
+.lesson-reader,
+.editor,
+.data-panel,
+.video-manager,
+.trails-layout,
+.stream-player,
+.stream-hero,
+.trail-grid,
+.trail-row,
+.site-footer,
+.site-info-section,
+.communication-grid,
+.user-admin-card,
+.access-log-card,
+.admin-item-card {
+  max-width: 100%;
+}
+
+.brand *,
+.toolbar *,
+.lesson-reader *,
+.video-manager *,
+.site-footer *,
+.news-drawer *,
+.auth-card * {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 720px) {
+  .app-shell {
+    width: 100%;
+    max-width: 100%;
+    padding-inline: 10px;
+    overflow: hidden;
+  }
+
+  .brand {
+    gap: 10px;
+  }
+
+  .brand-logo {
+    flex: 0 0 auto;
+    width: 82px;
+  }
+
+  .brand h1 {
+    font-size: clamp(0.98rem, 6vw, 1.28rem);
+  }
+
+  .brand p {
+    display: none;
+  }
+
+  .topbar,
+  .toolbar,
+  .home-hero,
+  .lesson-list,
+  .lesson-reader,
+  .editor,
+  .data-panel,
+  .video-manager,
+  .trails-layout,
+  .site-footer,
+  .auth-card {
+    width: 100%;
+  }
+
+  .nav-main,
+  .tabs,
+  .manage-tabs {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .nav-menu,
+  .nav-menu summary,
+  .nav-submenu,
+  .nav-submenu .tab,
+  .manage-tab,
+  .manage-tab-group,
+  .manage-tab-submenu {
+    width: 100%;
+  }
+
+  .nav-submenu,
+  .manage-tab-submenu {
+    position: static;
+    right: auto;
+    min-width: 0;
+  }
+
+  .toolbar {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar input,
+  .toolbar select,
+  .toolbar input[type="month"] {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .home-copy h2 {
+    font-size: clamp(1.65rem, 10vw, 2.2rem);
+  }
+
+  .home-feature-grid,
+  .age-grid,
+  .form-grid,
+  .communication-grid,
+  .site-info-section,
+  .stream-player,
+  .stream-hero,
+  .content-layout,
+  #studyView,
+  .manage-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .home-illustration,
+  .home-login-panel {
+    width: 100%;
+  }
+
+  .form-actions,
+  .data-actions,
+  .user-actions,
+  .communication-link-list,
+  .admin-export-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+    width: 100%;
+  }
+
+  .form-actions > *,
+  .data-actions > *,
+  .user-actions > *,
+  .admin-export-row > *,
+  .communication-link-list > * {
+    width: 100%;
+  }
+
+  #studyView #lessonList,
+  .trail-rail,
+  .admin-card-rail,
+  .stream-quick-nav {
+    display: grid;
+    grid-auto-flow: row;
+    grid-auto-columns: unset;
+    grid-template-columns: 1fr;
+    overflow-x: visible;
+    scroll-snap-type: none;
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  #studyView .lesson-card,
+  .trail-card,
+  .admin-card-rail > *,
+  .video-admin-card,
+  .news-card,
+  .news-drawer-card {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .trail-card {
+    min-height: auto;
+  }
+
+  .trail-content h3,
+  .trail-content p {
+    min-height: 0;
+  }
+
+  .lesson-row-controls,
+  .trail-row-controls {
+    display: none;
+  }
+
+  .reader-hero,
+  .trails-header,
+  .manager-heading,
+  .trail-row-heading,
+  .user-admin-card,
+  .access-log-card,
+  .attachment-remove-option {
+    grid-template-columns: 1fr !important;
+  }
+
+  .reader-chip,
+  .pill,
+  .trail-category-line,
+  .admin-item-body strong,
+  .admin-item-body small,
+  .admin-item-body em,
+  .attachment-remove-option strong {
+    white-space: normal;
+  }
+
+  .stream-player-frame,
+  .stream-hero-thumb,
+  .lesson-inline-video-frame {
+    width: 100%;
+  }
+
+  .news-drawer {
+    inset: 8px 8px 8px auto;
+    width: calc(100% - 16px);
+  }
+}
+
+@media (max-width: 420px) {
+  .app-shell {
+    padding-inline: 8px;
+  }
+
+  .topbar,
+  .toolbar,
+  .home-hero,
+  .lesson-list,
+  .lesson-reader,
+  .editor,
+  .data-panel,
+  .video-manager,
+  .trails-layout,
+  .site-footer,
+  .auth-card {
+    padding-inline: 10px;
+  }
+
+  .brand-logo {
+    width: 70px;
+  }
+
+  .tab,
+  .icon-button,
+  .file-button,
+  .manage-tab {
+    min-height: 48px;
+    padding-inline: 8px;
+  }
+}
+
+/* Lições Bíblicas: aproxima a navegação do padrão confortável do Culto em Família. */
+@media (min-width: 721px) {
+  #studyView #lessonList {
+    grid-auto-columns: minmax(240px, 292px);
+    gap: 10px;
+  }
+
+  #studyView .lesson-card {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  #studyView .lesson-card strong {
+    font-size: 0.98rem;
+    line-height: 1.18;
+  }
+
+  #studyView .lesson-card-age,
+  #studyView .lesson-card-verse {
+    padding: 4px 8px;
+    font-size: 0.74rem;
+    line-height: 1.2;
+  }
+
+  #studyView .lesson-cover-ref {
+    font-size: 0.62rem;
+  }
+
+  #studyView .lesson-cover-principle {
+    font-size: clamp(0.66rem, 0.95vw, 0.88rem);
+    line-height: 1.05;
+  }
+}
+
+@media (max-width: 720px) {
+  #studyView #lessonList {
+    gap: 10px;
+  }
+
+  #studyView .lesson-card {
+    gap: 10px;
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  #studyView .lesson-cover {
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+  }
+
+  #studyView .lesson-card strong {
+    font-size: 1rem;
+    line-height: 1.22;
+  }
+
+  #studyView .lesson-card-age,
+  #studyView .lesson-card-verse {
+    padding: 5px 8px;
+    font-size: 0.78rem;
+    line-height: 1.22;
+  }
+
+  #studyView .lesson-cover-book {
+    font-size: clamp(1.55rem, 13vw, 2.7rem);
+  }
+
+  #studyView .lesson-cover-ref {
+    font-size: 0.62rem;
+  }
+
+  #studyView .lesson-cover-principle {
+    font-size: clamp(0.68rem, 3.3vw, 0.92rem);
+    line-height: 1.05;
+  }
+}
+
+/* Refinamento final: Lições Bíblicas com dimensões equivalentes ao Culto em Família. */
+#studyView .lesson-list {
+  overflow: hidden;
+}
+
+#studyView #lessonList {
+  grid-auto-columns: minmax(240px, 292px);
+  gap: 10px;
+}
+
+#studyView .biblical-lesson-card {
+  padding: 12px;
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(31, 77, 117, 0.08);
+}
+
+#studyView .biblical-lesson-card strong {
+  color: var(--ink);
+  font-size: 1.02rem;
+  line-height: 1.22;
+  white-space: normal;
+}
+
+#studyView .biblical-lesson-card .lesson-card-age,
+#studyView .biblical-lesson-card .lesson-card-verse {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  padding: 5px 9px;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+#studyView .biblical-lesson-card .lesson-cover {
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+}
+
+#studyView .biblical-lesson-card .lesson-cover-book {
+  font-size: clamp(1.55rem, 3.2vw, 2.7rem);
+}
+
+#studyView .biblical-lesson-card .lesson-cover-principle {
+  font-size: clamp(0.7rem, 1.05vw, 0.9rem);
+  line-height: 1.06;
+}
+
+@media (max-width: 720px) {
+  #studyView {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  #studyView .lesson-list {
+    padding: 14px;
+    overflow: hidden;
+    border-radius: 22px;
+  }
+
+  #studyView #lessonList {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-template-columns: none !important;
+    grid-auto-columns: minmax(300px, calc(100vw - 58px)) !important;
+    gap: 14px;
+    overflow-x: auto !important;
+    overflow-y: visible;
+    overscroll-behavior-inline: contain;
+    padding: 0 0 12px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+  }
+
+  #studyView .biblical-lesson-card {
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    padding: 12px;
+    border-radius: 18px;
+    scroll-snap-align: start;
+  }
+
+  #studyView .biblical-lesson-card .lesson-cover {
+    aspect-ratio: 16 / 9;
+    border-radius: 16px;
+  }
+
+  #studyView .biblical-lesson-card strong {
+    font-size: 1.34rem;
+    line-height: 1.15;
+  }
+
+  #studyView .biblical-lesson-card .lesson-card-age,
+  #studyView .biblical-lesson-card .lesson-card-verse {
+    padding: 5px 9px;
+    font-size: 1rem;
+    white-space: normal;
+  }
+
+  #studyView .biblical-lesson-card .lesson-cover-book {
+    font-size: clamp(1.9rem, 15vw, 3.1rem);
+  }
+
+  #studyView .biblical-lesson-card .lesson-cover-principle {
+    font-size: clamp(0.82rem, 3.8vw, 1rem);
+  }
+
+  #studyView .lesson-reader {
+    overflow: hidden;
+    border-radius: 22px;
+  }
+
+  #studyView .reader-hero {
+    padding: 28px;
+    border-radius: 22px 22px 0 0;
+  }
+
+  #studyView .reader-hero h2 {
+    font-size: clamp(2rem, 9vw, 2.65rem);
+    line-height: 1.02;
+  }
+
+  #studyView .reader-verse strong {
+    font-size: 1.05rem;
+  }
+
+  #studyView .section-timeline {
+    display: grid;
+    gap: 16px;
+    padding: 22px;
+  }
+
+  #studyView .lesson-section {
+    display: grid;
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+
+  #studyView .section-icon {
+    width: 54px;
+    height: 54px;
+  }
+
+  #studyView .section-body {
+    padding: 18px;
+    border-radius: 16px;
+  }
+
+  #studyView .section-body h3 {
+    font-size: 1.02rem;
+  }
+
+  #studyView .section-body p,
+  #studyView .lesson-section-copy {
+    font-size: 1.02rem;
+    line-height: 1.65;
+  }
+}
+
+@media (max-width: 380px) {
+  #studyView #lessonList {
+    grid-auto-columns: minmax(270px, calc(100vw - 52px)) !important;
+  }
+
+  #studyView .biblical-lesson-card strong {
+    font-size: 1.18rem;
+  }
+
+  #studyView .biblical-lesson-card .lesson-card-age,
+  #studyView .biblical-lesson-card .lesson-card-verse {
+    font-size: 0.92rem;
   }
 }

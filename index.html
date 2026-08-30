@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Catálogo de Lições Bíblicas</title>
-    <link rel="stylesheet" href="styles.css?v=20260703-pdf-layout" />
+    <link rel="stylesheet" href="styles.css?v=20260830-mobile-licoes" />
   </head>
   <body>
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -50,6 +50,10 @@
               </div>
             </details>
           </nav>
+          <button id="newsBellBtn" class="notification-bell" type="button" aria-label="Abrir novidades">
+            <span>🔔</span>
+            <strong id="newsBellCount">0</strong>
+          </button>
           <span class="auth-slot"></span>
         </div>
       </header>
@@ -141,6 +145,14 @@
               <button class="age-card orange" type="button" data-age-select="11 a 12 anos - Juniores"><span>🏆</span><strong>Juniores</strong><em>11 a 12 anos</em></button>
             </div>
           </section>
+
+          <section id="newsHomeSection" class="news-home-section" aria-label="Novidades">
+            <div class="section-heading">
+              <span class="home-kicker">🔔 Novidades</span>
+              <h2>Veja o que acabou de chegar no Raízes Kids</h2>
+            </div>
+            <div id="newsHomeList" class="news-home-list"></div>
+          </section>
         </section>
 
         <section id="studyView" class="view" aria-label="Exibição das lições">
@@ -217,6 +229,17 @@
         </section>
 
       </main>
+      <aside id="newsDrawer" class="news-drawer" aria-label="Painel de novidades" aria-hidden="true">
+        <div class="news-drawer-header">
+          <div>
+            <span class="home-kicker">Novidades</span>
+            <h2>O que há de novo</h2>
+          </div>
+          <button id="closeNewsDrawerBtn" class="rail-arrow" type="button" aria-label="Fechar novidades">×</button>
+        </div>
+        <div id="newsDrawerList" class="news-drawer-list"></div>
+      </aside>
+      <div id="newsOverlay" class="news-overlay" hidden></div>
       <footer class="site-footer">
         <div class="site-footer-brand">
           <img src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
@@ -263,8 +286,8 @@
       <div class="section-timeline"></div>
     </template>
 
-    <script src="lessons-data.js?v=20260703-pdf-layout"></script>
-    <script src="app.js?v=20260703-pdf-layout"></script>
-    <script src="auth.js?v=20260703-pdf-layout"></script>
+    <script src="lessons-data.js?v=20260830-mobile-licoes"></script>
+    <script src="app.js?v=20260830-mobile-licoes"></script>
+    <script src="auth.js?v=20260830-mobile-licoes"></script>
   </body>
 </html>

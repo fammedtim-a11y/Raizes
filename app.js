@@ -116,6 +116,7 @@ const state = {
   devotionals: loadCollection("raizes-devotionals", []),
   trainings: loadCollection("raizes-trainings", []),
   ebfs: loadCollection("raizes-ebf", []),
+  notifications: loadCollection("raizes-notifications", []),
   manualVideos: loadManualVideos(),
   activeId: null,
   activeDevotionalId: null,
@@ -206,7 +207,29 @@ const els = {
   videoActionMessage: $("#videoActionMessage"),
   lessonAdminList: $("#lessonAdminList"),
   trailAdminList: $("#trailAdminList"),
-  videoAdminList: $("#videoAdminList")
+  videoAdminList: $("#videoAdminList"),
+  newsBell: $("#newsBellBtn"),
+  newsBellCount: $("#newsBellCount"),
+  newsDrawer: $("#newsDrawer"),
+  newsOverlay: $("#newsOverlay"),
+  closeNewsDrawer: $("#closeNewsDrawerBtn"),
+  newsDrawerList: $("#newsDrawerList"),
+  newsHomeList: $("#newsHomeList"),
+  newsAdminList: $("#newsAdminList"),
+  newsForm: $("#newsForm"),
+  newsId: $("#newsIdInput"),
+  newsTitle: $("#newsTitleInput"),
+  newsType: $("#newsTypeInput"),
+  newsTarget: $("#newsTargetInput"),
+  newsLinkLabel: $("#newsLinkLabelInput"),
+  newsPublishAt: $("#newsPublishAtInput"),
+  newsExpiresAt: $("#newsExpiresAtInput"),
+  newsSummary: $("#newsSummaryInput"),
+  newsActive: $("#newsActiveInput"),
+  newsFeatured: $("#newsFeaturedInput"),
+  clearNews: $("#clearNewsBtn"),
+  deleteNews: $("#deleteNewsBtn"),
+  newsActionMessage: $("#newsActionMessage")
 };
 
 init();
@@ -229,7 +252,7 @@ function init() {
   state.activeId = state.lessons[0]?.id || null;
   render();
   if (isAdminPage) {
-    setManageTab(location.hash === "#trilhas" ? "trails" : location.hash === "#devocionais" ? "devotionals" : location.hash === "#treinamentos" ? "trainings" : location.hash === "#ebf" ? "ebf" : location.hash === "#usuarios" ? "users" : location.hash === "#acessos" ? "access" : location.hash === "#contato" ? "contact" : "lessons");
+    setManageTab(location.hash === "#trilhas" ? "trails" : location.hash === "#novidades" ? "news" : location.hash === "#comunicacao" ? "communication" : location.hash === "#devocionais" ? "devotionals" : location.hash === "#treinamentos" ? "trainings" : location.hash === "#ebf" ? "ebf" : location.hash === "#usuarios" ? "users" : location.hash === "#acessos" ? "access" : location.hash === "#contato" ? "contact" : "lessons");
     loadIntoForm(getActiveLesson());
   } else {
     const initialTab = location.hash === "#trilhas" ? "trails" : location.hash === "#licoes" ? "study" : location.hash === "#treinamentos" ? "training" : location.hash === "#devocional" ? "devotional" : location.hash === "#ebf" ? "ebf" : "home";
@@ -239,6 +262,7 @@ function init() {
   renderLimitedNotice();
   syncLessonsFromServer();
   syncContentFromServer();
+  syncNotificationsFromServer();
 }
 
 function loadLessons() {
@@ -361,6 +385,58 @@ async function syncContentFromServer() {
   renderTrainings();
   renderEbfs();
   renderContentAdminLists();
+}
+
+async function syncNotificationsFromServer() {
+  try {
+    const response = await fetch(isAdminPage ? "/api/admin/novidades" : "/api/novidades", { cache: "no-store" });
+    if (!response.ok) return;
+    const data = await response.json();
+    if (!Array.isArray(data.notifications)) return;
+    state.notifications = normalizeNotifications(data.notifications);
+    saveCollectionCache("raizes-notifications", state.notifications);
+    renderNotifications();
+  } catch {
+    renderNotifications();
+  }
+}
+
+async function saveNotificationsToServer() {
+  saveCollectionCache("raizes-notifications", state.notifications);
+  if (!isAdminPage) return;
+  const response = await fetch("/api/admin/novidades", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ notifications: state.notifications })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Não foi possível salvar as novidades.");
+  if (Array.isArray(data.notifications)) {
+    state.notifications = normalizeNotifications(data.notifications);
+    saveCollectionCache("raizes-notifications", state.notifications);
+  }
+  renderNotifications();
+  return data;
+}
+
+function normalizeNotifications(items) {
+  return items.map((item) => ({
+    id: item.id || crypto.randomUUID(),
+    title: String(item.title || "Nova atualização").trim(),
+    summary: String(item.summary || "").trim(),
+    type: String(item.type || "Novidade").trim(),
+    target: String(item.target || "home").trim(),
+    linkLabel: String(item.linkLabel || "Conhecer").trim(),
+    active: item.active !== false,
+    featured: Boolean(item.featured),
+    publishAt: item.publishAt || item.createdAt || new Date().toISOString(),
+    expiresAt: item.expiresAt || "",
+    createdAt: item.createdAt || new Date().toISOString(),
+    updatedAt: item.updatedAt || ""
+  })).sort((a, b) => {
+    if (Boolean(b.featured) !== Boolean(a.featured)) return Number(b.featured) - Number(a.featured);
+    return new Date(b.publishAt || b.createdAt || 0) - new Date(a.publishAt || a.createdAt || 0);
+  });
 }
 
 async function syncManualVideosFromServer() {
@@ -524,6 +600,12 @@ function bindEvents() {
   els.deleteVideo?.addEventListener("click", deleteCurrentVideo);
   els.savePrevVideo?.addEventListener("click", () => moveVideoInForm(-1));
   els.saveNextVideo?.addEventListener("click", () => moveVideoInForm(1));
+  els.newsBell?.addEventListener("click", openNewsDrawer);
+  els.closeNewsDrawer?.addEventListener("click", closeNewsDrawer);
+  els.newsOverlay?.addEventListener("click", closeNewsDrawer);
+  els.newsForm?.addEventListener("submit", saveNewsFromForm);
+  els.clearNews?.addEventListener("click", () => clearNewsForm({ confirm: true }));
+  els.deleteNews?.addEventListener("click", deleteCurrentNews);
   els.exportJson?.addEventListener("click", exportJson);
   els.importJson?.addEventListener("change", importJson);
   document.querySelectorAll(".content-editor").forEach((form) => bindContentEditor(form));
@@ -760,13 +842,17 @@ function setManageTab(tabName) {
   $("#lessonManagePanel")?.classList.toggle("active", tabName === "lessons");
   $("#devotionalManagePanel")?.classList.toggle("active", tabName === "devotionals");
   $("#trailManagePanel")?.classList.toggle("active", tabName === "trails");
+  $("#newsManagePanel")?.classList.toggle("active", tabName === "news");
   $("#trainingManagePanel")?.classList.toggle("active", tabName === "trainings");
   $("#ebfManagePanel")?.classList.toggle("active", tabName === "ebf");
   $("#userManagePanel")?.classList.toggle("active", tabName === "users");
+  $("#communicationManagePanel")?.classList.toggle("active", tabName === "communication");
   $("#accessManagePanel")?.classList.toggle("active", tabName === "access");
   $("#contactManagePanel")?.classList.toggle("active", tabName === "contact");
   if (tabName === "access") window.loadAdminAccessLogs?.();
+  if (tabName === "communication") window.loadCommunicationCenter?.();
   if (tabName === "contact") window.loadAdminSiteInfo?.();
+  if (tabName === "news") renderNotifications();
 }
 
 function applyAccessVisibility() {
@@ -822,6 +908,7 @@ function render() {
   renderLessonAdminList();
   renderTrailAdminList();
   renderVideoAdminList();
+  renderNotifications();
 }
 
 function renderActiveFilteredView() {
@@ -900,7 +987,7 @@ function renderLessonCard(lesson, locked) {
   const visual = lessonVisual(lesson);
   return `
     <button
-      class="lesson-card ${lesson.id === state.activeId ? "active" : ""} ${locked ? "locked" : ""}"
+      class="lesson-card biblical-lesson-card ${lesson.id === state.activeId ? "active" : ""} ${locked ? "locked" : ""}"
       style="--lesson-primary:${visual.primary};--lesson-soft:${visual.soft};--lesson-accent:${visual.accent}"
       type="button"
       data-id="${escapeHtml(lesson.id)}">
@@ -1913,6 +2000,223 @@ function renderVideoAdminList() {
       if (els.manageView) setTab("manage");
     });
   });
+}
+
+function activeNotifications() {
+  const now = new Date();
+  return state.notifications.filter((item) => {
+    if (item.active === false) return false;
+    if (item.publishAt && new Date(item.publishAt) > now) return false;
+    if (item.expiresAt && new Date(item.expiresAt) < now) return false;
+    return true;
+  });
+}
+
+function seenNewsIds() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem("raizes-seen-news") || "[]");
+    return new Set(Array.isArray(parsed) ? parsed : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveSeenNewsIds(ids) {
+  localStorage.setItem("raizes-seen-news", JSON.stringify([...ids]));
+}
+
+function renderNotifications() {
+  const active = activeNotifications();
+  const seen = seenNewsIds();
+  const unseen = active.filter((item) => !seen.has(item.id));
+  if (els.newsBellCount) els.newsBellCount.textContent = String(unseen.length);
+  els.newsBell?.classList.toggle("has-news", unseen.length > 0);
+
+  if (els.newsHomeList) {
+    const featured = active.slice(0, 4);
+    els.newsHomeList.innerHTML = featured.length
+      ? featured.map(renderNewsCard).join("")
+      : '<p class="muted-line">Nenhuma novidade ativa no momento.</p>';
+  }
+
+  if (els.newsDrawerList) {
+    els.newsDrawerList.innerHTML = active.length
+      ? active.map((item) => renderNewsCard(item, { compact: true, seen: seen.has(item.id) })).join("")
+      : '<p class="muted-line">Nenhuma novidade ativa no momento.</p>';
+  }
+
+  if (els.newsAdminList) {
+    els.newsAdminList.innerHTML = state.notifications.length
+      ? state.notifications.map(renderNewsAdminCard).join("")
+      : '<p class="muted-line">Nenhuma novidade cadastrada ainda.</p>';
+  }
+
+  document.querySelectorAll("[data-news-target]").forEach((button) => {
+    button.addEventListener("click", () => openNewsTarget(button.dataset.newsTarget, button.dataset.newsId));
+  });
+  document.querySelectorAll("[data-admin-news-id]").forEach((card) => {
+    card.addEventListener("click", () => {
+      const item = state.notifications.find((news) => news.id === card.dataset.adminNewsId);
+      loadNewsIntoForm(item);
+    });
+  });
+}
+
+function renderNewsCard(item, options = {}) {
+  const date = item.publishAt ? new Date(item.publishAt).toLocaleDateString("pt-BR") : "";
+  return `
+    <article class="news-card ${item.featured ? "featured" : ""} ${options.seen ? "seen" : ""}">
+      <div>
+        <span class="news-type">${escapeHtml(item.type || "Novidade")}</span>
+        <h3>${escapeHtml(item.title)}</h3>
+        <p>${escapeHtml(item.summary || "Confira esta novidade no Raízes Kids.")}</p>
+        ${date ? `<small>${escapeHtml(date)}</small>` : ""}
+      </div>
+      <button class="icon-button ${item.featured ? "accent" : ""}" type="button" data-news-target="${escapeHtml(item.target || "home")}" data-news-id="${escapeHtml(item.id)}">
+        ${escapeHtml(item.linkLabel || "Conhecer")}
+      </button>
+    </article>
+  `;
+}
+
+function renderNewsAdminCard(item) {
+  const status = item.active === false ? "Inativa" : "Ativa";
+  return `
+    <button class="video-admin-card news-admin-card" type="button" data-admin-news-id="${escapeHtml(item.id)}">
+      <strong>${escapeHtml(item.title)}</strong>
+      <span>${escapeHtml(item.type || "Novidade")} · ${status}${item.featured ? " · Destaque" : ""}</span>
+      <small>${escapeHtml(item.summary || "")}</small>
+    </button>
+  `;
+}
+
+function openNewsDrawer() {
+  els.newsDrawer?.classList.add("open");
+  els.newsDrawer?.setAttribute("aria-hidden", "false");
+  if (els.newsOverlay) els.newsOverlay.hidden = false;
+  const seen = seenNewsIds();
+  activeNotifications().forEach((item) => seen.add(item.id));
+  saveSeenNewsIds(seen);
+  renderNotifications();
+}
+
+function closeNewsDrawer() {
+  els.newsDrawer?.classList.remove("open");
+  els.newsDrawer?.setAttribute("aria-hidden", "true");
+  if (els.newsOverlay) els.newsOverlay.hidden = true;
+}
+
+function openNewsTarget(target, id) {
+  const seen = seenNewsIds();
+  if (id) seen.add(id);
+  saveSeenNewsIds(seen);
+  renderNotifications();
+  closeNewsDrawer();
+  if (isAdminPage) {
+    const hashes = { study: "#licoes", trails: "#trilhas", devotional: "#devocional", training: "#treinamentos", ebf: "#ebf", home: "" };
+    window.location.href = `index.html${hashes[target] || ""}`;
+    return;
+  }
+  if (target && target !== "home") {
+    setTab(target);
+  } else {
+    setTab("home");
+  }
+}
+
+async function saveNewsFromForm(event) {
+  event.preventDefault();
+  const id = els.newsId.value || crypto.randomUUID();
+  const existing = state.notifications.find((item) => item.id === id);
+  const item = {
+    id,
+    title: els.newsTitle.value.trim(),
+    summary: els.newsSummary.value.trim(),
+    type: els.newsType.value,
+    target: els.newsTarget.value,
+    linkLabel: els.newsLinkLabel.value.trim() || "Conhecer",
+    active: els.newsActive.checked,
+    featured: els.newsFeatured.checked,
+    publishAt: dateInputToIso(els.newsPublishAt.value) || existing?.publishAt || new Date().toISOString(),
+    expiresAt: dateInputToIso(els.newsExpiresAt.value),
+    createdAt: existing?.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  const index = state.notifications.findIndex((news) => news.id === id);
+  if (index >= 0) {
+    state.notifications[index] = item;
+  } else {
+    state.notifications.unshift(item);
+  }
+  try {
+    await saveNotificationsToServer();
+    loadNewsIntoForm(item);
+    showNewsMessage(`Novidade "${item.title}" salva com sucesso.`);
+  } catch (error) {
+    showNewsMessage(error.message || "Não foi possível salvar a novidade.", true);
+  }
+}
+
+function loadNewsIntoForm(item) {
+  if (!item || !els.newsForm) return;
+  els.newsId.value = item.id || "";
+  els.newsTitle.value = item.title || "";
+  els.newsSummary.value = item.summary || "";
+  els.newsType.value = item.type || "Novidade";
+  els.newsTarget.value = item.target || "home";
+  els.newsLinkLabel.value = item.linkLabel || "";
+  els.newsActive.checked = item.active !== false;
+  els.newsFeatured.checked = Boolean(item.featured);
+  els.newsPublishAt.value = isoToDateInput(item.publishAt);
+  els.newsExpiresAt.value = isoToDateInput(item.expiresAt);
+}
+
+function clearNewsForm(options = {}) {
+  if (!els.newsForm) return;
+  if (options.confirm && !window.confirm("Limpar os campos da novidade?")) return;
+  els.newsForm.reset();
+  els.newsId.value = "";
+  els.newsActive.checked = true;
+  els.newsFeatured.checked = false;
+  if (els.newsPublishAt) els.newsPublishAt.value = new Date().toISOString().slice(0, 10);
+  if (options.confirm) showNewsMessage("Formulário de novidade limpo.");
+}
+
+async function deleteCurrentNews() {
+  const id = els.newsId?.value;
+  if (!id) {
+    showNewsMessage("Selecione uma novidade para excluir.", true);
+    return;
+  }
+  const item = state.notifications.find((news) => news.id === id);
+  if (!item) {
+    showNewsMessage("Novidade não encontrada.", true);
+    return;
+  }
+  if (!window.confirm(`Excluir a novidade "${item.title}"?`)) return;
+  state.notifications = state.notifications.filter((news) => news.id !== id);
+  try {
+    await saveNotificationsToServer();
+    clearNewsForm();
+    showNewsMessage(`Novidade "${item.title}" excluída com sucesso.`);
+  } catch (error) {
+    showNewsMessage(error.message || "Não foi possível excluir a novidade.", true);
+  }
+}
+
+function showNewsMessage(message, isError = false) {
+  if (!els.newsActionMessage) return;
+  els.newsActionMessage.textContent = message;
+  els.newsActionMessage.classList.toggle("error", isError);
+  els.newsActionMessage.classList.add("visible");
+}
+
+function dateInputToIso(value) {
+  return value ? `${value}T00:00:00.000Z` : "";
+}
+
+function isoToDateInput(value) {
+  return value ? new Date(value).toISOString().slice(0, 10) : "";
 }
 
 function exportJson() {

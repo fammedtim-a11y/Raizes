@@ -28,6 +28,7 @@ async function refreshSession() {
   document.body.classList.toggle("is-authenticated", Boolean(authState.user));
   document.body.classList.toggle("is-visitor", !authState.user);
   document.body.dataset.accessLevel = authState.user?.accessLevel || "";
+  document.body.dataset.master = authState.user?.username === "08047232657" ? "true" : "false";
   if (userChanged) renderAuthSlots();
   showStoredNotice();
   if (userChanged) window.onRaizesAuthChange?.(authState.user);
@@ -42,6 +43,7 @@ async function refreshSession() {
     }
     if (userChanged) loadAdminUsers();
     if (userChanged) loadAdminAccessLogs();
+    if (userChanged) loadCommunicationCenter();
   }
 }
 
@@ -57,6 +59,9 @@ function userSignature(user) {
 function renderAuthSlots() {
   document.querySelectorAll(".admin-only").forEach((el) => {
     el.classList.toggle("visible", authState.user?.role === "admin");
+  });
+  document.querySelectorAll(".master-only").forEach((el) => {
+    el.classList.toggle("visible", authState.user?.username === "08047232657");
   });
 
   document.querySelectorAll(".auth-slot").forEach((slot) => {
@@ -278,6 +283,105 @@ async function loadAdminAccessLogs() {
 }
 
 window.loadAdminAccessLogs = loadAdminAccessLogs;
+
+async function loadCommunicationCenter() {
+  const form = document.querySelector("#communicationForm");
+  if (!form) return;
+  bindCommunicationForm();
+  await Promise.all([loadCommunicationAudience(), loadCommunicationCampaigns()]);
+}
+
+window.loadCommunicationCenter = loadCommunicationCenter;
+
+function bindCommunicationForm() {
+  const form = document.querySelector("#communicationForm");
+  if (!form || form.dataset.bound) return;
+  form.dataset.bound = "true";
+  document.querySelector("#previewAudienceBtn")?.addEventListener("click", loadCommunicationAudience);
+  ["#communicationChannelInput", "#communicationAccessInput", "#communicationStatusInput"].forEach((selector) => {
+    document.querySelector(selector)?.addEventListener("change", loadCommunicationAudience);
+  });
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const payload = communicationPayload();
+    const result = await apiPost("/api/admin/comunicacao/campanhas", payload);
+    const message = document.querySelector("#communicationActionMessage");
+    if (message) {
+      message.textContent = result.error || `Campanha criada para ${result.campaign?.recipientCount || 0} destinatário(s).`;
+      message.classList.toggle("error", Boolean(result.error));
+      message.classList.add("visible");
+    }
+    if (!result.error) {
+      renderCommunicationCampaigns([result.campaign]);
+      await loadCommunicationCampaigns();
+    }
+  });
+}
+
+function communicationPayload() {
+  return {
+    channel: document.querySelector("#communicationChannelInput")?.value || "both",
+    accessLevel: document.querySelector("#communicationAccessInput")?.value || "all",
+    status: document.querySelector("#communicationStatusInput")?.value || "approved",
+    subject: document.querySelector("#communicationSubjectInput")?.value || "",
+    message: document.querySelector("#communicationMessageInput")?.value || ""
+  };
+}
+
+async function loadCommunicationAudience() {
+  const list = document.querySelector("#communicationAudienceList");
+  if (!list) return;
+  const payload = communicationPayload();
+  const channel = payload.channel === "both" ? "all" : payload.channel;
+  const query = new URLSearchParams({ accessLevel: payload.accessLevel, status: payload.status, channel });
+  const data = await apiGet(`/api/admin/comunicacao/audiencia?${query}`);
+  if (data.error) {
+    list.innerHTML = `<p class="muted-line">${authEscapeHtml(data.error)}</p>`;
+    return;
+  }
+  const users = data.users || [];
+  list.innerHTML = users.length
+    ? users.map((user) => `
+      <article class="communication-recipient-card">
+        <strong>${authEscapeHtml(user.name || user.username)}</strong>
+        <span>${authEscapeHtml(user.email || "Sem email")} · ${authEscapeHtml(formatPhoneDisplay(user.phone) || "Sem WhatsApp")}</span>
+        <small>${authEscapeHtml(user.church || "Igreja não informada")} · ${authEscapeHtml(user.accessLevel || "")}</small>
+      </article>
+    `).join("")
+    : '<p class="muted-line">Nenhum destinatário encontrado para este filtro.</p>';
+}
+
+async function loadCommunicationCampaigns() {
+  const data = await apiGet("/api/admin/comunicacao/campanhas");
+  if (!data.error) renderCommunicationCampaigns(data.campaigns || []);
+}
+
+function renderCommunicationCampaigns(campaigns) {
+  const list = document.querySelector("#communicationCampaignList");
+  if (!list) return;
+  list.innerHTML = campaigns.length
+    ? campaigns.map(renderCommunicationCampaignCard).join("")
+    : '<p class="muted-line">Nenhuma campanha criada ainda.</p>';
+}
+
+function renderCommunicationCampaignCard(campaign) {
+  const emailLinks = campaign.emailLinks || [];
+  const whatsappLinks = campaign.whatsappLinks || [];
+  return `
+    <article class="communication-campaign-card">
+      <div>
+        <strong>${authEscapeHtml(campaign.subject || "Campanha")}</strong>
+        <span>${authEscapeHtml(campaign.channel || "both")} · ${Number(campaign.recipientCount || 0)} destinatário(s)</span>
+        <small>${formatDateTime(campaign.createdAt)}</small>
+      </div>
+      <div class="communication-link-list">
+        ${emailLinks.slice(0, 8).map((link) => `<a class="icon-button" href="${authEscapeHtml(link.href)}">Email: ${authEscapeHtml(link.name || link.email)}</a>`).join("")}
+        ${whatsappLinks.slice(0, 8).map((link) => `<a class="icon-button accent" href="${authEscapeHtml(link.href)}" target="_blank" rel="noreferrer">WhatsApp: ${authEscapeHtml(link.name || link.phone)}</a>`).join("")}
+        ${(emailLinks.length + whatsappLinks.length) > 16 ? `<small>Mostrando primeiros envios. Total de links: ${emailLinks.length + whatsappLinks.length}</small>` : ""}
+      </div>
+    </article>
+  `;
+}
 
 async function clearAccessLogs() {
   if (!window.confirm("Apagar todos os registros de acesso? Esta acao nao pode ser desfeita.")) return;

@@ -15,9 +15,11 @@ const DEVOTIONALS_FILE = path.join(DATA_DIR, "devotionals.json");
 const TRAININGS_FILE = path.join(DATA_DIR, "trainings.json");
 const EBFS_FILE = path.join(DATA_DIR, "ebf.json");
 const VIDEOS_FILE = path.join(DATA_DIR, "videos.json");
+const NOTIFICATIONS_FILE = path.join(DATA_DIR, "notifications.json");
 const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
 const ACCESS_LOG_FILE = path.join(DATA_DIR, "access-log.json");
 const SITE_INFO_FILE = path.join(DATA_DIR, "site-info.json");
+const COMMUNICATIONS_FILE = path.join(DATA_DIR, "communications.json");
 const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 const LICENSE_DAYS = 364;
 const DAY_MS = 1000 * 60 * 60 * 24;
@@ -154,6 +156,21 @@ const initialDevotionals = seededDevotionals.length ? seededDevotionals : [
 const initialTrainings = seededTrainings;
 const initialEbfs = seededEbfs;
 const initialVideos = [];
+const initialNotifications = [
+  {
+    id: "novidade-boas-vindas-raizes",
+    title: "Bem-vindo às novidades do Raízes Kids",
+    summary: "Agora você verá aqui os novos materiais, trilhas e avisos importantes do ministério.",
+    type: "Atualização",
+    target: "home",
+    linkLabel: "Ver novidades",
+    active: true,
+    featured: true,
+    publishAt: new Date().toISOString(),
+    expiresAt: "",
+    createdAt: new Date().toISOString()
+  }
+];
 
 ensureData();
 
@@ -198,6 +215,12 @@ function ensureData() {
   }
   if (!fs.existsSync(VIDEOS_FILE)) {
     writeManualVideos(initialVideos);
+  }
+  if (!fs.existsSync(NOTIFICATIONS_FILE)) {
+    writeNotifications(initialNotifications);
+  }
+  if (!fs.existsSync(COMMUNICATIONS_FILE)) {
+    writeCommunications([]);
   }
   mergeSeedContent();
   applyUserAdministrationUpdates();
@@ -332,6 +355,11 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (req.method === "GET" && url.pathname === "/api/novidades") {
+    sendJson(res, 200, { notifications: readNotifications().filter((item) => item.active !== false) });
+    return;
+  }
+
   if (req.method === "GET" && url.pathname === "/api/site-info") {
     sendJson(res, 200, { info: readSiteInfo() });
     return;
@@ -401,6 +429,25 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (url.pathname.startsWith("/api/admin/comunicacao")) {
+    if (!requireMasterAdmin(req, res)) return;
+
+    if (req.method === "GET" && url.pathname === "/api/admin/comunicacao/audiencia") {
+      sendJson(res, 200, { users: communicationAudience(url.searchParams) });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/comunicacao/campanhas") {
+      sendJson(res, 200, { campaigns: readCommunications().slice(-100).reverse() });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/comunicacao/campanhas") {
+      await createCommunicationCampaign(req, res);
+      return;
+    }
+  }
+
   if (req.method === "POST" && url.pathname === "/api/admin/site-info") {
     await updateSiteInfo(req, res);
     return;
@@ -453,6 +500,16 @@ async function handleApi(req, res, url) {
 
   if (req.method === "POST" && url.pathname === "/api/admin/videos") {
     await updateManualVideos(req, res);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/admin/novidades") {
+    sendJson(res, 200, { notifications: readNotifications() });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/admin/novidades") {
+    await updateNotifications(req, res);
     return;
   }
 
@@ -867,6 +924,16 @@ function requireAdmin(req, res) {
   return user;
 }
 
+function requireMasterAdmin(req, res) {
+  const user = requireAdmin(req, res);
+  if (!user) return null;
+  if (user.username !== "08047232657") {
+    sendJson(res, 403, { error: "Acesso restrito ao administrador master." });
+    return null;
+  }
+  return user;
+}
+
 function getSessionUser(req) {
   return getSessionState(req).user;
 }
@@ -1016,6 +1083,122 @@ function writeSiteInfo(info) {
   fs.writeFileSync(SITE_INFO_FILE, JSON.stringify({ ...defaultSiteInfo, ...info }, null, 2), "utf8");
 }
 
+function readCommunications() {
+  if (!fs.existsSync(COMMUNICATIONS_FILE)) return [];
+  try {
+    const parsed = JSON.parse(fs.readFileSync(COMMUNICATIONS_FILE, "utf8"));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCommunications(campaigns) {
+  fs.writeFileSync(COMMUNICATIONS_FILE, JSON.stringify(campaigns.slice(-500), null, 2), "utf8");
+}
+
+function communicationAudience(params) {
+  const accessLevel = String(params.get("accessLevel") || "all");
+  const status = String(params.get("status") || "approved");
+  const channel = String(params.get("channel") || "all");
+  return readUsers()
+    .filter((user) => user.role !== "admin")
+    .filter((user) => {
+      if (status === "approved") return user.approved && user.active !== false;
+      if (status === "pending") return !user.approved;
+      if (status === "inactive") return user.active === false;
+      return true;
+    })
+    .filter((user) => accessLevel === "all" || (user.accessLevel || "prime") === accessLevel)
+    .filter((user) => {
+      if (channel === "email") return Boolean(user.email);
+      if (channel === "whatsapp") return Boolean(onlyDigits(user.phone || ""));
+      return Boolean(user.email || onlyDigits(user.phone || ""));
+    })
+    .map(publicCommunicationUser);
+}
+
+async function createCommunicationCampaign(req, res) {
+  const body = await readBody(req);
+  const subject = cleanText(body.subject || "");
+  const message = cleanLongText(body.message || "", 5000);
+  const channel = String(body.channel || "both");
+  if (!subject || !message) {
+    sendJson(res, 400, { error: "Informe assunto e mensagem." });
+    return;
+  }
+
+  const params = new URLSearchParams({
+    accessLevel: body.accessLevel || "all",
+    status: body.status || "approved",
+    channel: channel === "both" ? "all" : channel
+  });
+  const audience = communicationAudience(params);
+  const campaign = {
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    channel,
+    subject,
+    message,
+    filters: {
+      accessLevel: body.accessLevel || "all",
+      status: body.status || "approved"
+    },
+    recipientCount: audience.length,
+    recipients: audience.map((user) => ({
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      email: user.email,
+      phone: user.phone
+    })),
+    emailLinks: buildEmailLinks(audience, subject, message),
+    whatsappLinks: buildWhatsappLinks(audience, message)
+  };
+  const campaigns = readCommunications();
+  campaigns.push(campaign);
+  writeCommunications(campaigns);
+  sendJson(res, 201, { campaign });
+}
+
+function buildEmailLinks(users, subject, message) {
+  return users
+    .filter((user) => user.email)
+    .map((user) => ({
+      name: user.name,
+      email: user.email,
+      href: `mailto:${encodeURIComponent(user.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`
+    }));
+}
+
+function buildWhatsappLinks(users, message) {
+  return users
+    .filter((user) => onlyDigits(user.phone || ""))
+    .map((user) => {
+      const phone = onlyDigits(user.phone || "");
+      const normalized = phone.startsWith("55") ? phone : `55${phone}`;
+      return {
+        name: user.name,
+        phone,
+        href: `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`
+      };
+    });
+}
+
+function publicCommunicationUser(user) {
+  return {
+    id: user.id,
+    username: user.username,
+    name: user.name || "",
+    email: user.email || "",
+    phone: onlyDigits(user.phone || ""),
+    church: user.church || "",
+    accessLevel: user.accessLevel || "prime",
+    approved: Boolean(user.approved),
+    active: user.active !== false
+  };
+}
+
 function readLessons() {
   if (!fs.existsSync(LESSONS_FILE)) return null;
   const merged = addMissingImportedLessons(readLessonsRaw());
@@ -1082,6 +1265,40 @@ function readManualVideos() {
 
 function writeManualVideos(videos) {
   fs.writeFileSync(VIDEOS_FILE, JSON.stringify(normalizeManualVideos(videos), null, 2), "utf8");
+}
+
+function readNotifications() {
+  if (!fs.existsSync(NOTIFICATIONS_FILE)) return initialNotifications;
+  const parsed = JSON.parse(fs.readFileSync(NOTIFICATIONS_FILE, "utf8"));
+  return Array.isArray(parsed) ? sortNotifications(parsed.map(normalizeNotification)) : [];
+}
+
+function writeNotifications(notifications) {
+  fs.writeFileSync(NOTIFICATIONS_FILE, JSON.stringify(sortNotifications(notifications.map(normalizeNotification)), null, 2), "utf8");
+}
+
+function normalizeNotification(item) {
+  return {
+    id: item.id || crypto.randomUUID(),
+    title: cleanText(item.title || "Nova atualização"),
+    summary: cleanText(item.summary || ""),
+    type: cleanText(item.type || "Novidade"),
+    target: cleanText(item.target || "home"),
+    linkLabel: cleanText(item.linkLabel || "Conhecer"),
+    active: item.active !== false,
+    featured: Boolean(item.featured),
+    publishAt: item.publishAt || item.createdAt || new Date().toISOString(),
+    expiresAt: item.expiresAt || "",
+    createdAt: item.createdAt || new Date().toISOString(),
+    updatedAt: item.updatedAt || ""
+  };
+}
+
+function sortNotifications(items) {
+  return [...items].sort((a, b) => {
+    if (Boolean(b.featured) !== Boolean(a.featured)) return Number(b.featured) - Number(a.featured);
+    return new Date(b.publishAt || b.createdAt || 0) - new Date(a.publishAt || a.createdAt || 0);
+  });
 }
 
 async function updateLessons(req, res) {
@@ -1157,6 +1374,17 @@ async function updateManualVideos(req, res) {
   }
   writeManualVideos(videos);
   sendJson(res, 200, { ok: true, videos: readManualVideos(), savedAt: new Date().toISOString() });
+}
+
+async function updateNotifications(req, res) {
+  const body = await readBody(req);
+  const notifications = Array.isArray(body.notifications) ? body.notifications : null;
+  if (!notifications) {
+    sendJson(res, 400, { error: "Lista de novidades inválida." });
+    return;
+  }
+  writeNotifications(notifications);
+  sendJson(res, 200, { ok: true, notifications: readNotifications(), savedAt: new Date().toISOString() });
 }
 
 function sendSystemBackup(res) {
@@ -1659,6 +1887,10 @@ function onlyDigits(value) {
 
 function cleanText(value) {
   return String(value || "").trim().slice(0, 240);
+}
+
+function cleanLongText(value, limit = 5000) {
+  return String(value || "").trim().slice(0, limit);
 }
 
 function normalizeEmail(value) {

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20260703-pdf-layout" />
+    <link rel="stylesheet" href="styles.css?v=20260830-mobile-licoes" />
   </head>
   <body data-page="admin">
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -98,12 +98,14 @@
             <button class="manage-tab active" data-manage-tab="lessons" type="button">Lições</button>
             <button class="manage-tab" data-manage-tab="devotionals" type="button">Culto em Família</button>
             <button class="manage-tab" data-manage-tab="trails" type="button">Gerenciar trilhas</button>
+            <button class="manage-tab" data-manage-tab="news" type="button">Novidades</button>
             <button class="manage-tab" data-manage-tab="trainings" type="button">Treinamentos</button>
             <button class="manage-tab" data-manage-tab="ebf" type="button">EBF</button>
             <details class="manage-tab-group manage-tab-dropdown" aria-label="Controle administrativo">
               <summary class="manage-tab">Controle</summary>
               <div class="manage-tab-submenu">
                 <button class="manage-tab" data-manage-tab="access" type="button">Acesso</button>
+                <button class="manage-tab master-only" data-manage-tab="communication" type="button">Comunicação</button>
                 <button class="manage-tab" data-manage-tab="contact" type="button">Contato</button>
                 <button class="manage-tab" data-manage-tab="users" type="button">Usuários</button>
               </div>
@@ -333,6 +335,74 @@
             <div id="videoAdminList" class="video-admin-list"></div>
           </section>
 
+          <section id="newsManagePanel" class="video-manager manage-panel">
+            <div class="manager-heading">
+              <div>
+                <h2>Central de novidades</h2>
+                <p>Cadastre chamadas para avisar os usuários sobre novas lições, trilhas, EBF, treinamentos ou comunicados.</p>
+              </div>
+            </div>
+            <div id="newsAdminList" class="admin-item-list admin-card-rail"></div>
+            <form id="newsForm" class="video-form">
+              <input type="hidden" id="newsIdInput" />
+              <div class="form-grid">
+                <label>
+                  <span>Título</span>
+                  <input id="newsTitleInput" required placeholder="Ex.: Nova trilha sobre Criação" />
+                </label>
+                <label>
+                  <span>Tipo</span>
+                  <select id="newsTypeInput">
+                    <option>Novidade</option>
+                    <option>Nova lição</option>
+                    <option>Nova trilha</option>
+                    <option>Treinamento</option>
+                    <option>EBF</option>
+                    <option>Aviso</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Destino</span>
+                  <select id="newsTargetInput">
+                    <option value="home">Home</option>
+                    <option value="study">Lições Bíblicas</option>
+                    <option value="trails">Trilhas</option>
+                    <option value="devotional">Culto em Família</option>
+                    <option value="training">Treinamentos</option>
+                    <option value="ebf">EBF Completa</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Texto do botão</span>
+                  <input id="newsLinkLabelInput" placeholder="Ex.: Conhecer agora" />
+                </label>
+                <label>
+                  <span>Publicar em</span>
+                  <input id="newsPublishAtInput" type="date" />
+                </label>
+                <label>
+                  <span>Expira em</span>
+                  <input id="newsExpiresAtInput" type="date" />
+                </label>
+              </div>
+              <label>
+                <span>Resumo</span>
+                <textarea id="newsSummaryInput" required placeholder="Explique em poucas palavras o que há de novo."></textarea>
+              </label>
+              <fieldset class="video-flags">
+                <legend>Exibição</legend>
+                <label><input id="newsActiveInput" type="checkbox" checked /> Ativa</label>
+                <label><input id="newsFeaturedInput" type="checkbox" /> Destaque principal</label>
+              </fieldset>
+              <div class="form-actions">
+                <button class="icon-button primary" type="submit">Salvar novidade</button>
+                <button id="clearNewsBtn" class="icon-button" type="button">Limpar</button>
+                <button id="deleteNewsBtn" class="icon-button danger" type="button">Excluir</button>
+              </div>
+              <p id="newsActionMessage" class="action-message" role="status"></p>
+            </form>
+          </section>
+
           <section id="trainingManagePanel" class="video-manager manage-panel">
             <div class="manager-heading">
               <div>
@@ -415,6 +485,69 @@
             <div id="adminUsersList" class="user-admin-list"></div>
           </section>
 
+          <section id="communicationManagePanel" class="video-manager manage-panel master-only">
+            <div class="manager-heading">
+              <div>
+                <h2>Comunicação contínua</h2>
+                <p>Escolha o público, defina a mensagem e gere envios por Email ou WhatsApp para manter todos atualizados.</p>
+              </div>
+            </div>
+            <form id="communicationForm" class="video-form">
+              <div class="form-grid">
+                <label>
+                  <span>Canal</span>
+                  <select id="communicationChannelInput">
+                    <option value="both">Email e WhatsApp</option>
+                    <option value="email">Somente Email</option>
+                    <option value="whatsapp">Somente WhatsApp</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Grupo de acesso</span>
+                  <select id="communicationAccessInput">
+                    <option value="all">Todos</option>
+                    <option value="simple">Simples</option>
+                    <option value="test">Teste</option>
+                    <option value="leader">Líderes</option>
+                    <option value="prime">Prime</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Status</span>
+                  <select id="communicationStatusInput">
+                    <option value="approved">Ativos aprovados</option>
+                    <option value="pending">Aguardando aprovação</option>
+                    <option value="inactive">Inativos</option>
+                    <option value="all">Todos</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Assunto do Email</span>
+                  <input id="communicationSubjectInput" placeholder="Ex.: Novidades da semana no Raízes Kids" />
+                </label>
+              </div>
+              <label>
+                <span>Mensagem</span>
+                <textarea id="communicationMessageInput" rows="8" placeholder="Escreva a mensagem que será usada no email e no WhatsApp."></textarea>
+              </label>
+              <div class="form-actions">
+                <button class="icon-button" id="previewAudienceBtn" type="button">Pré-visualizar público</button>
+                <button class="icon-button primary" type="submit">Criar campanha</button>
+              </div>
+              <p id="communicationActionMessage" class="action-message" role="status"></p>
+            </form>
+            <div class="communication-grid">
+              <section>
+                <h3>Destinatários encontrados</h3>
+                <div id="communicationAudienceList" class="user-admin-list"></div>
+              </section>
+              <section>
+                <h3>Campanhas recentes</h3>
+                <div id="communicationCampaignList" class="user-admin-list"></div>
+              </section>
+            </div>
+          </section>
+
           <section id="accessManagePanel" class="video-manager manage-panel">
             <div class="manager-heading">
               <div>
@@ -470,8 +603,8 @@
       </main>
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
-    <script src="lessons-data.js?v=20260703-pdf-layout"></script>
-    <script src="app.js?v=20260703-pdf-layout"></script>
-    <script src="auth.js?v=20260703-pdf-layout"></script>
+    <script src="lessons-data.js?v=20260830-mobile-licoes"></script>
+    <script src="app.js?v=20260830-mobile-licoes"></script>
+    <script src="auth.js?v=20260830-mobile-licoes"></script>
   </body>
 </html>
