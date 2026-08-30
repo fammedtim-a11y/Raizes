@@ -4,9 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Catálogo de Lições Bíblicas</title>
-    <link rel="stylesheet" href="styles.css?v=20260830-mobile-licoes" />
+    <link rel="stylesheet" href="styles.css?v=20260830-mobile-nav" />
   </head>
-  <body>
+  <body data-active-tab="home">
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
     <div class="app-shell">
       <header class="topbar">
@@ -59,7 +59,31 @@
       </header>
 
       <main>
+        <section class="mobile-filter-launcher" aria-label="Busca e filtros rápidos">
+          <button id="openFilterSheetBtn" class="mobile-filter-button" type="button">
+            <span>🔎</span>
+            <strong>Buscar e filtrar</strong>
+          </button>
+          <span id="mobileFilterSummary" class="mobile-filter-summary">Todos os conteúdos</span>
+        </section>
+
+        <nav class="mobile-age-chips" aria-label="Filtro rápido por idade">
+          <button type="button" data-age-select="Todas">Todos</button>
+          <button type="button" data-age-select="0 a 2 anos - Berçário">0-2</button>
+          <button type="button" data-age-select="3 a 4 anos - Maternal">3-4</button>
+          <button type="button" data-age-select="5 a 6 anos - Jardim">5-6</button>
+          <button type="button" data-age-select="7 a 10 anos - Primários">7-10</button>
+          <button type="button" data-age-select="11 a 12 anos - Juniores">11-12</button>
+        </nav>
+
         <section id="filterToolbar" class="toolbar" aria-label="Filtros do catálogo">
+          <div class="mobile-filter-sheet-header">
+            <div>
+              <span class="home-kicker">Filtros</span>
+              <h2>Encontrar conteúdo</h2>
+            </div>
+            <button id="closeFilterSheetBtn" class="rail-arrow" type="button" aria-label="Fechar filtros">×</button>
+          </div>
           <label data-filter-field="search">
             <span>Buscar</span>
             <input id="searchInput" type="search" placeholder="Tema, categoria, versículo..." />
@@ -95,6 +119,10 @@
             <span>Mês de inclusão</span>
             <input id="createdMonthFilter" type="month" />
           </label>
+          <div class="mobile-filter-sheet-actions">
+            <button id="applyFilterSheetBtn" class="icon-button primary" type="button">Aplicar filtros</button>
+            <button id="clearMobileFiltersBtn" class="icon-button" type="button">Limpar filtros</button>
+          </div>
         </section>
 
         <section id="homeView" class="view active home-view" aria-label="Home Raízes Kids">
@@ -240,6 +268,27 @@
         <div id="newsDrawerList" class="news-drawer-list"></div>
       </aside>
       <div id="newsOverlay" class="news-overlay" hidden></div>
+      <div id="mobileMenuOverlay" class="mobile-menu-overlay" hidden></div>
+      <aside id="mobileMoreSheet" class="mobile-more-sheet" aria-label="Mais opções" aria-hidden="true">
+        <div class="mobile-more-header">
+          <strong>Mais opções</strong>
+          <button id="closeMobileMoreBtn" class="rail-arrow" type="button" aria-label="Fechar menu">×</button>
+        </div>
+        <button type="button" data-mobile-tab="devotional" data-min-access="simple">🏠 Culto em Família</button>
+        <button type="button" data-mobile-tab="training" data-min-access="prime">🎓 Treinamentos</button>
+        <button type="button" data-mobile-tab="ebf" data-min-access="prime">🎪 EBF Completa</button>
+        <a class="member-only" href="perfil.html">👤 Perfil</a>
+        <a class="admin-only" href="gerenciamento.html">⚙️ Gerenciamento</a>
+        <a href="#contato">💬 Contato</a>
+        <a class="visitor-only" href="login.html">🔐 Entrar / Cadastrar</a>
+      </aside>
+      <nav class="mobile-bottom-nav" aria-label="Navegação principal mobile">
+        <button type="button" data-mobile-tab="home"><span>🏠</span><strong>Início</strong></button>
+        <button type="button" data-mobile-tab="study"><span>📖</span><strong>Lições</strong></button>
+        <button type="button" data-mobile-tab="trails" data-min-access="leader"><span>▶️</span><strong>Trilhas</strong></button>
+        <a class="member-only" href="perfil.html"><span>👤</span><strong>Perfil</strong></a>
+        <button id="openMobileMoreBtn" type="button"><span>☰</span><strong>Mais</strong></button>
+      </nav>
       <footer class="site-footer">
         <div class="site-footer-brand">
           <img src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
@@ -286,8 +335,8 @@
       <div class="section-timeline"></div>
     </template>
 
-    <script src="lessons-data.js?v=20260830-mobile-licoes"></script>
-    <script src="app.js?v=20260830-mobile-licoes"></script>
-    <script src="auth.js?v=20260830-mobile-licoes"></script>
+    <script src="lessons-data.js?v=20260830-mobile-nav"></script>
+    <script src="app.js?v=20260830-mobile-nav"></script>
+    <script src="auth.js?v=20260830-mobile-nav"></script>
   </body>
 </html>

@@ -229,7 +229,16 @@ const els = {
   newsFeatured: $("#newsFeaturedInput"),
   clearNews: $("#clearNewsBtn"),
   deleteNews: $("#deleteNewsBtn"),
-  newsActionMessage: $("#newsActionMessage")
+  newsActionMessage: $("#newsActionMessage"),
+  openFilterSheet: $("#openFilterSheetBtn"),
+  closeFilterSheet: $("#closeFilterSheetBtn"),
+  applyFilterSheet: $("#applyFilterSheetBtn"),
+  clearMobileFilters: $("#clearMobileFiltersBtn"),
+  mobileFilterSummary: $("#mobileFilterSummary"),
+  openMobileMore: $("#openMobileMoreBtn"),
+  closeMobileMore: $("#closeMobileMoreBtn"),
+  mobileMoreSheet: $("#mobileMoreSheet"),
+  mobileMenuOverlay: $("#mobileMenuOverlay")
 };
 
 init();
@@ -548,11 +557,20 @@ function bindEvents() {
   document.querySelectorAll("[data-age-select]").forEach((button) => {
     button.addEventListener("click", () => {
       const mappedAge = button.dataset.ageSelect;
+      setTab("study");
       els.ageFilter.value = mappedAge;
       renderList();
       if (state.trailsRendered) renderTrails();
-      setTab("study");
+      updateMobileChrome();
       scrollToLessonRail();
+    });
+  });
+
+  document.querySelectorAll("[data-mobile-tab]").forEach((button) => {
+    button.addEventListener("click", () => {
+      setTab(button.dataset.mobileTab);
+      closeMobileMoreSheet();
+      scrollToActiveView();
     });
   });
 
@@ -577,6 +595,28 @@ function bindEvents() {
   [els.search, els.categoryFilter, els.ageFilter, els.testamentFilter, els.specialFilter, els.createdMonthFilter].filter(Boolean).forEach((el) => {
     el.addEventListener("input", refreshFilteredViews);
     el.addEventListener("change", refreshFilteredViews);
+  });
+
+  els.openFilterSheet?.addEventListener("click", openFilterSheet);
+  els.closeFilterSheet?.addEventListener("click", closeFilterSheet);
+  els.applyFilterSheet?.addEventListener("click", () => {
+    renderActiveFilteredView();
+    closeFilterSheet();
+    scrollToActiveView();
+  });
+  els.clearMobileFilters?.addEventListener("click", () => {
+    resetFilters();
+    renderActiveFilteredView();
+    updateMobileChrome();
+  });
+  els.openMobileMore?.addEventListener("click", openMobileMoreSheet);
+  els.closeMobileMore?.addEventListener("click", closeMobileMoreSheet);
+  els.mobileMoreSheet?.querySelectorAll("a").forEach((link) => {
+    link.addEventListener("click", closeMobileMoreSheet);
+  });
+  els.mobileMenuOverlay?.addEventListener("click", () => {
+    closeMobileMoreSheet();
+    closeFilterSheet();
   });
 
   els.newLesson?.addEventListener("click", () => {
@@ -611,6 +651,49 @@ function bindEvents() {
   document.querySelectorAll(".content-editor").forEach((form) => bindContentEditor(form));
   document.addEventListener("submit", syncAllRichTextEditors, true);
   window.addEventListener("resize", debounce(drawSky, 160));
+}
+
+function openFilterSheet() {
+  document.body.classList.add("filter-sheet-open");
+  if (els.mobileMenuOverlay) els.mobileMenuOverlay.hidden = false;
+  els.filterToolbar?.setAttribute("aria-modal", "true");
+  els.filterToolbar?.querySelector("input, select, button")?.focus();
+}
+
+function closeFilterSheet() {
+  document.body.classList.remove("filter-sheet-open");
+  els.filterToolbar?.removeAttribute("aria-modal");
+  if (!document.body.classList.contains("mobile-more-open") && els.mobileMenuOverlay) els.mobileMenuOverlay.hidden = true;
+}
+
+function openMobileMoreSheet() {
+  closeFilterSheet();
+  document.body.classList.add("mobile-more-open");
+  if (els.mobileMoreSheet) els.mobileMoreSheet.setAttribute("aria-hidden", "false");
+  if (els.mobileMenuOverlay) els.mobileMenuOverlay.hidden = false;
+}
+
+function closeMobileMoreSheet() {
+  document.body.classList.remove("mobile-more-open");
+  if (els.mobileMoreSheet) els.mobileMoreSheet.setAttribute("aria-hidden", "true");
+  if (!document.body.classList.contains("filter-sheet-open") && els.mobileMenuOverlay) els.mobileMenuOverlay.hidden = true;
+}
+
+function scrollToActiveView() {
+  const target = state.tab === "home"
+    ? els.homeView
+    : state.tab === "study"
+      ? els.studyView
+      : state.tab === "trails"
+        ? els.trailsView
+        : state.tab === "devotional"
+          ? els.devotionalView
+          : state.tab === "training"
+            ? els.trainingView
+            : state.tab === "ebf"
+              ? els.ebfView
+              : document.querySelector("main");
+  window.requestAnimationFrame(() => target?.scrollIntoView({ behavior: "smooth", block: "start" }));
 }
 
 function enhanceRichTextEditors() {
@@ -789,6 +872,7 @@ function setTab(tabName) {
   if (!canAccessTab(tabName)) tabName = state.authUser ? "devotional" : "home";
   const previousTab = state.tab;
   state.tab = tabName;
+  document.body.dataset.activeTab = tabName;
   if (previousTab !== tabName) resetFilters();
   els.tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.tab === tabName));
   els.homeView?.classList.toggle("active", tabName === "home");
@@ -808,6 +892,8 @@ function setTab(tabName) {
     }, 0);
   }
   renderActiveFilteredView();
+  closeFilterSheet();
+  updateMobileChrome();
 }
 
 function updateFilterVisibility(tabName) {
@@ -853,6 +939,27 @@ function setManageTab(tabName) {
   if (tabName === "communication") window.loadCommunicationCenter?.();
   if (tabName === "contact") window.loadAdminSiteInfo?.();
   if (tabName === "news") renderNotifications();
+}
+
+function updateMobileChrome() {
+  document.querySelectorAll("[data-mobile-tab]").forEach((item) => {
+    item.classList.toggle("active", item.dataset.mobileTab === state.tab);
+  });
+
+  document.querySelectorAll("[data-age-select]").forEach((item) => {
+    item.classList.toggle("active", els.ageFilter?.value === item.dataset.ageSelect);
+  });
+
+  if (els.mobileFilterSummary) {
+    const parts = [];
+    if (els.search?.value) parts.push(`Busca: ${els.search.value}`);
+    if (els.categoryFilter?.value && els.categoryFilter.value !== "Todas") parts.push(els.categoryFilter.value);
+    if (els.ageFilter?.value && els.ageFilter.value !== "Todas") parts.push(els.ageFilter.value.replace(" anos - ", "-"));
+    if (els.testamentFilter?.value && els.testamentFilter.value !== "Todos") parts.push(els.testamentFilter.value);
+    if (els.specialFilter?.value && els.specialFilter.value !== "Todas") parts.push(els.specialFilter.value);
+    if (els.createdMonthFilter?.value) parts.push(`Mês ${els.createdMonthFilter.value}`);
+    els.mobileFilterSummary.textContent = parts.length ? parts.join(" • ") : "Todos os conteúdos";
+  }
 }
 
 function applyAccessVisibility() {
@@ -912,6 +1019,7 @@ function render() {
 }
 
 function renderActiveFilteredView() {
+  updateMobileChrome();
   if (state.tab === "devotional") {
     renderDevotionals();
     return;
@@ -1312,7 +1420,25 @@ function trimTrailingUrlPunctuation(url) {
 }
 
 function formatLessonTextFragment(value) {
-  return richTextToHtml(value).replace(/\n/g, "<br>");
+  const source = normalizeDisplayLineBreaks(value);
+  const html = richTextToHtml(source).replace(/\n/g, "<br>");
+  return normalizeDisplayHtmlBreaks(html);
+}
+
+function normalizeDisplayLineBreaks(value) {
+  return String(value || "")
+    .replace(/\r\n?/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n");
+}
+
+function normalizeDisplayHtmlBreaks(html) {
+  return String(html || "")
+    .replace(/<(p|div)>\s*(?:<br\s*\/?>)?\s*<\/\1>/gi, "")
+    .replace(/(<br\s*\/?>\s*){3,}/gi, "<br><br>")
+    .replace(/(?:<\/p>\s*<p>\s*(?:<br\s*\/?>\s*)?){2,}/gi, "</p><p>")
+    .trim();
 }
 
 // Mantem o acervo visivel para visitantes, mas protege o conteudo completo.
