@@ -3729,7 +3729,7 @@ textarea,
     width: 210mm !important;
     max-width: none !important;
     margin: 0 !important;
-    min-height: 297mm !important;
+    min-height: 296mm !important;
     overflow: visible !important;
     background: transparent !important;
     box-shadow: none !important;
@@ -3737,13 +3737,18 @@ textarea,
 
   body.ebook-printing .ebook-cover {
     display: grid !important;
-    min-height: 297mm !important;
+    height: 296mm !important;
+    min-height: 296mm !important;
+    max-height: 296mm !important;
     align-content: center !important;
     justify-items: center !important;
-    padding: 35mm !important;
+    padding: 34mm 32mm !important;
     border: 0 !important;
     background: #fff !important;
     text-align: center !important;
+    overflow: hidden !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
     break-after: page;
     page-break-after: always;
   }
@@ -4009,12 +4014,12 @@ textarea,
 
   body.ebook-printing .ebook-page-model {
     position: absolute !important;
-    inset: 5mm !important;
+    inset: 6mm !important;
     z-index: 0 !important;
-    width: 200mm !important;
-    height: 287mm !important;
+    width: calc(100% - 12mm) !important;
+    height: calc(100% - 12mm) !important;
     max-width: none !important;
-    object-fit: fill !important;
+    object-fit: contain !important;
     pointer-events: none !important;
   }
 
