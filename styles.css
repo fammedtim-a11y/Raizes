@@ -1866,6 +1866,24 @@ button.master-only.visible,
   background: rgba(255, 255, 255, 0.08);
 }
 
+.trail-favorite {
+  min-width: 46px;
+  padding-inline: 12px;
+  font-size: 1.05rem;
+}
+
+.trail-favorite.active {
+  color: #3f2e08;
+  border-color: rgba(255, 217, 61, 0.7);
+  background: linear-gradient(135deg, #fff3a8, #ffd93d);
+}
+
+.stream-mobile-hint {
+  display: block;
+  color: rgba(255, 255, 255, 0.68);
+  font-weight: 800;
+}
+
 .compact-empty {
   min-height: 280px;
   border: 1px solid var(--line);
@@ -5545,5 +5563,197 @@ summary {
 
   .mobile-bottom-nav span {
     font-size: 1.05rem;
+  }
+}
+
+/* Trilhas mobile: experiência de streaming com player focado, favoritos e carrosséis horizontais. */
+.trail-card .trail-favorite.active,
+.stream-player .trail-favorite.active {
+  color: #3f2e08;
+  border-color: rgba(255, 217, 61, 0.7);
+  background: linear-gradient(135deg, #fff3a8, #ffd93d);
+}
+
+.stream-player .stream-mobile-hint {
+  color: #526176;
+}
+
+@media (max-width: 720px) {
+  body[data-active-tab="trails"] .app-shell {
+    padding-inline: 8px;
+  }
+
+  body[data-active-tab="trails"] .mobile-filter-button {
+    min-height: 50px;
+  }
+
+  .trails-layout {
+    gap: 14px;
+    padding: 10px;
+    border-radius: 20px;
+  }
+
+  .trails-header {
+    padding: 6px 4px 0;
+  }
+
+  .trails-header h2 {
+    font-size: clamp(1.35rem, 7vw, 1.85rem);
+    line-height: 1.06;
+  }
+
+  .trail-count {
+    width: fit-content;
+    padding: 6px 10px;
+    font-size: 0.82rem;
+  }
+
+  .stream-player {
+    display: grid;
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.94);
+  }
+
+  .stream-player-frame {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    min-height: auto !important;
+    max-height: none !important;
+    border-radius: 16px;
+  }
+
+  .stream-player-info {
+    gap: 8px;
+    align-content: start;
+  }
+
+  .stream-player-info h2 {
+    font-size: clamp(1.24rem, 6.5vw, 1.65rem);
+    line-height: 1.08;
+  }
+
+  .stream-mobile-hint {
+    display: block;
+    color: #526176;
+    font-size: 0.86rem;
+  }
+
+  .stream-player .trail-actions {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+  }
+
+  .stream-player .trail-favorite {
+    min-width: 54px;
+    padding-inline: 10px;
+  }
+
+  .stream-hero {
+    display: none;
+  }
+
+  .stream-quick-nav {
+    display: flex !important;
+    grid-auto-flow: unset !important;
+    grid-template-columns: none !important;
+    gap: 8px;
+    margin-inline: -2px;
+    overflow-x: auto !important;
+    padding: 0 2px 10px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .stream-quick-nav::-webkit-scrollbar,
+  .trail-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .stream-quick-nav a {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    white-space: nowrap;
+  }
+
+  .trail-grid {
+    gap: 18px;
+  }
+
+  .trail-row-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .trail-row-heading h3 {
+    font-size: 1.08rem;
+    line-height: 1.1;
+  }
+
+  .trail-row-controls {
+    display: none;
+  }
+
+  .trail-rail {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-template-columns: none !important;
+    grid-auto-columns: minmax(238px, 78vw) !important;
+    gap: 10px;
+    overflow-x: auto !important;
+    overflow-y: visible;
+    padding: 2px 2px 14px;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-inline: contain;
+  }
+
+  .trail-card {
+    width: auto;
+    min-height: 236px;
+    border-radius: 16px;
+    scroll-snap-align: start;
+  }
+
+  .trail-thumb {
+    border-radius: 16px 16px 0 0;
+  }
+
+  .trail-thumb span {
+    width: 48px;
+    height: 48px;
+  }
+
+  .trail-content {
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .trail-content h3 {
+    min-height: 2.5em;
+    font-size: 1rem;
+    line-height: 1.22;
+  }
+
+  .trail-card .trail-actions {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+  }
+
+  .trail-card .icon-button {
+    min-height: 44px;
+    padding-inline: 10px;
+  }
+
+  .trail-card .trail-favorite {
+    width: 46px;
+    min-width: 46px;
+    padding-inline: 0;
   }
 }

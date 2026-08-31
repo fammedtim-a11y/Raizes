@@ -118,11 +118,13 @@ const state = {
   ebfs: loadCollection("raizes-ebf", []),
   notifications: loadCollection("raizes-notifications", []),
   manualVideos: loadManualVideos(),
+  favoriteVideoIds: loadFavoriteVideoIds(),
   activeId: null,
   activeDevotionalId: null,
   activeTrainingId: null,
   activeEbfId: null,
   activeVideoId: null,
+  trailAutoplay: false,
   tab: "home",
   manageTab: "lessons",
   trailsRendered: false,
@@ -533,6 +535,30 @@ function saveManualVideos() {
   localStorage.setItem("raizes-manual-videos", JSON.stringify(state.manualVideos));
 }
 
+function loadFavoriteVideoIds() {
+  const saved = localStorage.getItem("raizes-favorite-videos");
+  if (!saved) return [];
+  try {
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveFavoriteVideoIds() {
+  localStorage.setItem("raizes-favorite-videos", JSON.stringify(state.favoriteVideoIds));
+}
+
+function saveLastTrailVideo(video) {
+  if (!video?.id) return;
+  localStorage.setItem("raizes-last-trail-video", video.id);
+}
+
+function loadLastTrailVideoId() {
+  return localStorage.getItem("raizes-last-trail-video") || "";
+}
+
 function bindEvents() {
   document.querySelectorAll(".nav-menu").forEach((menu) => {
     menu.addEventListener("toggle", () => {
@@ -557,12 +583,17 @@ function bindEvents() {
   document.querySelectorAll("[data-age-select]").forEach((button) => {
     button.addEventListener("click", () => {
       const mappedAge = button.dataset.ageSelect;
-      setTab("study");
+      const targetTab = state.tab === "trails" ? "trails" : "study";
+      setTab(targetTab);
       els.ageFilter.value = mappedAge;
       renderList();
       if (state.trailsRendered) renderTrails();
       updateMobileChrome();
-      scrollToLessonRail();
+      if (targetTab === "trails") {
+        scrollToActiveView();
+      } else {
+        scrollToLessonRail();
+      }
     });
   });
 
@@ -918,6 +949,7 @@ function stopTrailPlayback() {
   // Remove o iframe do YouTube ao sair de Trilhas, garantindo que o video pare.
   els.streamPlayer.innerHTML = "";
   state.trailsRendered = false;
+  state.trailAutoplay = false;
 }
 
 function setManageTab(tabName) {
@@ -2397,14 +2429,15 @@ function renderTrails() {
   }
 
   if (!videos.some((video) => video.id === state.activeVideoId)) {
-    state.activeVideoId = pickFeaturedVideo(videos).id;
+    const lastVideo = videos.find((video) => video.id === loadLastTrailVideoId());
+    state.activeVideoId = (lastVideo || pickFeaturedVideo(videos)).id;
   }
 
   const activeVideo = videos.find((video) => video.id === state.activeVideoId) || videos[0];
   if (locked) {
     renderLockedStreamPlayer(activeVideo);
   } else {
-    renderStreamPlayer(activeVideo);
+    renderStreamPlayer(activeVideo, { autoplay: state.trailAutoplay });
   }
   renderStreamHero(pickFeaturedVideo(videos));
   const grouped = groupVideosByShelf(videos);
@@ -2447,8 +2480,17 @@ function renderTrails() {
         return;
       }
       state.activeVideoId = selectedVideo.id;
+      state.trailAutoplay = true;
+      saveLastTrailVideo(selectedVideo);
       renderTrails();
       els.streamPlayer?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+
+  document.querySelectorAll("[data-toggle-favorite-video]").forEach((button) => {
+    button.addEventListener("click", () => {
+      toggleFavoriteVideo(button.dataset.toggleFavoriteVideo);
+      renderTrails();
     });
   });
 
@@ -2821,9 +2863,7 @@ function formatMonthYear(value) {
 function renderTrailCard(video) {
   const locked = catalogIsLimited();
   const title = cleanTrailDisplayText(video.title, "Trilha bíblica");
-  const watchActions = locked
-    ? '<a class="icon-button accent" href="login.html">Entrar para assistir</a>'
-    : `<a class="icon-button" href="${escapeHtml(video.url)}" target="_blank" rel="noreferrer">YouTube</a>`;
+  const favorite = isFavoriteVideo(video.id);
   return `
     <article class="trail-card ${video.id === state.activeVideoId ? "active" : ""} ${locked ? "locked" : ""}">
       <button class="trail-thumb" type="button" data-play-video="${escapeHtml(video.id)}" aria-label="Reproduzir vídeo ${escapeHtml(title)}">
@@ -2835,7 +2875,7 @@ function renderTrailCard(video) {
         ${locked ? '<span class="pill lock-pill">Bloqueado</span>' : ""}
         <div class="trail-actions">
           <button class="icon-button" type="button" data-play-video="${escapeHtml(video.id)}">${locked ? "Ver bloqueio" : "Assistir"}</button>
-          ${watchActions}
+          ${locked ? '<a class="icon-button accent" href="login.html">Entrar</a>' : `<button class="icon-button trail-favorite ${favorite ? "active" : ""}" type="button" data-toggle-favorite-video="${escapeHtml(video.id)}" aria-label="${favorite ? "Remover dos favoritos" : "Salvar nos favoritos"}">${favorite ? "★" : "☆"}</button>`}
           ${video.source === "manual" ? `<button class="icon-button" type="button" data-edit-video="${escapeHtml(video.id)}">Editar</button>` : ""}
         </div>
       </div>
@@ -2850,6 +2890,9 @@ function groupVideosByShelf(videos) {
     if (uniqueVideos.length) shelves.set(name, uniqueVideos);
   };
 
+  const lastVideo = videos.find((video) => video.id === loadLastTrailVideoId());
+  addShelf("▶ Continuar vendo", lastVideo ? [lastVideo] : []);
+  addShelf("★ Minha lista", videos.filter((video) => isFavoriteVideo(video.id)));
   addShelf("🔥 Em Alta", videos.filter((video) => video.trending || videoRank(video) >= 8));
 
   const manual = videos.filter((video) => video.source === "manual");
@@ -2863,21 +2906,24 @@ function groupVideosByShelf(videos) {
   return [...shelves.entries()];
 }
 
-function renderStreamPlayer(video) {
+function renderStreamPlayer(video, options = {}) {
   const title = cleanTrailDisplayText(video.title, "Trilha bíblica");
-  // Nao adicionar autoplay aqui: o video deve iniciar somente quando o usuario decidir.
+  const favorite = isFavoriteVideo(video.id);
+  const autoplay = options.autoplay ? "&autoplay=1" : "";
   els.streamPlayer.innerHTML = `
     <div class="stream-player-frame">
       <iframe
-        src="https://www.youtube-nocookie.com/embed/${escapeHtml(video.youtubeId)}?rel=0&modestbranding=1"
+        src="https://www.youtube-nocookie.com/embed/${escapeHtml(video.youtubeId)}?rel=0&modestbranding=1${autoplay}"
         title="${escapeHtml(title)}"
         allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowfullscreen></iframe>
     </div>
     <div class="stream-player-info">
       <h2>${escapeHtml(title)}</h2>
+      <span class="stream-mobile-hint">Toque em outro card para trocar de vídeo.</span>
       <div class="trail-actions">
         <a class="icon-button accent" href="${escapeHtml(watchUrl(video))}" target="_blank" rel="noreferrer">Abrir no YouTube</a>
+        <button class="icon-button trail-favorite ${favorite ? "active" : ""}" type="button" data-toggle-favorite-video="${escapeHtml(video.id)}">${favorite ? "★ Salvo" : "☆ Salvar"}</button>
       </div>
     </div>
   `;
@@ -3244,6 +3290,20 @@ function buildEbookLessonHtml(lesson, number, isLast = false) {
       ${buildPdfPageFooter()}
     </section>
   `;
+}
+
+function isFavoriteVideo(id) {
+  return state.favoriteVideoIds.includes(id);
+}
+
+function toggleFavoriteVideo(id) {
+  if (!id) return;
+  if (state.favoriteVideoIds.includes(id)) {
+    state.favoriteVideoIds = state.favoriteVideoIds.filter((item) => item !== id);
+  } else {
+    state.favoriteVideoIds = [id, ...state.favoriteVideoIds].slice(0, 80);
+  }
+  saveFavoriteVideoIds();
 }
 
 function buildPdfCopyFragments(text) {
