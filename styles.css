@@ -3814,7 +3814,7 @@ textarea,
 
   body.ebook-printing .ebook-toc {
     min-height: 297mm !important;
-    padding: 18mm 20mm 38mm !important;
+    padding: 0 20mm 32mm !important;
     background: #fff !important;
     break-after: page;
     page-break-after: always;
@@ -3842,14 +3842,20 @@ textarea,
   body.ebook-printing .ebook-lesson {
     display: block !important;
     min-height: 297mm !important;
-    padding: 18mm 20mm 38mm !important;
+    padding: 0 20mm 32mm !important;
     border: 0 !important;
     border-radius: 0 !important;
     background: #fff !important;
+    break-before: auto;
+    page-break-before: auto;
+  }
+
+  body.ebook-printing .ebook-lesson + .ebook-lesson {
     break-before: page;
     page-break-before: always;
   }
 
+  body.ebook-printing .ebook-cover + .ebook-lesson,
   body.ebook-printing .ebook-toc + .ebook-lesson {
     break-before: auto;
     page-break-before: auto;
@@ -3864,9 +3870,10 @@ textarea,
     justify-content: flex-end !important;
     align-items: center !important;
     width: 100% !important;
-    min-height: 17mm !important;
-    margin: 0 0 8mm !important;
-    padding: 0 0 3.5mm !important;
+    height: 25mm !important;
+    min-height: 25mm !important;
+    margin: 0 0 6mm !important;
+    padding: 6mm 0 4mm !important;
     border-bottom: 0.45mm solid rgba(31, 77, 117, 0.22) !important;
   }
 
@@ -3981,16 +3988,17 @@ textarea,
   body.ebook-printing .ebook-page-footer {
     position: absolute !important;
     right: 20mm !important;
-    bottom: 10mm !important;
+    bottom: 0 !important;
     left: 20mm !important;
     display: grid !important;
     grid-template-columns: 18mm minmax(0, 1fr) minmax(0, 1fr) !important;
     gap: 4mm !important;
     align-items: center !important;
     width: auto !important;
-    min-height: 0 !important;
+    height: 25mm !important;
+    min-height: 25mm !important;
     margin: 0 !important;
-    padding: 4mm 0 0 !important;
+    padding: 4mm 0 3mm !important;
     border-top: 0.35mm solid rgba(31, 77, 117, 0.22) !important;
     color: #31506f !important;
     font-size: 8pt !important;
