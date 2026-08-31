@@ -2821,8 +2821,6 @@ function formatMonthYear(value) {
 function renderTrailCard(video) {
   const locked = catalogIsLimited();
   const title = cleanTrailDisplayText(video.title, "Trilha bíblica");
-  const category = cleanTrailDisplayText(video.category, "Trilha");
-  const description = cleanTrailDisplayText(video.description || video.lessonTitle, "Vídeo de apoio para a lição.");
   const watchActions = locked
     ? '<a class="icon-button accent" href="login.html">Entrar para assistir</a>'
     : `<a class="icon-button" href="${escapeHtml(video.url)}" target="_blank" rel="noreferrer">YouTube</a>`;
@@ -2833,9 +2831,7 @@ function renderTrailCard(video) {
         <span>${locked ? "🔒" : "▶"}</span>
       </button>
       <div class="trail-content">
-        <span class="trail-category-line">${escapeHtml(category)}</span>
         <h3>${escapeHtml(title)}</h3>
-        <p>${escapeHtml(description)}</p>
         ${locked ? '<span class="pill lock-pill">Bloqueado</span>' : ""}
         <div class="trail-actions">
           <button class="icon-button" type="button" data-play-video="${escapeHtml(video.id)}">${locked ? "Ver bloqueio" : "Assistir"}</button>
@@ -2850,7 +2846,7 @@ function renderTrailCard(video) {
 function groupVideosByShelf(videos) {
   const shelves = new Map();
   const addShelf = (name, shelfVideos) => {
-    const uniqueVideos = dedupeVideos(shelfVideos).slice(0, 6);
+    const uniqueVideos = dedupeVideos(shelfVideos);
     if (uniqueVideos.length) shelves.set(name, uniqueVideos);
   };
 
@@ -2869,9 +2865,6 @@ function groupVideosByShelf(videos) {
 
 function renderStreamPlayer(video) {
   const title = cleanTrailDisplayText(video.title, "Trilha bíblica");
-  const category = cleanTrailDisplayText(video.category, "Trilha");
-  const description = cleanTrailDisplayText(video.description || video.lessonTitle, "Vídeo selecionado para apoiar a lição.");
-  const playlist = cleanTrailDisplayText(video.playlist || video.season, "Catálogo");
   // Nao adicionar autoplay aqui: o video deve iniciar somente quando o usuario decidir.
   els.streamPlayer.innerHTML = `
     <div class="stream-player-frame">
@@ -2884,15 +2877,8 @@ function renderStreamPlayer(video) {
     <div class="stream-player-info">
       <span class="reader-kicker">Assistindo na página</span>
       <h2>${escapeHtml(title)}</h2>
-      <p>${escapeHtml(description)}</p>
-      <div class="lesson-meta">
-        <span class="pill">${escapeHtml(category)}</span>
-        <span class="pill">${escapeHtml(video.age ? ageText(video.age) : "Todas as idades")}</span>
-        <span class="pill">${escapeHtml(playlist)}</span>
-      </div>
       <div class="trail-actions">
         <a class="icon-button accent" href="${escapeHtml(watchUrl(video))}" target="_blank" rel="noreferrer">Abrir no YouTube</a>
-        <a class="icon-button" href="${escapeHtml(video.url)}" target="_blank" rel="noreferrer">Ver no YouTube</a>
       </div>
     </div>
   `;
@@ -2901,7 +2887,6 @@ function renderStreamPlayer(video) {
 // O player nao usa autoplay: o lider escolhe quando iniciar o video.
 function renderLockedStreamPlayer(video) {
   const title = cleanTrailDisplayText(video.title, "Trilha bíblica");
-  const category = cleanTrailDisplayText(video.category, "Trilha");
   els.streamPlayer.innerHTML = `
     <div class="locked-reader stream-lock">
       <span class="locked-icon">🔒</span>
@@ -2909,8 +2894,6 @@ function renderLockedStreamPlayer(video) {
       <h2>${escapeHtml(title)}</h2>
       <p>Esta trilha está no acervo, mas o vídeo completo é liberado apenas para usuários com acesso ativo.</p>
       <div class="lesson-meta">
-        <span class="pill">${escapeHtml(category)}</span>
-        <span class="pill">${escapeHtml(video.age ? ageText(video.age) : "Todas as idades")}</span>
         <span class="pill lock-pill">Bloqueado</span>
       </div>
       <div class="home-login-actions">
@@ -2924,12 +2907,10 @@ function renderLockedStreamPlayer(video) {
 function renderStreamHero(video) {
   const locked = catalogIsLimited();
   const title = cleanTrailDisplayText(video.title, "Trilha bíblica");
-  const description = cleanTrailDisplayText(video.description || video.lessonTitle, "Conteúdo em destaque para sua aula.");
   els.streamHero.innerHTML = `
     <div class="stream-hero-copy">
       <span class="reader-kicker">Destaque inteligente</span>
       <h2>${escapeHtml(title)}</h2>
-      <p>${escapeHtml(description)}</p>
       <div class="trail-actions">
         <button class="icon-button accent" type="button" data-play-video="${escapeHtml(video.id)}">${locked ? "🔒 Ver bloqueio" : "▶ Assistir agora"}</button>
         ${locked ? '<a class="icon-button" href="login.html">Entrar para liberar</a>' : `<a class="icon-button" href="${escapeHtml(watchUrl(video))}" target="_blank" rel="noreferrer">Abrir no YouTube</a>`}
@@ -2992,18 +2973,16 @@ function shelfId(name) {
 }
 
 function filteredVideos() {
-  const filteredLessonIds = new Set(filteredLessons().map((lesson) => lesson.id));
   const term = normalize(els.search.value);
   const category = els.categoryFilter.value;
   const age = els.ageFilter.value;
 
   const videos = allVideos().filter((video) => {
-    const linkedMatch = video.lessonId ? filteredLessonIds.has(video.lessonId) : true;
     const content = normalize([video.title, video.category, video.age, video.description, video.lessonTitle].map((value) => cleanTrailDisplayText(value)).join(" "));
     const matchesTerm = !term || content.includes(term);
     const matchesCategory = category === "Todas" || cleanTrailDisplayText(video.category) === category;
     const matchesAge = age === "Todas" || !video.age || normalizeAgeLabel(video.age) === age;
-    return linkedMatch && matchesTerm && matchesCategory && matchesAge;
+    return matchesTerm && matchesCategory && matchesAge;
   });
 
   return isTestUser() ? videos.slice(0, 1) : videos;
@@ -3039,7 +3018,8 @@ function extractLessonVideos(lesson) {
     lines.forEach((line, index) => {
       const urls = line.match(/https?:\/\/[^\s)"]+/g) || [];
       urls.filter((url) => /youtu\.?be|youtube\.com/i.test(url)).forEach((url) => {
-        const youtubeId = getYouTubeId(url);
+        const cleanUrl = trimTrailingUrlPunctuation(url);
+        const youtubeId = getYouTubeId(cleanUrl);
         if (!youtubeId) return;
         const lineTitle = cleanVideoTitle(line.replace(url, ""));
         const previousTitle = cleanVideoTitle(lines[index - 1] || "");
@@ -3047,7 +3027,7 @@ function extractLessonVideos(lesson) {
           id: `auto-${lesson.id}-${youtubeId}`,
           source: "lesson",
           title: lineTitle || previousTitle || `${label} · ${lesson.title}`,
-          url,
+          url: cleanUrl,
           youtubeId,
           category: lesson.category,
           age: lesson.age,
@@ -3076,13 +3056,14 @@ function extractContentVideos(item, source) {
   ].filter(Boolean).join("\n");
   const urls = text.match(/https?:\/\/[^\s)"]+/g) || [];
   urls.filter((url) => /youtu\.?be|youtube\.com/i.test(url)).forEach((url) => {
-    const youtubeId = getYouTubeId(url);
+    const cleanUrl = trimTrailingUrlPunctuation(url);
+    const youtubeId = getYouTubeId(cleanUrl);
     if (!youtubeId) return;
     videos.push({
       id: `auto-${source}-${item.id}-${youtubeId}`,
       source,
       title: `${source === "devotional" ? "Culto em Família" : "Treinamento"} · ${item.title}`,
-      url,
+      url: cleanUrl,
       youtubeId,
       category: item.category || (source === "devotional" ? "Culto em Família" : "Treinamento"),
       age: "",

@@ -1477,7 +1477,7 @@ button.master-only.visible,
 
 .stream-player {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr);
+  grid-template-columns: minmax(0, 1.65fr) minmax(240px, 0.45fr);
   gap: 18px;
   align-items: stretch;
   padding: 14px;
@@ -1494,6 +1494,8 @@ button.master-only.visible,
   border-radius: 8px;
   background: #000;
   aspect-ratio: 16 / 9;
+  min-height: 280px;
+  max-height: 620px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.32);
 }
 
@@ -1563,10 +1565,10 @@ button.master-only.visible,
 
 .stream-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.58fr);
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.5fr);
   gap: 18px;
   align-items: center;
-  min-height: 330px;
+  min-height: 260px;
   padding: 28px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
@@ -1728,7 +1730,7 @@ button.master-only.visible,
 
 .trail-rail {
   display: grid;
-  grid-auto-columns: minmax(255px, 305px);
+  grid-auto-columns: minmax(245px, 292px);
   grid-auto-flow: column;
   gap: 12px;
   overflow-x: auto;
@@ -1748,7 +1750,7 @@ button.master-only.visible,
   box-shadow: 0 18px 32px rgba(0, 0, 0, 0.2);
   transform-origin: center left;
   transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
-  min-height: 365px;
+  min-height: 268px;
 }
 
 .trail-card:hover {
@@ -1814,7 +1816,7 @@ button.master-only.visible,
   display: grid;
   gap: 10px;
   padding: 15px;
-  grid-template-rows: auto auto auto 1fr;
+  grid-template-rows: auto 1fr;
 }
 
 .trail-category-line {
@@ -4654,6 +4656,11 @@ body.is-authenticated .visitor-only {
   .stream-player,
   .stream-hero {
     padding: 12px;
+  }
+
+  .stream-player-frame {
+    min-height: auto;
+    max-height: none;
   }
 
   .manage-tabs {
