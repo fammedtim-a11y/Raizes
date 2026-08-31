@@ -96,10 +96,11 @@ const mimeTypes = {
 
 const defaultSiteInfo = {
   about: "Raízes Kids é uma plataforma criada para facilitar a vida de líderes e discipuladores de crianças, reunindo lições, trilhas, cultos em família e materiais de apoio em um só lugar.",
-  contactEmail: "raizes.r12@gmail.com",
+  contactEmail: "administrador@raizeskids.com",
   whatsapp: "31971773756",
-  instagram: "@raizes_r12",
-  siteUrl: "https://raizes-fic9.onrender.com/"
+  instagram: "@raizeskids_",
+  siteUrl: "www.raizeskids.com",
+  teamMembers: []
 };
 
 const ageAliases = {
@@ -306,9 +307,11 @@ function applySiteInfoContactUpdates() {
   const next = { ...info };
   const oldAbout = "Raizes Kids e uma plataforma criada para facilitar a vida de lideres e discipuladores de criancas, reunindo licoes, trilhas, cultos em familia e materiais de apoio em um so lugar.";
   if (!next.about || next.about === oldAbout || /Raizes Kids e uma plataforma/.test(next.about)) next.about = defaultSiteInfo.about;
-  if (!next.contactEmail || next.contactEmail === "raizes@gmail.com") next.contactEmail = defaultSiteInfo.contactEmail;
+  if (!next.contactEmail || next.contactEmail === "raizes@gmail.com" || next.contactEmail === "raizes.r12@gmail.com") next.contactEmail = defaultSiteInfo.contactEmail;
   if (!next.whatsapp || onlyDigits(next.whatsapp) === "31971773756") next.whatsapp = defaultSiteInfo.whatsapp;
-  if (!next.instagram || next.instagram === "@raizeskids") next.instagram = defaultSiteInfo.instagram;
+  if (!next.instagram || next.instagram === "@raizeskids" || next.instagram === "@raizes_r12") next.instagram = defaultSiteInfo.instagram;
+  if (!next.siteUrl || next.siteUrl === "https://raizes-fic9.onrender.com/") next.siteUrl = defaultSiteInfo.siteUrl;
+  if (!Array.isArray(next.teamMembers)) next.teamMembers = defaultSiteInfo.teamMembers;
   if (JSON.stringify(next) !== JSON.stringify(info)) writeSiteInfo(next);
 }
 
@@ -559,7 +562,7 @@ async function handleApi(req, res, url) {
 
   const renewMatch = url.pathname.match(/^\/api\/admin\/users\/([^/]+)\/renew-license$/);
   if (req.method === "POST" && renewMatch) {
-    renewUserLicense(res, renewMatch[1]);
+    await renewUserLicense(req, res, renewMatch[1]);
     return;
   }
 
@@ -855,7 +858,7 @@ function updateUserActive(res, id, active) {
   const users = readUsers();
   const user = users.find((item) => item.id === id);
   if (!user || user.role === "admin") {
-    sendJson(res, 404, { error: "UsuÃ¡rio nÃ£o encontrado." });
+    sendJson(res, 404, { error: "Usuário não encontrado." });
     return;
   }
   user.active = active;
@@ -868,20 +871,34 @@ function updateUserActive(res, id, active) {
   sendJson(res, 200, { user: publicAdminUser(user) });
 }
 
-function renewUserLicense(res, id) {
+async function renewUserLicense(req, res, id) {
+  const body = await readBody(req);
   const users = readUsers();
   const user = users.find((item) => item.id === id);
   if (!user || user.role === "admin") {
     sendJson(res, 404, { error: "Usuario nao encontrado." });
     return;
   }
-  addLicenseDays(user, LICENSE_DAYS);
+  const expiresAt = String(body.licenseExpiresAt || "").trim();
+  if (expiresAt) {
+    const date = new Date(`${expiresAt}T23:59:59.999-03:00`);
+    if (Number.isNaN(date.getTime())) {
+      sendJson(res, 400, { error: "Data de vencimento invalida." });
+      return;
+    }
+    user.licenseExpiresAt = date.toISOString();
+  } else {
+    addLicenseDays(user, LICENSE_DAYS);
+  }
   user.active = true;
   user.approved = true;
   user.renewalRequested = false;
   user.updatedAt = new Date().toISOString();
   writeUsers(users);
-  sendJson(res, 200, { user: publicAdminUser(user), message: "Licenca renovada por 364 dias." });
+  sendJson(res, 200, {
+    user: publicAdminUser(user),
+    message: expiresAt ? `Licenca atualizada ate ${expiresAt}.` : "Licenca renovada por 364 dias."
+  });
 }
 
 async function adminResetPassword(req, res, id) {
@@ -1082,7 +1099,9 @@ function readSiteInfo() {
   if (!fs.existsSync(SITE_INFO_FILE)) return { ...defaultSiteInfo };
   try {
     const parsed = JSON.parse(fs.readFileSync(SITE_INFO_FILE, "utf8"));
-    return { ...defaultSiteInfo, ...(parsed || {}) };
+    const info = { ...defaultSiteInfo, ...(parsed || {}) };
+    info.teamMembers = normalizeTeamMembers(info.teamMembers);
+    return info;
   } catch {
     return { ...defaultSiteInfo };
   }
@@ -1670,10 +1689,25 @@ async function updateSiteInfo(req, res) {
     whatsapp: onlyDigits(body.whatsapp || defaultSiteInfo.whatsapp),
     instagram: cleanText(body.instagram || defaultSiteInfo.instagram),
     siteUrl: cleanText(body.siteUrl || defaultSiteInfo.siteUrl),
+    teamMembers: normalizeTeamMembers(body.teamMembers),
     updatedAt: new Date().toISOString()
   };
   writeSiteInfo(info);
   sendJson(res, 200, { ok: true, info, message: "Informacoes de contato atualizadas." });
+}
+
+function normalizeTeamMembers(items) {
+  const list = Array.isArray(items) ? items : [];
+  return list
+    .map((item) => ({
+      id: cleanText(item.id || crypto.randomUUID()),
+      name: cleanText(item.name || ""),
+      role: cleanText(item.role || ""),
+      photoUrl: cleanText(item.photoUrl || ""),
+      summary: cleanText(item.summary || "")
+    }))
+    .filter((item) => item.name || item.role || item.photoUrl || item.summary)
+    .slice(0, 30);
 }
 
 async function passwordResetRequest(req, res) {
@@ -1902,7 +1936,7 @@ function setSecurityHeaders(res) {
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://img.youtube.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self'; base-uri 'self'; form-action 'self'"
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; frame-src https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self'; base-uri 'self'; form-action 'self'"
   );
 }
 

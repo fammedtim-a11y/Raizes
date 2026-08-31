@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20260831-desktop-video-play" />
+    <link rel="stylesheet" href="styles.css?v=20260831-admin-control-team" />
   </head>
   <body data-page="admin">
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -95,19 +95,23 @@
 
         <section id="manageView" class="view active manage-layout" aria-label="Gerenciamento">
           <div class="manage-tabs">
-            <button class="manage-tab active" data-manage-tab="lessons" type="button">Lições</button>
-            <button class="manage-tab" data-manage-tab="devotionals" type="button">Culto em Família</button>
-            <button class="manage-tab" data-manage-tab="trails" type="button">Gerenciar trilhas</button>
-            <button class="manage-tab" data-manage-tab="news" type="button">Novidades</button>
-            <button class="manage-tab" data-manage-tab="trainings" type="button">Treinamentos</button>
-            <button class="manage-tab" data-manage-tab="ebf" type="button">EBF</button>
+            <details class="manage-tab-group manage-tab-dropdown" open aria-label="Conteúdo administrativo">
+              <summary class="manage-tab active">Conteúdo</summary>
+              <div class="manage-tab-submenu">
+                <button class="manage-tab active" data-manage-tab="lessons" type="button">Lições</button>
+                <button class="manage-tab" data-manage-tab="devotionals" type="button">Culto em Família</button>
+                <button class="manage-tab" data-manage-tab="trails" type="button">Trilhas</button>
+                <button class="manage-tab" data-manage-tab="trainings" type="button">Treinamentos</button>
+                <button class="manage-tab" data-manage-tab="ebf" type="button">EBF</button>
+                <button class="manage-tab" data-manage-tab="news" type="button">Novidades</button>
+              </div>
+            </details>
             <details class="manage-tab-group manage-tab-dropdown" aria-label="Controle administrativo">
               <summary class="manage-tab">Controle</summary>
               <div class="manage-tab-submenu">
-                <button class="manage-tab" data-manage-tab="access" type="button">Acesso</button>
+                <button class="manage-tab" data-manage-tab="users" type="button">Usuários e acessos</button>
                 <button class="manage-tab master-only" data-manage-tab="communication" type="button">Comunicação</button>
-                <button class="manage-tab" data-manage-tab="contact" type="button">Contato</button>
-                <button class="manage-tab" data-manage-tab="users" type="button">Usuários</button>
+                <button class="manage-tab" data-manage-tab="contact" type="button">Institucional</button>
               </div>
             </details>
           </div>
@@ -478,11 +482,18 @@
           <section id="userManagePanel" class="video-manager manage-panel">
             <div class="manager-heading">
               <div>
-                <h2>Usuários e aprovações</h2>
-                <p>Aprove novos cadastros, bloqueie acessos e acompanhe os dados dos usuários.</p>
+                <h2>Usuários e acessos</h2>
+                <p>Veja a última utilização na lista principal e abra cada usuário para aprovar, editar licença e acompanhar detalhes.</p>
+              </div>
+              <div class="admin-export-row">
+                <button id="exportUsersCsvBtn" class="icon-button primary" type="button">Exportar usuários</button>
+                <button id="exportAccessLogsCsvBtn" class="icon-button" type="button">Exportar acessos</button>
+                <button id="refreshAccessLogsBtn" class="icon-button" type="button">Atualizar</button>
+                <button id="clearAccessLogsBtn" class="icon-button danger" type="button">Apagar acessos</button>
               </div>
             </div>
             <div id="adminUsersList" class="user-admin-list"></div>
+            <div id="adminAccessLogsList" class="access-log-list compact-access-log-list"></div>
           </section>
 
           <section id="communicationManagePanel" class="video-manager manage-panel master-only">
@@ -548,26 +559,11 @@
             </div>
           </section>
 
-          <section id="accessManagePanel" class="video-manager manage-panel">
-            <div class="manager-heading">
-              <div>
-                <h2>Registro de acessos</h2>
-                <p>Veja fluxo de uso, IP e dispositivos usados para acessar o app.</p>
-              </div>
-              <div class="admin-export-row">
-                <button id="exportAccessLogsCsvBtn" class="icon-button primary" type="button">Exportar Excel</button>
-                <button id="refreshAccessLogsBtn" class="icon-button" type="button">Atualizar</button>
-                <button id="clearAccessLogsBtn" class="icon-button danger" type="button">Apagar registros</button>
-              </div>
-            </div>
-            <div id="adminAccessLogsList" class="access-log-list"></div>
-          </section>
-
           <section id="contactManagePanel" class="video-manager manage-panel">
             <div class="manager-heading">
               <div>
-                <h2>Sobre e contato</h2>
-                <p>Edite as informacoes institucionais exibidas no site.</p>
+                <h2>Institucional, contato e Quem Somos</h2>
+                <p>Edite as informações institucionais exibidas no site e mantenha a equipe atualizada.</p>
               </div>
             </div>
             <form id="siteInfoForm" class="editor">
@@ -578,7 +574,7 @@
               <div class="form-grid">
                 <label>
                   <span>Email de contato</span>
-                  <input name="contactEmail" type="email" placeholder="raizes.r12@gmail.com" />
+                  <input name="contactEmail" type="email" placeholder="administrador@raizeskids.com" />
                 </label>
                 <label>
                   <span>WhatsApp</span>
@@ -586,15 +582,25 @@
                 </label>
                 <label>
                   <span>Instagram</span>
-                  <input name="instagram" placeholder="@raizes_r12" />
+                  <input name="instagram" placeholder="@raizeskids_" />
                 </label>
                 <label>
                   <span>Site</span>
-                  <input name="siteUrl" type="url" placeholder="https://raizes-fic9.onrender.com/" />
+                  <input name="siteUrl" placeholder="www.raizeskids.com" />
                 </label>
               </div>
+              <section class="team-editor">
+                <div class="manager-heading compact-heading">
+                  <div>
+                    <h3>Quem Somos</h3>
+                    <p>Cadastre colaboradores com foto 3x4, função e resumo.</p>
+                  </div>
+                  <button id="addTeamMemberBtn" class="icon-button" type="button">Adicionar colaborador</button>
+                </div>
+                <div id="teamMembersEditor" class="team-members-editor"></div>
+              </section>
               <div class="form-actions">
-                <button class="icon-button primary" type="submit">Salvar informacoes</button>
+                <button class="icon-button primary" type="submit">Salvar informações</button>
               </div>
               <p id="siteInfoMessage" class="action-message" role="status"></p>
             </form>
@@ -603,8 +609,8 @@
       </main>
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
-    <script src="lessons-data.js?v=20260831-desktop-video-play"></script>
-    <script src="app.js?v=20260831-desktop-video-play"></script>
-    <script src="auth.js?v=20260831-desktop-video-play"></script>
+    <script src="lessons-data.js?v=20260831-admin-control-team"></script>
+    <script src="app.js?v=20260831-admin-control-team"></script>
+    <script src="auth.js?v=20260831-admin-control-team"></script>
   </body>
 </html>

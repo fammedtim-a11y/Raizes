@@ -168,13 +168,14 @@ function bindAuthForms() {
     loadAdminSiteInfo();
     siteInfoForm.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const result = await apiPost("/api/admin/site-info", formData(siteInfoForm));
+      const result = await apiPost("/api/admin/site-info", siteInfoPayload(siteInfoForm));
       setActionMessage("#siteInfoMessage", result.error || result.message || "Informacoes salvas.", Boolean(result.error));
       if (!result.error && result.info) {
         fillSiteInfoForm(siteInfoForm, result.info);
         applySiteInfo(result.info);
       }
     });
+    document.querySelector("#addTeamMemberBtn")?.addEventListener("click", () => addTeamMemberEditor());
   }
 }
 
@@ -217,6 +218,13 @@ async function loadAdminUsers() {
     ${data.users.map(renderAdminUserCard).join("")}
   `;
   document.querySelector("#exportUsersCsvBtn")?.addEventListener("click", () => exportUsersCsv(data.users));
+  list.querySelectorAll("[data-toggle-user-details]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const card = button.closest(".user-admin-card");
+      const expanded = card?.classList.toggle("expanded");
+      button.textContent = expanded ? "Ocultar detalhes" : "Ver detalhes";
+    });
+  });
 
   list.querySelectorAll("[data-approve]").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -239,9 +247,10 @@ async function loadAdminUsers() {
 
   list.querySelectorAll("[data-renew-license]").forEach((button) => {
     button.addEventListener("click", () => {
-      if (window.confirm("Renovar a licenca deste usuario por mais 364 dias?")) {
-        adminAction(`/api/admin/users/${button.dataset.renewLicense}/renew-license`, {});
-      }
+      const input = list.querySelector(`[data-license-date="${button.dataset.renewLicense}"]`);
+      const licenseExpiresAt = input?.value || "";
+      if (!licenseExpiresAt && !window.confirm("Nenhuma data foi informada. Renovar por mais 364 dias?")) return;
+      adminAction(`/api/admin/users/${button.dataset.renewLicense}/renew-license`, { licenseExpiresAt });
     });
   });
 
@@ -273,7 +282,11 @@ async function loadAdminAccessLogs() {
   }
   const logs = Array.isArray(data.logs) ? data.logs : [];
   window.raizesAccessLogs = logs;
-  list.innerHTML = logs.length ? logs.map(renderAccessLogCard).join("") : '<p class="muted-line">Nenhum acesso registrado ainda.</p>';
+  const compact = document.querySelector("#userManagePanel")?.classList.contains("active");
+  const visibleLogs = compact ? logs.slice(0, 12) : logs;
+  list.innerHTML = logs.length
+    ? `${compact ? '<h3>Últimas utilizações</h3>' : ""}${visibleLogs.map(renderAccessLogCard).join("")}`
+    : '<p class="muted-line">Nenhum acesso registrado ainda.</p>';
   const refreshButton = document.querySelector("#refreshAccessLogsBtn");
   if (refreshButton) refreshButton.onclick = loadAdminAccessLogs;
   const exportButton = document.querySelector("#exportAccessLogsCsvBtn");
@@ -421,6 +434,7 @@ function renderAdminUserCard(user) {
         ? "Ativo"
         : "Aguardando aprovacao";
   const stateClass = user.active === false ? "inactive" : user.approved ? "approved" : "pending";
+  const expiresDateValue = user.licenseExpiresAt ? new Date(user.licenseExpiresAt).toISOString().slice(0, 10) : "";
   const accessControl = user.role === "admin" ? "" : `
     <label class="user-access-control">
       <span>Categoria</span>
@@ -434,25 +448,37 @@ function renderAdminUserCard(user) {
   `;
   const actionButtons = user.role === "admin" ? '<span class="pill">Administrador</span>' : `
     ${accessControl}
+    <label class="user-access-control">
+      <span>Expira em</span>
+      <input type="date" data-license-date="${authEscapeHtml(user.id)}" value="${authEscapeHtml(expiresDateValue)}" />
+    </label>
     ${!user.approved ? `<button class="icon-button primary" type="button" data-approve="${authEscapeHtml(user.id)}">Aprovar</button>` : ""}
     ${user.active === false
       ? `<button class="icon-button primary" type="button" data-activate="${authEscapeHtml(user.id)}">Reativar</button>`
       : `<button class="icon-button danger" type="button" data-deactivate="${authEscapeHtml(user.id)}">Desativar</button>`}
-    <button class="icon-button accent" type="button" data-renew-license="${authEscapeHtml(user.id)}">Renovar licença</button>
+    <button class="icon-button accent" type="button" data-renew-license="${authEscapeHtml(user.id)}">Salvar licença</button>
     <button class="icon-button" type="button" data-reset="${authEscapeHtml(user.id)}">Nova senha</button>
   `;
 
   return `
     <article class="user-admin-card ${stateClass}">
-      <div>
-        <strong>${authEscapeHtml(user.name || user.username)}</strong>
-        <span>${authEscapeHtml(user.username)} - ${authEscapeHtml(user.email || "Sem email")}</span>
+      <div class="user-admin-summary">
+        <div>
+          <strong>${authEscapeHtml(user.name || user.username)}</strong>
+          <span>${status} - ${accessLabel}</span>
+        </div>
+        <small>Última utilização: ${formatDateTime(user.lastAccessAt || user.lastLoginAt) || "Sem acesso registrado"}</small>
+        <button class="icon-button" type="button" data-toggle-user-details>Ver detalhes</button>
+      </div>
+      <div class="user-admin-details">
+        <small>CPF: ${authEscapeHtml(user.username)}</small>
+        <small>Email: ${authEscapeHtml(user.email || "Sem email")}</small>
         <small>Telefone: ${authEscapeHtml(user.phone || "Nao informado")}</small>
-        <small>${authEscapeHtml(user.church || "Igreja nao informada")} - ${authEscapeHtml(user.churchCity || "Cidade nao informada")} - ${authEscapeHtml(user.address || "Endereco nao informado")}</small>
-        <small>Status: ${status} - Categoria: ${accessLabel}</small>
-        <small>Licenca: ${authEscapeHtml(licenseText)}${user.licenseExpiresAt ? ` - vence em ${formatDate(user.licenseExpiresAt)}` : ""}</small>
+        <small>Igreja: ${authEscapeHtml(user.church || "Igreja nao informada")} - ${authEscapeHtml(user.churchCity || "Cidade nao informada")}</small>
+        <small>Endereço: ${authEscapeHtml(user.address || "Endereco nao informado")}</small>
+        <small>Licença: ${authEscapeHtml(licenseText)}${user.licenseExpiresAt ? ` - vence em ${formatDate(user.licenseExpiresAt)}` : ""}</small>
+        <small>Criado: ${formatDateTime(user.createdAt)} - Aprovado: ${formatDateTime(user.approvedAt)}</small>
         ${user.renewalRequested ? "<em>Solicitou renovacao de licenca</em>" : ""}
-        <small>Criado: ${formatDateTime(user.createdAt)} - Ultimo acesso: ${formatDateTime(user.lastAccessAt)}</small>
         ${user.resetRequested ? "<em>Solicitou redefinicao de senha</em>" : ""}
       </div>
       <div class="user-actions">${actionButtons}</div>
@@ -528,6 +554,7 @@ function fillSiteInfoForm(form, info) {
   ["about", "contactEmail", "whatsapp", "instagram", "siteUrl"].forEach((key) => {
     if (form.elements[key]) form.elements[key].value = info?.[key] || "";
   });
+  renderTeamMembersEditor(Array.isArray(info?.teamMembers) ? info.teamMembers : []);
 }
 
 function applySiteInfo(info) {
@@ -548,9 +575,81 @@ function applySiteInfo(info) {
     el.href = handle ? `https://instagram.com/${handle}` : "#instagram";
   });
   document.querySelectorAll("[data-site-link='siteUrl']").forEach((el) => {
-    const siteUrl = info?.siteUrl || "https://raizes-fic9.onrender.com/";
-    el.href = siteUrl;
+    const siteUrl = info?.siteUrl || "www.raizeskids.com";
+    el.href = normalizePublicUrl(siteUrl);
   });
+  renderPublicTeamMembers(info?.teamMembers || []);
+}
+
+function renderTeamMembersEditor(members) {
+  const list = document.querySelector("#teamMembersEditor");
+  if (!list) return;
+  const items = members.length ? members : [{ id: "", name: "", role: "", photoUrl: "", summary: "" }];
+  list.innerHTML = items.map((member) => teamMemberEditorHtml(member)).join("");
+  list.querySelectorAll("[data-remove-team-member]").forEach((button) => {
+    button.addEventListener("click", () => {
+      button.closest(".team-member-editor")?.remove();
+      if (!list.querySelector(".team-member-editor")) addTeamMemberEditor();
+    });
+  });
+}
+
+function addTeamMemberEditor(member = {}) {
+  const list = document.querySelector("#teamMembersEditor");
+  if (!list) return;
+  list.insertAdjacentHTML("beforeend", teamMemberEditorHtml(member));
+  const card = list.lastElementChild;
+  card?.querySelector("[data-remove-team-member]")?.addEventListener("click", () => card.remove());
+}
+
+function teamMemberEditorHtml(member) {
+  return `
+    <article class="team-member-editor">
+      <input type="hidden" data-team-field="id" value="${authEscapeHtml(member.id || "")}" />
+      <label><span>Nome</span><input data-team-field="name" value="${authEscapeHtml(member.name || "")}" placeholder="Nome do colaborador" /></label>
+      <label><span>Função</span><input data-team-field="role" value="${authEscapeHtml(member.role || "")}" placeholder="Ex.: Coordenação pedagógica" /></label>
+      <label><span>Foto 3x4 (URL)</span><input data-team-field="photoUrl" value="${authEscapeHtml(member.photoUrl || "")}" placeholder="https://..." /></label>
+      <label><span>Resumo</span><textarea data-team-field="summary" rows="3" placeholder="Pequeno resumo sobre o colaborador">${authEscapeHtml(member.summary || "")}</textarea></label>
+      <button class="icon-button danger" type="button" data-remove-team-member>Remover</button>
+    </article>
+  `;
+}
+
+function siteInfoPayload(form) {
+  return {
+    ...formData(form),
+    teamMembers: [...document.querySelectorAll(".team-member-editor")].map((card) => ({
+      id: card.querySelector('[data-team-field="id"]')?.value || "",
+      name: card.querySelector('[data-team-field="name"]')?.value || "",
+      role: card.querySelector('[data-team-field="role"]')?.value || "",
+      photoUrl: card.querySelector('[data-team-field="photoUrl"]')?.value || "",
+      summary: card.querySelector('[data-team-field="summary"]')?.value || ""
+    }))
+  };
+}
+
+function renderPublicTeamMembers(members) {
+  const list = document.querySelector("#teamMembersList");
+  if (!list) return;
+  const items = Array.isArray(members) ? members.filter((member) => member.name || member.summary || member.photoUrl) : [];
+  list.innerHTML = items.length
+    ? items.map((member) => `
+      <article class="team-member-card">
+        <img src="${authEscapeHtml(member.photoUrl || "assets/logo-raizes-kids.png")}" alt="${authEscapeHtml(member.name || "Colaborador Raízes Kids")}" loading="lazy" />
+        <div>
+          <strong>${authEscapeHtml(member.name || "Equipe Raízes Kids")}</strong>
+          <span>${authEscapeHtml(member.role || "Ministério com Criança")}</span>
+          <p>${authEscapeHtml(member.summary || "")}</p>
+        </div>
+      </article>
+    `).join("")
+    : '<p>Equipe Raízes Kids em organização.</p>';
+}
+
+function normalizePublicUrl(value) {
+  const text = String(value || "").trim();
+  if (!text) return "#contato";
+  return /^https?:\/\//i.test(text) ? text : `https://${text}`;
 }
 
 function formatPhoneDisplay(value) {
@@ -612,6 +711,7 @@ async function adminAction(url, body) {
   const result = await apiPost(url, body);
   if (result.error) window.alert(result.error);
   await loadAdminUsers();
+  await loadAdminAccessLogs();
   return result;
 }
 

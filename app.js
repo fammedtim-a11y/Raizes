@@ -972,6 +972,7 @@ function stopTrailPlayback() {
 }
 
 function setManageTab(tabName) {
+  if (tabName === "access") tabName = "users";
   state.manageTab = tabName;
   document.querySelectorAll("[data-manage-tab]").forEach((tab) => {
     tab.classList.toggle("active", tab.dataset.manageTab === tabName);
@@ -984,9 +985,9 @@ function setManageTab(tabName) {
   $("#ebfManagePanel")?.classList.toggle("active", tabName === "ebf");
   $("#userManagePanel")?.classList.toggle("active", tabName === "users");
   $("#communicationManagePanel")?.classList.toggle("active", tabName === "communication");
-  $("#accessManagePanel")?.classList.toggle("active", tabName === "access");
+  $("#accessManagePanel")?.classList.toggle("active", false);
   $("#contactManagePanel")?.classList.toggle("active", tabName === "contact");
-  if (tabName === "access") window.loadAdminAccessLogs?.();
+  if (tabName === "users") window.loadAdminAccessLogs?.();
   if (tabName === "communication") window.loadCommunicationCenter?.();
   if (tabName === "contact") window.loadAdminSiteInfo?.();
   if (tabName === "news") renderNotifications();
@@ -3392,7 +3393,7 @@ function buildPdfPageFooter() {
     <footer class="ebook-page-footer">
       <img src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
       <span><strong>Sobre</strong> Plataforma para apoiar líderes e discipuladores de crianças com lições, trilhas, cultos em família, treinamentos e EBF.</span>
-      <span><strong>Contato</strong> raizes.r12@gmail.com | (31) 97177-3756 | @raizes_r12</span>
+      <span><strong>Contato</strong> administrador@raizeskids.com | (31) 97177-3756 | @raizeskids_ | www.raizeskids.com</span>
     </footer>
   `;
 }
