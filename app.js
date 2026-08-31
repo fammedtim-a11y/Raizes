@@ -2875,7 +2875,6 @@ function renderStreamPlayer(video) {
         allowfullscreen></iframe>
     </div>
     <div class="stream-player-info">
-      <span class="reader-kicker">Assistindo na página</span>
       <h2>${escapeHtml(title)}</h2>
       <div class="trail-actions">
         <a class="icon-button accent" href="${escapeHtml(watchUrl(video))}" target="_blank" rel="noreferrer">Abrir no YouTube</a>
@@ -2890,9 +2889,7 @@ function renderLockedStreamPlayer(video) {
   els.streamPlayer.innerHTML = `
     <div class="locked-reader stream-lock">
       <span class="locked-icon">🔒</span>
-      <span class="reader-kicker">Trilha exclusiva</span>
       <h2>${escapeHtml(title)}</h2>
-      <p>Esta trilha está no acervo, mas o vídeo completo é liberado apenas para usuários com acesso ativo.</p>
       <div class="lesson-meta">
         <span class="pill lock-pill">Bloqueado</span>
       </div>
@@ -2909,7 +2906,6 @@ function renderStreamHero(video) {
   const title = cleanTrailDisplayText(video.title, "Trilha bíblica");
   els.streamHero.innerHTML = `
     <div class="stream-hero-copy">
-      <span class="reader-kicker">Destaque inteligente</span>
       <h2>${escapeHtml(title)}</h2>
       <div class="trail-actions">
         <button class="icon-button accent" type="button" data-play-video="${escapeHtml(video.id)}">${locked ? "🔒 Ver bloqueio" : "▶ Assistir agora"}</button>
@@ -3083,14 +3079,21 @@ function extractContentVideos(item, source) {
 function getYouTubeId(url) {
   try {
     const parsed = new URL(url);
-    if (parsed.hostname.includes("youtu.be")) return parsed.pathname.slice(1).split("/")[0];
-    if (parsed.searchParams.get("v")) return parsed.searchParams.get("v");
+    let id = "";
+    if (parsed.hostname.includes("youtu.be")) id = parsed.pathname.slice(1).split("/")[0];
+    if (!id && parsed.searchParams.get("v")) id = parsed.searchParams.get("v");
     const parts = parsed.pathname.split("/").filter(Boolean);
     const embedIndex = parts.findIndex((part) => ["embed", "shorts"].includes(part));
-    return embedIndex >= 0 ? parts[embedIndex + 1] : "";
+    if (!id && embedIndex >= 0) id = parts[embedIndex + 1] || "";
+    return normalizeYouTubeId(id);
   } catch {
     return "";
   }
+}
+
+function normalizeYouTubeId(id) {
+  const value = String(id || "").trim().replace(/[^a-zA-Z0-9_-].*$/g, "");
+  return /^[a-zA-Z0-9_-]{11}$/.test(value) ? value : "";
 }
 
 function cleanVideoTitle(value) {
