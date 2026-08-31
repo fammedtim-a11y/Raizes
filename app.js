@@ -119,6 +119,8 @@ const state = {
   notifications: loadCollection("raizes-notifications", []),
   manualVideos: loadManualVideos(),
   favoriteVideoIds: loadFavoriteVideoIds(),
+  youtubeTitles: loadYouTubeTitles(),
+  loadingYouTubeTitleIds: new Set(),
   activeId: null,
   activeDevotionalId: null,
   activeTrainingId: null,
@@ -548,6 +550,21 @@ function loadFavoriteVideoIds() {
 
 function saveFavoriteVideoIds() {
   localStorage.setItem("raizes-favorite-videos", JSON.stringify(state.favoriteVideoIds));
+}
+
+function loadYouTubeTitles() {
+  const saved = localStorage.getItem("raizes-youtube-titles");
+  if (!saved) return {};
+  try {
+    const parsed = JSON.parse(saved);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveYouTubeTitles() {
+  localStorage.setItem("raizes-youtube-titles", JSON.stringify(state.youtubeTitles));
 }
 
 function saveLastTrailVideo(video) {
@@ -2096,6 +2113,7 @@ function renderLessonAdminCard(lesson) {
 function renderTrailAdminList() {
   if (!els.trailAdminList) return;
   const videos = filteredVideos();
+  hydrateYouTubeTitles(videos);
   if (!videos.length) {
     els.trailAdminList.innerHTML = '<p class="muted-line">Nenhuma trilha encontrada com os filtros atuais.</p>';
     return;
@@ -2105,7 +2123,7 @@ function renderTrailAdminList() {
       <button class="admin-item-card ${video.id === state.activeVideoId ? "active" : ""}" type="button" data-admin-trail-id="${escapeHtml(video.id)}">
         <span class="admin-item-icon video-icon">▶</span>
         <span class="admin-item-body">
-          <strong>${escapeHtml(video.title)}</strong>
+          <strong>${escapeHtml(videoDisplayTitle(video))}</strong>
           <small>${escapeHtml(video.category || "Trilha")} · ${escapeHtml(video.age ? ageText(video.age) : "Todas as idades")}</small>
           <em>${video.source === "manual" ? "Vídeo manual" : `Gerado pela lição: ${escapeHtml(video.lessonTitle || "sem título")}`}</em>
         </span>
@@ -2140,6 +2158,7 @@ function renderTrailAdminList() {
 
 function renderVideoAdminList() {
   if (!els.videoAdminList) return;
+  hydrateYouTubeTitles(state.manualVideos);
   if (!state.manualVideos.length) {
     els.videoAdminList.innerHTML = '<p class="muted-line">Nenhum vídeo manual cadastrado ainda.</p>';
     return;
@@ -2147,7 +2166,7 @@ function renderVideoAdminList() {
 
   els.videoAdminList.innerHTML = state.manualVideos.map((video) => `
     <button class="video-admin-card" type="button" data-video-id="${escapeHtml(video.id)}">
-      <strong>${escapeHtml(video.title)}</strong>
+      <strong>${escapeHtml(videoDisplayTitle(video))}</strong>
       <span>${escapeHtml(video.category || "Trilha")} · ${escapeHtml(video.age ? ageText(video.age) : "Todas as idades")}</span>
     </button>
   `).join("");
@@ -2413,6 +2432,7 @@ function renderTrails() {
   if (!els.trailGrid) return;
   const videos = filteredVideos();
   const locked = catalogIsLimited();
+  hydrateYouTubeTitles(videos);
   // Nas trilhas, visitantes tambem veem o acervo completo com cadeado.
   if (els.trailCount) els.trailCount.textContent = locked ? `${videos.length} trilha(s) bloqueada(s)` : `${videos.length} vídeo(s)`;
   renderLimitedNotice();
@@ -2864,7 +2884,7 @@ function formatMonthYear(value) {
 
 function renderTrailCard(video) {
   const locked = catalogIsLimited();
-  const title = cleanTrailDisplayText(video.title, "Trilha bíblica");
+  const title = videoDisplayTitle(video);
   const favorite = isFavoriteVideo(video.id);
   return `
     <article class="trail-card ${video.id === state.activeVideoId ? "active" : ""} ${locked ? "locked" : ""}">
@@ -2909,7 +2929,7 @@ function groupVideosByShelf(videos) {
 }
 
 function renderStreamPlayer(video, options = {}) {
-  const title = cleanTrailDisplayText(video.title, "Trilha bíblica");
+  const title = videoDisplayTitle(video);
   const favorite = isFavoriteVideo(video.id);
   const autoplay = options.autoplay ? "&autoplay=1" : "";
   els.streamPlayer.innerHTML = `
@@ -2933,7 +2953,7 @@ function renderStreamPlayer(video, options = {}) {
 
 // O player nao usa autoplay: o lider escolhe quando iniciar o video.
 function renderLockedStreamPlayer(video) {
-  const title = cleanTrailDisplayText(video.title, "Trilha bíblica");
+  const title = videoDisplayTitle(video);
   els.streamPlayer.innerHTML = `
     <div class="locked-reader stream-lock">
       <span class="locked-icon">🔒</span>
@@ -2951,7 +2971,7 @@ function renderLockedStreamPlayer(video) {
 
 function renderStreamHero(video) {
   const locked = catalogIsLimited();
-  const title = cleanTrailDisplayText(video.title, "Trilha bíblica");
+  const title = videoDisplayTitle(video);
   els.streamHero.innerHTML = `
     <div class="stream-hero-copy">
       <h2>${escapeHtml(title)}</h2>
@@ -2971,6 +2991,50 @@ function watchUrl(video) {
   return `https://www.youtube.com/watch?v=${encodeURIComponent(video.youtubeId)}`;
 }
 
+function videoDisplayTitle(video) {
+  const hostedTitle = cleanTrailDisplayText(state.youtubeTitles[video.youtubeId] || video.youtubeTitle || "");
+  if (hostedTitle) return hostedTitle;
+  const manualTitle = video.source === "manual" ? cleanShortVideoTitle(video.title) : "";
+  if (manualTitle) return manualTitle;
+  return "Carregando título do YouTube...";
+}
+
+function cleanShortVideoTitle(value) {
+  const title = cleanTrailDisplayText(value || "");
+  if (!title || title.length > 90) return "";
+  if (/[.!?]\s+[A-ZÁÉÍÓÚÂÊÔÃÕ]/.test(title) && title.length > 55) return "";
+  return title;
+}
+
+async function hydrateYouTubeTitles(videos) {
+  const missingIds = [...new Set(videos
+    .map((video) => video.youtubeId)
+    .filter((id) => id && !state.youtubeTitles[id] && !state.loadingYouTubeTitleIds.has(id)))]
+    .slice(0, 60);
+  if (!missingIds.length) return;
+  missingIds.forEach((id) => state.loadingYouTubeTitleIds.add(id));
+  try {
+    const response = await fetch(`/api/youtube-titles?ids=${encodeURIComponent(missingIds.join(","))}`, { cache: "no-store" });
+    if (!response.ok) return;
+    const data = await response.json();
+    if (!data.titles || typeof data.titles !== "object") return;
+    Object.entries(data.titles).forEach(([id, title]) => {
+      const cleanTitle = cleanShortVideoTitle(title);
+      if (cleanTitle) state.youtubeTitles[id] = cleanTitle;
+    });
+    saveYouTubeTitles();
+    if (state.tab === "trails") renderTrails();
+    if (isAdminPage && state.manageTab === "trails") {
+      renderTrailAdminList();
+      renderVideoAdminList();
+    }
+  } catch {
+    // Se o YouTube nao responder, mantemos a interface sem exibir texto longo da licao.
+  } finally {
+    missingIds.forEach((id) => state.loadingYouTubeTitleIds.delete(id));
+  }
+}
+
 function renderStreamQuickNav(grouped) {
   els.streamQuickNav.innerHTML = grouped.slice(0, 10).map(([name]) => `
     <a href="#${escapeHtml(shelfId(name))}">${escapeHtml(name)}</a>
@@ -2987,7 +3051,7 @@ function videoRank(video) {
   if (video.trending) score += 9;
   if (video.recommended) score += 7;
   if (video.source === "manual") score += 4;
-  if (/louvor|cria|jesus|promessa|coração|hist[oó]ria/i.test(cleanTrailDisplayText(video.title))) score += 3;
+  if (/louvor|cria|jesus|promessa|coração|hist[oó]ria/i.test(videoDisplayTitle(video))) score += 3;
   if (video.description) score += 1;
   return score;
 }
@@ -3022,7 +3086,7 @@ function filteredVideos() {
   const age = els.ageFilter.value;
 
   const videos = allVideos().filter((video) => {
-    const content = normalize([video.title, video.category, video.age, video.description, video.lessonTitle].map((value) => cleanTrailDisplayText(value)).join(" "));
+    const content = normalize([videoDisplayTitle(video), video.category, video.age, video.lessonTitle].map((value) => cleanTrailDisplayText(value)).join(" "));
     const matchesTerm = !term || content.includes(term);
     const matchesCategory = category === "Todas" || cleanTrailDisplayText(video.category) === category;
     const matchesAge = age === "Todas" || !video.age || normalizeAgeLabel(video.age) === age;
@@ -3065,12 +3129,10 @@ function extractLessonVideos(lesson) {
         const cleanUrl = trimTrailingUrlPunctuation(url);
         const youtubeId = getYouTubeId(cleanUrl);
         if (!youtubeId) return;
-        const lineTitle = cleanVideoTitle(line.replace(url, ""));
-        const previousTitle = cleanVideoTitle(lines[index - 1] || "");
         videos.push({
           id: `auto-${lesson.id}-${youtubeId}`,
           source: "lesson",
-          title: lineTitle || previousTitle || `${label} · ${lesson.title}`,
+          title: "Vídeo do YouTube",
           url: cleanUrl,
           youtubeId,
           category: lesson.category,
@@ -3082,7 +3144,8 @@ function extractLessonVideos(lesson) {
           recommended: /biblica|memorizacao|versiculo|aplicacao/i.test(normalize(label)),
           lessonId: lesson.id,
           lessonTitle: lesson.title,
-          description: `${label} da lição "${lesson.title}".`
+          description: "",
+          contextLabel: label
         });
       });
     });
@@ -3106,7 +3169,7 @@ function extractContentVideos(item, source) {
     videos.push({
       id: `auto-${source}-${item.id}-${youtubeId}`,
       source,
-      title: `${source === "devotional" ? "Culto em Família" : "Treinamento"} · ${item.title}`,
+      title: "Vídeo do YouTube",
       url: cleanUrl,
       youtubeId,
       category: item.category || (source === "devotional" ? "Culto em Família" : "Treinamento"),
@@ -3118,7 +3181,7 @@ function extractContentVideos(item, source) {
       recommended: true,
       lessonId: "",
       lessonTitle: item.title,
-      description: item.principle || item.description || ""
+      description: ""
     });
   });
   return videos;

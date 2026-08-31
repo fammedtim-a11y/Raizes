@@ -1,4 +1,5 @@
 const http = require("http");
+const https = require("https");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
@@ -26,6 +27,7 @@ const DAY_MS = 1000 * 60 * 60 * 24;
 const sessions = new Map();
 const revokedSessions = new Map();
 const loginAttempts = new Map();
+const youtubeTitleCache = new Map();
 
 const initialUsers = [
   {
@@ -354,6 +356,11 @@ async function handleApi(req, res, url) {
 
   if (req.method === "GET" && url.pathname === "/api/videos") {
     sendJson(res, 200, { videos: readManualVideos() });
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/youtube-titles") {
+    await sendYouTubeTitles(res, url.searchParams.get("ids") || "");
     return;
   }
 
@@ -1816,6 +1823,76 @@ function publicAdminUser(user) {
     lastLoginAt: user.lastLoginAt || "",
     lastAccessAt: user.lastAccessAt || ""
   };
+}
+
+async function sendYouTubeTitles(res, idsText) {
+  const ids = [...new Set(String(idsText || "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter((id) => /^[a-zA-Z0-9_-]{11}$/.test(id)))]
+    .slice(0, 60);
+
+  if (!ids.length) {
+    sendJson(res, 200, { titles: {} });
+    return;
+  }
+
+  const entries = await Promise.all(ids.map(async (id) => {
+    const cached = youtubeTitleCache.get(id);
+    if (cached && cached.expiresAt > Date.now()) return [id, cached.title];
+    try {
+      const title = await fetchYouTubeTitle(id);
+      if (title) {
+        youtubeTitleCache.set(id, { title, expiresAt: Date.now() + DAY_MS });
+        return [id, title];
+      }
+    } catch {
+      // Mantem a resposta parcial quando algum video foi removido, privado ou bloqueado.
+    }
+    return [id, ""];
+  }));
+
+  sendJson(res, 200, { titles: Object.fromEntries(entries.filter(([, title]) => title)) });
+}
+
+function fetchYouTubeTitle(id) {
+  const endpoint = `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/watch?v=${id}`)}`;
+  return new Promise((resolve, reject) => {
+    const request = https.get(endpoint, {
+      timeout: 6000,
+      headers: {
+        "User-Agent": "RaizesKids/1.0 (+https://raizes-fic9.onrender.com)"
+      }
+    }, (response) => {
+      let body = "";
+      response.setEncoding("utf8");
+      response.on("data", (chunk) => {
+        body += chunk;
+        if (body.length > 20000) request.destroy(new Error("Resposta muito grande."));
+      });
+      response.on("end", () => {
+        if (response.statusCode !== 200) {
+          resolve("");
+          return;
+        }
+        try {
+          const data = JSON.parse(body);
+          resolve(cleanPlainText(data.title || "").slice(0, 140));
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+    request.on("timeout", () => request.destroy(new Error("Tempo esgotado ao consultar o YouTube.")));
+    request.on("error", reject);
+  });
+}
+
+function cleanPlainText(value) {
+  return String(value || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function setSecurityHeaders(res) {
