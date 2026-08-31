@@ -3740,9 +3740,9 @@ textarea,
     height: 296mm !important;
     min-height: 296mm !important;
     max-height: 296mm !important;
-    align-content: center !important;
+    align-content: start !important;
     justify-items: center !important;
-    padding: 34mm 32mm !important;
+    padding: 36mm 32mm 28mm !important;
     border: 0 !important;
     background: #fff !important;
     text-align: center !important;
@@ -3770,16 +3770,16 @@ textarea,
   body.ebook-printing .ebook-cover h1 {
     max-width: 155mm !important;
     margin: 0 !important;
-    font-size: 27pt !important;
+    font-size: 28pt !important;
     line-height: 1.08 !important;
   }
 
   body.ebook-printing .ebook-cover h1::before {
     content: "" !important;
     display: block !important;
-    width: 44mm !important;
-    height: 28mm !important;
-    margin: 0 auto 8mm !important;
+    width: 76mm !important;
+    height: 52mm !important;
+    margin: 0 auto 16mm !important;
     background: url("assets/logo-raizes-kids.png") center / contain no-repeat !important;
   }
 
@@ -3814,7 +3814,7 @@ textarea,
 
   body.ebook-printing .ebook-toc {
     min-height: 297mm !important;
-    padding: 24mm 22mm 22mm !important;
+    padding: 18mm 20mm 38mm !important;
     background: #fff !important;
     break-after: page;
     page-break-after: always;
@@ -3842,7 +3842,7 @@ textarea,
   body.ebook-printing .ebook-lesson {
     display: block !important;
     min-height: 297mm !important;
-    padding: 24mm 22mm 22mm !important;
+    padding: 18mm 20mm 38mm !important;
     border: 0 !important;
     border-radius: 0 !important;
     background: #fff !important;
@@ -3859,18 +3859,19 @@ textarea,
     display: none !important;
   }
 
-  body.ebook-printing .ebook-page-brand {
+  body.ebook-printing .ebook-page-header {
     display: flex !important;
     justify-content: flex-end !important;
     align-items: center !important;
     width: 100% !important;
-    margin: 0 0 7mm !important;
-    padding-bottom: 3mm !important;
-    border-bottom: 0.25mm solid rgba(31, 77, 117, 0.18) !important;
+    min-height: 17mm !important;
+    margin: 0 0 8mm !important;
+    padding: 0 0 3.5mm !important;
+    border-bottom: 0.45mm solid rgba(31, 77, 117, 0.22) !important;
   }
 
-  body.ebook-printing .ebook-page-brand img {
-    width: 18mm !important;
+  body.ebook-printing .ebook-page-header img {
+    width: 22mm !important;
     height: auto !important;
     object-fit: contain !important;
   }
@@ -3977,18 +3978,18 @@ textarea,
     margin: 3mm auto 0 !important;
   }
 
-  body.ebook-printing .ebook-final-footer {
-    position: relative !important;
-    right: auto !important;
-    bottom: auto !important;
-    left: auto !important;
+  body.ebook-printing .ebook-page-footer {
+    position: absolute !important;
+    right: 20mm !important;
+    bottom: 10mm !important;
+    left: 20mm !important;
     display: grid !important;
     grid-template-columns: 18mm minmax(0, 1fr) minmax(0, 1fr) !important;
     gap: 4mm !important;
     align-items: center !important;
-    width: 100% !important;
+    width: auto !important;
     min-height: 0 !important;
-    margin: 12mm auto 0 !important;
+    margin: 0 !important;
     padding: 4mm 0 0 !important;
     border-top: 0.35mm solid rgba(31, 77, 117, 0.22) !important;
     color: #31506f !important;
@@ -3999,14 +4000,14 @@ textarea,
     page-break-inside: avoid !important;
   }
 
-  body.ebook-printing .ebook-final-footer img {
+  body.ebook-printing .ebook-page-footer img {
     width: 17mm !important;
     max-height: 12mm !important;
     object-fit: contain !important;
     margin: 0 auto !important;
   }
 
-  body.ebook-printing .ebook-final-footer strong {
+  body.ebook-printing .ebook-page-footer strong {
     display: inline !important;
     color: #15456d !important;
     font-weight: 900 !important;

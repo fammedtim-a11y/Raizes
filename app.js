@@ -2722,7 +2722,6 @@ function buildContentPdfHtml(type, item) {
   return `
     <article class="ebook">
       <section class="ebook-cover">
-        ${buildPageModelImage(1)}
         <p>Raízes Kids</p>
         <h1>${escapeHtml(item.title || typeLabel)}</h1>
         <span>${escapeHtml(item.category || typeLabel)}</span>
@@ -2730,7 +2729,7 @@ function buildContentPdfHtml(type, item) {
         <small>${escapeHtml(item.season || formatMonthYear(item.createdAt))}</small>
       </section>
       <section class="ebook-lesson" style="--theme:${theme.primary};--theme-soft:${theme.soft}">
-        ${buildPdfPageBrand()}
+        ${buildPdfPageHeader()}
         <header class="ebook-lesson-header">
           <span>${theme.emoji}</span>
           <div>
@@ -2775,7 +2774,7 @@ function buildContentPdfHtml(type, item) {
             </section>
           ` : ""}
         </div>
-        ${buildEbookFinalFooter()}
+        ${buildPdfPageFooter()}
       </section>
     </article>
   `;
@@ -2821,19 +2820,22 @@ function formatMonthYear(value) {
 
 function renderTrailCard(video) {
   const locked = catalogIsLimited();
+  const title = cleanTrailDisplayText(video.title, "Trilha bíblica");
+  const category = cleanTrailDisplayText(video.category, "Trilha");
+  const description = cleanTrailDisplayText(video.description || video.lessonTitle, "Vídeo de apoio para a lição.");
   const watchActions = locked
     ? '<a class="icon-button accent" href="login.html">Entrar para assistir</a>'
     : `<a class="icon-button" href="${escapeHtml(video.url)}" target="_blank" rel="noreferrer">YouTube</a>`;
   return `
     <article class="trail-card ${video.id === state.activeVideoId ? "active" : ""} ${locked ? "locked" : ""}">
-      <button class="trail-thumb" type="button" data-play-video="${escapeHtml(video.id)}" aria-label="Reproduzir vídeo ${escapeHtml(video.title)}">
+      <button class="trail-thumb" type="button" data-play-video="${escapeHtml(video.id)}" aria-label="Reproduzir vídeo ${escapeHtml(title)}">
         <img src="https://img.youtube.com/vi/${escapeHtml(video.youtubeId)}/hqdefault.jpg" alt="" loading="lazy" onerror="this.remove()" />
         <span>${locked ? "🔒" : "▶"}</span>
       </button>
       <div class="trail-content">
-        <span class="trail-category-line">${escapeHtml(video.category || "Trilha")}</span>
-        <h3>${escapeHtml(video.title)}</h3>
-        <p>${escapeHtml(video.description || video.lessonTitle || "Vídeo de apoio para a lição.")}</p>
+        <span class="trail-category-line">${escapeHtml(category)}</span>
+        <h3>${escapeHtml(title)}</h3>
+        <p>${escapeHtml(description)}</p>
         ${locked ? '<span class="pill lock-pill">Bloqueado</span>' : ""}
         <div class="trail-actions">
           <button class="icon-button" type="button" data-play-video="${escapeHtml(video.id)}">${locked ? "Ver bloqueio" : "Assistir"}</button>
@@ -2857,7 +2859,7 @@ function groupVideosByShelf(videos) {
   const manual = videos.filter((video) => video.source === "manual");
   addShelf("🎬 Cadastrados por você", manual);
 
-  const categories = groupBy(videos, (video) => video.category || "Trilhas bíblicas");
+  const categories = groupBy(videos, (video) => cleanTrailDisplayText(video.category, "Trilhas bíblicas"));
   [...categories.entries()]
     .sort(([a], [b]) => a.localeCompare(b, "pt-BR"))
     .forEach(([name, items]) => addShelf(name, items));
@@ -2866,23 +2868,27 @@ function groupVideosByShelf(videos) {
 }
 
 function renderStreamPlayer(video) {
+  const title = cleanTrailDisplayText(video.title, "Trilha bíblica");
+  const category = cleanTrailDisplayText(video.category, "Trilha");
+  const description = cleanTrailDisplayText(video.description || video.lessonTitle, "Vídeo selecionado para apoiar a lição.");
+  const playlist = cleanTrailDisplayText(video.playlist || video.season, "Catálogo");
   // Nao adicionar autoplay aqui: o video deve iniciar somente quando o usuario decidir.
   els.streamPlayer.innerHTML = `
     <div class="stream-player-frame">
       <iframe
         src="https://www.youtube-nocookie.com/embed/${escapeHtml(video.youtubeId)}?rel=0&modestbranding=1"
-        title="${escapeHtml(video.title)}"
+        title="${escapeHtml(title)}"
         allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowfullscreen></iframe>
     </div>
     <div class="stream-player-info">
       <span class="reader-kicker">Assistindo na página</span>
-      <h2>${escapeHtml(video.title)}</h2>
-      <p>${escapeHtml(video.description || video.lessonTitle || "Vídeo selecionado para apoiar a lição.")}</p>
+      <h2>${escapeHtml(title)}</h2>
+      <p>${escapeHtml(description)}</p>
       <div class="lesson-meta">
-        <span class="pill">${escapeHtml(video.category || "Trilha")}</span>
+        <span class="pill">${escapeHtml(category)}</span>
         <span class="pill">${escapeHtml(video.age ? ageText(video.age) : "Todas as idades")}</span>
-        <span class="pill">${escapeHtml(video.playlist || video.season || "Catálogo")}</span>
+        <span class="pill">${escapeHtml(playlist)}</span>
       </div>
       <div class="trail-actions">
         <a class="icon-button accent" href="${escapeHtml(watchUrl(video))}" target="_blank" rel="noreferrer">Abrir no YouTube</a>
@@ -2894,14 +2900,16 @@ function renderStreamPlayer(video) {
 
 // O player nao usa autoplay: o lider escolhe quando iniciar o video.
 function renderLockedStreamPlayer(video) {
+  const title = cleanTrailDisplayText(video.title, "Trilha bíblica");
+  const category = cleanTrailDisplayText(video.category, "Trilha");
   els.streamPlayer.innerHTML = `
     <div class="locked-reader stream-lock">
       <span class="locked-icon">🔒</span>
       <span class="reader-kicker">Trilha exclusiva</span>
-      <h2>${escapeHtml(video.title)}</h2>
+      <h2>${escapeHtml(title)}</h2>
       <p>Esta trilha está no acervo, mas o vídeo completo é liberado apenas para usuários com acesso ativo.</p>
       <div class="lesson-meta">
-        <span class="pill">${escapeHtml(video.category || "Trilha")}</span>
+        <span class="pill">${escapeHtml(category)}</span>
         <span class="pill">${escapeHtml(video.age ? ageText(video.age) : "Todas as idades")}</span>
         <span class="pill lock-pill">Bloqueado</span>
       </div>
@@ -2915,11 +2923,13 @@ function renderLockedStreamPlayer(video) {
 
 function renderStreamHero(video) {
   const locked = catalogIsLimited();
+  const title = cleanTrailDisplayText(video.title, "Trilha bíblica");
+  const description = cleanTrailDisplayText(video.description || video.lessonTitle, "Conteúdo em destaque para sua aula.");
   els.streamHero.innerHTML = `
     <div class="stream-hero-copy">
       <span class="reader-kicker">Destaque inteligente</span>
-      <h2>${escapeHtml(video.title)}</h2>
-      <p>${escapeHtml(video.description || video.lessonTitle || "Conteúdo em destaque para sua aula.")}</p>
+      <h2>${escapeHtml(title)}</h2>
+      <p>${escapeHtml(description)}</p>
       <div class="trail-actions">
         <button class="icon-button accent" type="button" data-play-video="${escapeHtml(video.id)}">${locked ? "🔒 Ver bloqueio" : "▶ Assistir agora"}</button>
         ${locked ? '<a class="icon-button" href="login.html">Entrar para liberar</a>' : `<a class="icon-button" href="${escapeHtml(watchUrl(video))}" target="_blank" rel="noreferrer">Abrir no YouTube</a>`}
@@ -2952,7 +2962,7 @@ function videoRank(video) {
   if (video.trending) score += 9;
   if (video.recommended) score += 7;
   if (video.source === "manual") score += 4;
-  if (/louvor|cria|jesus|promessa|coração|hist[oó]ria/i.test(video.title)) score += 3;
+  if (/louvor|cria|jesus|promessa|coração|hist[oó]ria/i.test(cleanTrailDisplayText(video.title))) score += 3;
   if (video.description) score += 1;
   return score;
 }
@@ -2989,9 +2999,9 @@ function filteredVideos() {
 
   const videos = allVideos().filter((video) => {
     const linkedMatch = video.lessonId ? filteredLessonIds.has(video.lessonId) : true;
-    const content = normalize([video.title, video.category, video.age, video.description, video.lessonTitle].join(" "));
+    const content = normalize([video.title, video.category, video.age, video.description, video.lessonTitle].map((value) => cleanTrailDisplayText(value)).join(" "));
     const matchesTerm = !term || content.includes(term);
-    const matchesCategory = category === "Todas" || video.category === category;
+    const matchesCategory = category === "Todas" || cleanTrailDisplayText(video.category) === category;
     const matchesAge = age === "Todas" || !video.age || normalizeAgeLabel(video.age) === age;
     return linkedMatch && matchesTerm && matchesCategory && matchesAge;
   });
@@ -3103,13 +3113,42 @@ function getYouTubeId(url) {
 }
 
 function cleanVideoTitle(value) {
-  return String(value || "")
+  return cleanTrailDisplayText(value)
     .replace(/https?:\/\/\S+/g, "")
     .replace(/[-–|:]+$/g, "")
     .replace(/^[-–|:]+/g, "")
     .replace(/\s*-\s*$/g, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function cleanTrailDisplayText(value, fallback = "") {
+  const text = repairMojibake(String(value || ""))
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<\/(?:p|div|li|h[1-6])>/gi, " ")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/https?:\/\/\S+/g, " ")
+    .replace(/&nbsp;/gi, " ");
+  const decoded = decodeHtmlEntities(text);
+  return decoded.replace(/\s+/g, " ").trim() || fallback;
+}
+
+function decodeHtmlEntities(value) {
+  if (typeof document === "undefined") return value;
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = value;
+  return textarea.value;
+}
+
+function repairMojibake(value) {
+  if (!/[ÃÂ]/.test(value) || typeof TextDecoder === "undefined") return value;
+  try {
+    const bytes = Uint8Array.from([...value].map((char) => char.charCodeAt(0) & 255));
+    return new TextDecoder("utf-8").decode(bytes).replace(/\uFFFD/g, "");
+  } catch {
+    return value;
+  }
 }
 
 async function printEbook() {
@@ -3159,7 +3198,7 @@ function buildEbookHtml(lessons, options = {}) {
   const coverAge = options.hideToc ? ageText(coverLesson.age, age) : `${age} - ${today}`;
   const toc = options.hideToc ? "" : `
       <section class="ebook-toc">
-        ${buildPdfPageBrand()}
+        ${buildPdfPageHeader()}
         <h2>Sumário</h2>
         ${lessons.map((lesson, index) => `
           <div class="ebook-toc-row">
@@ -3168,12 +3207,12 @@ function buildEbookHtml(lessons, options = {}) {
             <em>${escapeHtml(lesson.category)} · ${escapeHtml(ageText(lesson.age))}</em>
           </div>
         `).join("")}
+        ${buildPdfPageFooter()}
       </section>`;
 
   return `
     <article class="ebook">
       <section class="ebook-cover">
-        ${buildPageModelImage(1)}
         <p>Raízes Kids</p>
         <h1>${escapeHtml(title)}</h1>
         <div class="ebook-cover-line"></div>
@@ -3191,7 +3230,7 @@ function buildEbookLessonHtml(lesson, number, isLast = false) {
   const theme = categoryTheme(lesson.category);
   return `
     <section class="ebook-lesson" style="--theme:${theme.primary};--theme-soft:${theme.soft}">
-      ${buildPdfPageBrand()}
+      ${buildPdfPageHeader()}
       <header class="ebook-lesson-header">
         <span>${String(number).padStart(2, "0")}</span>
         <div>
@@ -3218,7 +3257,7 @@ function buildEbookLessonHtml(lesson, number, isLast = false) {
           </section>
         ` : ""}
       </div>
-      ${isLast ? buildEbookFinalFooter() : ""}
+      ${buildPdfPageFooter()}
     </section>
   `;
 }
@@ -3239,9 +3278,9 @@ function splitPdfTextFragments(text) {
   return [source];
 }
 
-function buildEbookFinalFooter() {
+function buildPdfPageFooter() {
   return `
-    <footer class="ebook-final-footer">
+    <footer class="ebook-page-footer">
       <img src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
       <span><strong>Sobre</strong> Plataforma para apoiar líderes e discipuladores de crianças com lições, trilhas, cultos em família, treinamentos e EBF.</span>
       <span><strong>Contato</strong> raizes.r12@gmail.com | (31) 97177-3756 | @raizes_r12</span>
@@ -3249,8 +3288,8 @@ function buildEbookFinalFooter() {
   `;
 }
 
-function buildPdfPageBrand() {
-  return `<div class="ebook-page-brand" aria-hidden="true"><img src="assets/logo-raizes-kids.png" alt="" /></div>`;
+function buildPdfPageHeader() {
+  return `<div class="ebook-page-header" aria-hidden="true"><img src="assets/logo-raizes-kids.png" alt="" /></div>`;
 }
 
 function buildPageModelImage(page) {

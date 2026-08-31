@@ -93,7 +93,7 @@ const mimeTypes = {
 };
 
 const defaultSiteInfo = {
-  about: "Raizes Kids e uma plataforma criada para facilitar a vida de lideres e discipuladores de criancas, reunindo licoes, trilhas, cultos em familia e materiais de apoio em um so lugar.",
+  about: "Raízes Kids é uma plataforma criada para facilitar a vida de líderes e discipuladores de crianças, reunindo lições, trilhas, cultos em família e materiais de apoio em um só lugar.",
   contactEmail: "raizes.r12@gmail.com",
   whatsapp: "31971773756",
   instagram: "@raizes_r12",
@@ -114,20 +114,20 @@ const ageAliases = {
 };
 
 Object.assign(ageAliases, {
-  "1 e 2": "0 a 2 anos - BerÃ§Ã¡rio",
-  "0 a 2": "0 a 2 anos - BerÃ§Ã¡rio",
-  "BerÃ§Ã¡rio: 0 a 2 anos": "0 a 2 anos - BerÃ§Ã¡rio",
+  "1 e 2": "0 a 2 anos - Berçário",
+  "0 a 2": "0 a 2 anos - Berçário",
+  "Berçário: 0 a 2 anos": "0 a 2 anos - Berçário",
   "3 e 4": "3 a 4 anos - Maternal",
   "3 a 4": "3 a 4 anos - Maternal",
   "Maternal: 3 a 4 anos": "3 a 4 anos - Maternal",
   "5 e 6": "5 a 6 anos - Jardim",
   "5 a 6": "5 a 6 anos - Jardim",
   "Jardim: 5 a 6 anos": "5 a 6 anos - Jardim",
-  "7 a 10": "7 a 10 anos - PrimÃ¡rios",
-  "7 a 8": "7 a 10 anos - PrimÃ¡rios",
-  "9 a 10": "7 a 10 anos - PrimÃ¡rios",
-  "PrimÃ¡rios: 7 a 8 anos": "7 a 10 anos - PrimÃ¡rios",
-  "PrÃ©-Juniores: 9 a 10 anos": "7 a 10 anos - PrimÃ¡rios",
+  "7 a 10": "7 a 10 anos - Primários",
+  "7 a 8": "7 a 10 anos - Primários",
+  "9 a 10": "7 a 10 anos - Primários",
+  "Primários: 7 a 8 anos": "7 a 10 anos - Primários",
+  "Pré-Juniores: 9 a 10 anos": "7 a 10 anos - Primários",
   "11 e 12": "11 a 12 anos - Juniores",
   "11 a 12": "11 a 12 anos - Juniores",
   "Juniores: 11 e 12 anos": "11 a 12 anos - Juniores"
@@ -302,6 +302,8 @@ function applyUserAdministrationUpdates() {
 function applySiteInfoContactUpdates() {
   const info = readSiteInfo();
   const next = { ...info };
+  const oldAbout = "Raizes Kids e uma plataforma criada para facilitar a vida de lideres e discipuladores de criancas, reunindo licoes, trilhas, cultos em familia e materiais de apoio em um so lugar.";
+  if (!next.about || next.about === oldAbout || /Raizes Kids e uma plataforma/.test(next.about)) next.about = defaultSiteInfo.about;
   if (!next.contactEmail || next.contactEmail === "raizes@gmail.com") next.contactEmail = defaultSiteInfo.contactEmail;
   if (!next.whatsapp || onlyDigits(next.whatsapp) === "31971773756") next.whatsapp = defaultSiteInfo.whatsapp;
   if (!next.instagram || next.instagram === "@raizeskids") next.instagram = defaultSiteInfo.instagram;
