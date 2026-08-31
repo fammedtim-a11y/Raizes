@@ -1459,7 +1459,7 @@ function buildInlineLessonVideo(youtubeId) {
         <iframe
           src="https://www.youtube-nocookie.com/embed/${escapeHtml(youtubeId)}?rel=0&modestbranding=1"
           title="Vídeo de apoio da lição"
-          allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allow="autoplay; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowfullscreen></iframe>
       </div>
     </div>
@@ -2935,9 +2935,9 @@ function renderStreamPlayer(video, options = {}) {
   els.streamPlayer.innerHTML = `
     <div class="stream-player-frame">
       <iframe
-        src="https://www.youtube-nocookie.com/embed/${escapeHtml(video.youtubeId)}?rel=0&modestbranding=1${autoplay}"
+        src="https://www.youtube-nocookie.com/embed/${escapeHtml(video.youtubeId)}?rel=0&modestbranding=1&playsinline=1${autoplay}"
         title="${escapeHtml(title)}"
-        allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allow="autoplay; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowfullscreen></iframe>
     </div>
     <div class="stream-player-info">
