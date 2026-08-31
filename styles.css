@@ -3749,8 +3749,8 @@ textarea,
     overflow: hidden !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
-    break-after: page;
-    page-break-after: always;
+    break-after: auto;
+    page-break-after: auto;
   }
 
   body.ebook-printing .ebook-cover p,
@@ -3816,8 +3816,8 @@ textarea,
     min-height: 297mm !important;
     padding: 0 20mm 32mm !important;
     background: #fff !important;
-    break-after: page;
-    page-break-after: always;
+    break-after: auto;
+    page-break-after: auto;
   }
 
   body.ebook-printing .ebook-toc-row {
@@ -3855,10 +3855,11 @@ textarea,
     page-break-before: always;
   }
 
+  body.ebook-printing .ebook-cover + .ebook-toc,
   body.ebook-printing .ebook-cover + .ebook-lesson,
   body.ebook-printing .ebook-toc + .ebook-lesson {
-    break-before: auto;
-    page-break-before: auto;
+    break-before: page;
+    page-break-before: always;
   }
 
   body.ebook-printing .ebook-lesson::before {
