@@ -580,6 +580,8 @@ function bindEvents() {
     button.addEventListener("click", () => setTab(button.dataset.jumpTab));
   });
 
+  $("#homeNewsShortcut")?.addEventListener("click", openNewsDrawer);
+
   document.querySelectorAll("[data-age-select]").forEach((button) => {
     button.addEventListener("click", () => {
       const mappedAge = button.dataset.ageSelect;
