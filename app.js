@@ -632,7 +632,7 @@ function bindEvents() {
   document.querySelectorAll("[data-manage-tab]").forEach((button) => {
     button.addEventListener("click", () => {
       setManageTab(button.dataset.manageTab);
-      button.closest("details")?.removeAttribute("open");
+      button.closest(".nav-menu")?.removeAttribute("open");
       document.querySelector("#manageView")?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   });
@@ -986,6 +986,11 @@ function setManageTab(tabName) {
   state.manageTab = tabName;
   document.querySelectorAll("[data-manage-tab]").forEach((tab) => {
     tab.classList.toggle("active", tab.dataset.manageTab === tabName);
+  });
+  document.querySelectorAll(".manage-tab-group").forEach((group) => {
+    const hasActiveTab = Boolean(group.querySelector(`[data-manage-tab="${tabName}"]`));
+    group.classList.toggle("active", hasActiveTab);
+    if (hasActiveTab) group.setAttribute("open", "");
   });
   $("#adminDashboardPanel")?.classList.toggle("active", tabName === "dashboard");
   $("#lessonManagePanel")?.classList.toggle("active", tabName === "lessons");

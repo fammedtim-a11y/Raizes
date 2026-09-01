@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20260901-public-menu-news" />
+    <link rel="stylesheet" href="styles.css?v=20260901-admin-clean" />
   </head>
   <body data-page="admin">
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -95,6 +95,30 @@
         </section>
 
         <section id="manageView" class="view active manage-layout" aria-label="Gerenciamento">
+          <nav class="manage-tabs admin-side-nav" aria-label="Seções administrativas">
+            <button class="manage-tab active" data-manage-tab="dashboard" type="button">🏡 Painel</button>
+            <details class="manage-tab-group" open>
+              <summary class="manage-tab">📚 Conteúdos</summary>
+              <div class="manage-tab-submenu">
+                <button class="manage-tab" data-manage-tab="lessons" type="button">📖 Lições</button>
+                <button class="manage-tab" data-manage-tab="devotionals" type="button">🏠 Culto em Família</button>
+                <button class="manage-tab" data-manage-tab="trails" type="button">▶️ Trilhas</button>
+                <button class="manage-tab" data-manage-tab="trainings" type="button">🎓 Treinamentos</button>
+                <button class="manage-tab" data-manage-tab="ebf" type="button">🎪 EBF</button>
+                <button class="manage-tab" data-manage-tab="news" type="button">🔔 Novidades</button>
+              </div>
+            </details>
+            <details class="manage-tab-group">
+              <summary class="manage-tab">🧭 Controle</summary>
+              <div class="manage-tab-submenu">
+                <button class="manage-tab" data-manage-tab="users" type="button">👥 Pessoas</button>
+                <button class="manage-tab" data-manage-tab="analytics" type="button">📊 Analytics</button>
+                <button class="manage-tab master-only" data-manage-tab="communication" type="button">💬 Comunicação</button>
+                <button class="manage-tab" data-manage-tab="contact" type="button">🌱 Institucional</button>
+              </div>
+            </details>
+          </nav>
+
           <section id="adminDashboardPanel" class="manage-panel active admin-dashboard" aria-label="Painel administrativo">
             <div class="admin-dashboard-hero">
               <div>
@@ -129,26 +153,40 @@
             </div>
           </section>
 
-          <nav class="manage-tabs" aria-label="Seções administrativas">
-            <button class="manage-tab active" data-manage-tab="dashboard" type="button">🏡 Painel</button>
-            <button class="manage-tab" data-manage-tab="lessons" type="button">📖 Lições</button>
-            <button class="manage-tab" data-manage-tab="devotionals" type="button">🏠 Culto em Família</button>
-            <button class="manage-tab" data-manage-tab="trails" type="button">▶️ Trilhas</button>
-            <button class="manage-tab" data-manage-tab="trainings" type="button">🎓 Treinamentos</button>
-            <button class="manage-tab" data-manage-tab="ebf" type="button">🎪 EBF</button>
-            <button class="manage-tab" data-manage-tab="news" type="button">🔔 Novidades</button>
-            <button class="manage-tab" data-manage-tab="users" type="button">👥 Pessoas</button>
-            <button class="manage-tab" data-manage-tab="analytics" type="button">📊 Analytics</button>
-            <button class="manage-tab master-only" data-manage-tab="communication" type="button">💬 Comunicação</button>
-            <button class="manage-tab" data-manage-tab="contact" type="button">🌱 Institucional</button>
-          </nav>
-
           <div id="lessonManagePanel" class="manage-panel">
             <div class="manager-heading">
               <div>
                 <h2>Lições cadastradas</h2>
                 <p>Selecione uma lição existente para editar no formulário abaixo.</p>
               </div>
+            </div>
+            <div class="admin-work-actions">
+              <button id="newLessonBtn" class="icon-button primary" type="button" title="Nova lição">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                Nova lição
+              </button>
+              <button id="ebookPrintBtn" class="icon-button accent" type="button" title="Exportar ebook filtrado">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5V5.8A2.8 2.8 0 0 1 6.8 3H20v15H7a3 3 0 0 0-3 3Z" /><path d="M8 7h8M8 11h6" /></svg>
+                Exportar Ebook
+              </button>
+              <details class="admin-advanced-actions">
+                <summary class="icon-button" title="Ações avançadas">⚙️ Ações avançadas</summary>
+                <div>
+                  <button id="exportJsonBtn" class="icon-button" type="button">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /></svg>
+                    Exportar JSON
+                  </button>
+                  <a class="icon-button primary" href="/api/admin/backup" download="backup-raizes.tar.gz" title="Baixar backup geral">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /><path d="M4 5h16" /></svg>
+                    Backup Geral
+                  </a>
+                  <label class="file-button">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V9M7 14l5-5 5 5M5 3h14" /></svg>
+                    Importar JSON
+                    <input id="importJsonInput" type="file" accept="application/json" />
+                  </label>
+                </div>
+              </details>
             </div>
             <div id="lessonAdminList" class="admin-item-list admin-card-rail lesson-admin-rail"></div>
 
@@ -259,38 +297,6 @@
               <p class="action-message" role="status"></p>
             </form>
           </section>
-
-          <aside class="data-panel">
-            <h2>Dados do catálogo</h2>
-            <p>Use estes botões para criar novas lições, exportar ebook filtrado ou guardar backup.</p>
-            <div class="data-actions">
-              <button id="newLessonBtn" class="icon-button primary" type="button" title="Nova lição">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-                Nova lição
-              </button>
-              <button id="ebookPrintBtn" class="icon-button accent" type="button" title="Exportar ebook filtrado">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5V5.8A2.8 2.8 0 0 1 6.8 3H20v15H7a3 3 0 0 0-3 3Z" /><path d="M8 7h8M8 11h6" /></svg>
-                Exportar Ebook
-              </button>
-              <button id="exportJsonBtn" class="icon-button" type="button">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /></svg>
-                Exportar JSON
-              </button>
-              <a class="icon-button primary" href="/api/admin/backup" download="backup-raizes.tar.gz" title="Baixar backup geral">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /><path d="M4 5h16" /></svg>
-                Backup Geral
-              </a>
-              <label class="file-button">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V9M7 14l5-5 5 5M5 3h14" /></svg>
-                Importar JSON
-                <input id="importJsonInput" type="file" accept="application/json" />
-              </label>
-            </div>
-            <div class="note-box">
-              <strong>Referência carregada</strong>
-              <p>O modelo inicial segue o padrão do documento “CURRICULUM GENESIS 1 2 3.docx”.</p>
-            </div>
-          </aside>
 
           <section id="trailManagePanel" class="video-manager manage-panel">
             <div class="manager-heading">
@@ -646,8 +652,8 @@
       </main>
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
-    <script src="lessons-data.js?v=20260901-public-menu-news"></script>
-    <script src="app.js?v=20260901-public-menu-news"></script>
-    <script src="auth.js?v=20260901-public-menu-news"></script>
+    <script src="lessons-data.js?v=20260901-admin-clean"></script>
+    <script src="app.js?v=20260901-admin-clean"></script>
+    <script src="auth.js?v=20260901-admin-clean"></script>
   </body>
 </html>
