@@ -217,6 +217,13 @@ async function loadAdminUsers() {
     </div>
     ${data.users.map(renderAdminUserCard).join("")}
   `;
+  window.raizesAdminPendingUsers = data.users.filter((user) => user.role !== "admin" && !user.approved).length;
+  const latestAccess = data.users
+    .map((user) => user.lastAccessAt || user.lastLoginAt)
+    .filter(Boolean)
+    .sort((a, b) => new Date(b) - new Date(a))[0];
+  window.raizesAdminLastAccessLabel = latestAccess ? new Date(latestAccess).toLocaleString("pt-BR") : "Sem acesso registrado";
+  window.renderAdminDashboard?.();
   document.querySelector("#exportUsersCsvBtn")?.addEventListener("click", () => exportUsersCsv(data.users));
   list.querySelectorAll("[data-toggle-user-details]").forEach((button) => {
     button.addEventListener("click", () => {

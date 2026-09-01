@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20260831-admin-control-team" />
+    <link rel="stylesheet" href="styles.css?v=20260831-admin-dashboard" />
   </head>
   <body data-page="admin">
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -94,29 +94,53 @@
         </section>
 
         <section id="manageView" class="view active manage-layout" aria-label="Gerenciamento">
-          <div class="manage-tabs">
-            <details class="manage-tab-group manage-tab-dropdown" open aria-label="Conteúdo administrativo">
-              <summary class="manage-tab active">Conteúdo</summary>
-              <div class="manage-tab-submenu">
-                <button class="manage-tab active" data-manage-tab="lessons" type="button">Lições</button>
-                <button class="manage-tab" data-manage-tab="devotionals" type="button">Culto em Família</button>
-                <button class="manage-tab" data-manage-tab="trails" type="button">Trilhas</button>
-                <button class="manage-tab" data-manage-tab="trainings" type="button">Treinamentos</button>
-                <button class="manage-tab" data-manage-tab="ebf" type="button">EBF</button>
-                <button class="manage-tab" data-manage-tab="news" type="button">Novidades</button>
+          <section id="adminDashboardPanel" class="manage-panel active admin-dashboard" aria-label="Painel administrativo">
+            <div class="admin-dashboard-hero">
+              <div>
+                <span class="home-kicker">Painel Administrativo</span>
+                <h2>Gerencie conteúdos, pessoas e comunicação em poucos cliques</h2>
+                <p>Escolha uma área abaixo para cadastrar materiais, aprovar usuários, enviar novidades ou editar informações institucionais.</p>
               </div>
-            </details>
-            <details class="manage-tab-group manage-tab-dropdown" aria-label="Controle administrativo">
-              <summary class="manage-tab">Controle</summary>
-              <div class="manage-tab-submenu">
-                <button class="manage-tab" data-manage-tab="users" type="button">Usuários e acessos</button>
-                <button class="manage-tab master-only" data-manage-tab="communication" type="button">Comunicação</button>
-                <button class="manage-tab" data-manage-tab="contact" type="button">Institucional</button>
-              </div>
-            </details>
-          </div>
+              <img src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
+            </div>
+            <div id="adminDashboardStats" class="admin-dashboard-stats" aria-label="Resumo do sistema"></div>
+            <div class="admin-dashboard-groups">
+              <section>
+                <h3>Conteúdos</h3>
+                <div class="admin-dashboard-grid">
+                  <button class="admin-menu-card blue" data-manage-tab="lessons" type="button"><span>📖</span><strong>Lições</strong><small>Cadastrar aulas bíblicas e exportar ebook.</small></button>
+                  <button class="admin-menu-card green" data-manage-tab="devotionals" type="button"><span>🏠</span><strong>Culto em Família</strong><small>Devocionais para pais e responsáveis.</small></button>
+                  <button class="admin-menu-card purple" data-manage-tab="trails" type="button"><span>▶️</span><strong>Trilhas</strong><small>Vídeos e playlists por categoria.</small></button>
+                  <button class="admin-menu-card red" data-manage-tab="trainings" type="button"><span>🎓</span><strong>Treinamentos</strong><small>Materiais para líderes e professores.</small></button>
+                  <button class="admin-menu-card yellow" data-manage-tab="ebf" type="button"><span>🎪</span><strong>EBF</strong><small>Programações e materiais especiais.</small></button>
+                  <button class="admin-menu-card teal" data-manage-tab="news" type="button"><span>🔔</span><strong>Novidades</strong><small>Avisos e destaques para usuários.</small></button>
+                </div>
+              </section>
+              <section>
+                <h3>Controle</h3>
+                <div class="admin-dashboard-grid compact">
+                  <button class="admin-menu-card blue" data-manage-tab="users" type="button"><span>👥</span><strong>Pessoas</strong><small>Usuários, aprovações, acessos e licenças.</small></button>
+                  <button class="admin-menu-card green master-only" data-manage-tab="communication" type="button"><span>💬</span><strong>Comunicação</strong><small>Email e WhatsApp para públicos filtrados.</small></button>
+                  <button class="admin-menu-card yellow" data-manage-tab="contact" type="button"><span>🌱</span><strong>Institucional</strong><small>Contato, Sobre e Quem Somos.</small></button>
+                </div>
+              </section>
+            </div>
+          </section>
 
-          <div id="lessonManagePanel" class="manage-panel active">
+          <nav class="manage-tabs" aria-label="Seções administrativas">
+            <button class="manage-tab active" data-manage-tab="dashboard" type="button">🏡 Painel</button>
+            <button class="manage-tab" data-manage-tab="lessons" type="button">📖 Lições</button>
+            <button class="manage-tab" data-manage-tab="devotionals" type="button">🏠 Culto em Família</button>
+            <button class="manage-tab" data-manage-tab="trails" type="button">▶️ Trilhas</button>
+            <button class="manage-tab" data-manage-tab="trainings" type="button">🎓 Treinamentos</button>
+            <button class="manage-tab" data-manage-tab="ebf" type="button">🎪 EBF</button>
+            <button class="manage-tab" data-manage-tab="news" type="button">🔔 Novidades</button>
+            <button class="manage-tab" data-manage-tab="users" type="button">👥 Pessoas</button>
+            <button class="manage-tab master-only" data-manage-tab="communication" type="button">💬 Comunicação</button>
+            <button class="manage-tab" data-manage-tab="contact" type="button">🌱 Institucional</button>
+          </nav>
+
+          <div id="lessonManagePanel" class="manage-panel">
             <div class="manager-heading">
               <div>
                 <h2>Lições cadastradas</h2>
@@ -609,8 +633,8 @@
       </main>
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
-    <script src="lessons-data.js?v=20260831-admin-control-team"></script>
-    <script src="app.js?v=20260831-admin-control-team"></script>
-    <script src="auth.js?v=20260831-admin-control-team"></script>
+    <script src="lessons-data.js?v=20260831-admin-dashboard"></script>
+    <script src="app.js?v=20260831-admin-dashboard"></script>
+    <script src="auth.js?v=20260831-admin-dashboard"></script>
   </body>
 </html>

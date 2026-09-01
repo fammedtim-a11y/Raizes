@@ -265,7 +265,7 @@ function init() {
   state.activeId = state.lessons[0]?.id || null;
   render();
   if (isAdminPage) {
-    setManageTab(location.hash === "#trilhas" ? "trails" : location.hash === "#novidades" ? "news" : location.hash === "#comunicacao" ? "communication" : location.hash === "#devocionais" ? "devotionals" : location.hash === "#treinamentos" ? "trainings" : location.hash === "#ebf" ? "ebf" : location.hash === "#usuarios" ? "users" : location.hash === "#acessos" ? "access" : location.hash === "#contato" ? "contact" : "lessons");
+    setManageTab(location.hash === "#trilhas" ? "trails" : location.hash === "#novidades" ? "news" : location.hash === "#comunicacao" ? "communication" : location.hash === "#devocionais" ? "devotionals" : location.hash === "#treinamentos" ? "trainings" : location.hash === "#ebf" ? "ebf" : location.hash === "#usuarios" ? "users" : location.hash === "#acessos" ? "access" : location.hash === "#contato" ? "contact" : "dashboard");
     loadIntoForm(getActiveLesson());
   } else {
     const initialTab = location.hash === "#trilhas" ? "trails" : location.hash === "#licoes" ? "study" : location.hash === "#treinamentos" ? "training" : location.hash === "#devocional" ? "devotional" : location.hash === "#ebf" ? "ebf" : "home";
@@ -373,6 +373,7 @@ async function syncLessonsFromServer() {
     render();
     if (isAdminPage) loadIntoForm(getActiveLesson());
     if (state.trailsRendered) renderTrails();
+    if (isAdminPage && state.manageTab === "dashboard") renderAdminDashboard();
   } catch {
     // Sem conexão com o catálogo do servidor, o sistema mantém o catálogo local como fallback.
   }
@@ -398,6 +399,7 @@ async function syncContentFromServer() {
   renderTrainings();
   renderEbfs();
   renderContentAdminLists();
+  if (isAdminPage && state.manageTab === "dashboard") renderAdminDashboard();
 }
 
 async function syncNotificationsFromServer() {
@@ -409,8 +411,10 @@ async function syncNotificationsFromServer() {
     state.notifications = normalizeNotifications(data.notifications);
     saveCollectionCache("raizes-notifications", state.notifications);
     renderNotifications();
+    if (isAdminPage && state.manageTab === "dashboard") renderAdminDashboard();
   } catch {
     renderNotifications();
+    if (isAdminPage && state.manageTab === "dashboard") renderAdminDashboard();
   }
 }
 
@@ -628,6 +632,7 @@ function bindEvents() {
     button.addEventListener("click", () => {
       setManageTab(button.dataset.manageTab);
       button.closest("details")?.removeAttribute("open");
+      document.querySelector("#manageView")?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   });
 
@@ -973,10 +978,12 @@ function stopTrailPlayback() {
 
 function setManageTab(tabName) {
   if (tabName === "access") tabName = "users";
+  if (!tabName) tabName = "dashboard";
   state.manageTab = tabName;
   document.querySelectorAll("[data-manage-tab]").forEach((tab) => {
     tab.classList.toggle("active", tab.dataset.manageTab === tabName);
   });
+  $("#adminDashboardPanel")?.classList.toggle("active", tabName === "dashboard");
   $("#lessonManagePanel")?.classList.toggle("active", tabName === "lessons");
   $("#devotionalManagePanel")?.classList.toggle("active", tabName === "devotionals");
   $("#trailManagePanel")?.classList.toggle("active", tabName === "trails");
@@ -987,11 +994,60 @@ function setManageTab(tabName) {
   $("#communicationManagePanel")?.classList.toggle("active", tabName === "communication");
   $("#accessManagePanel")?.classList.toggle("active", false);
   $("#contactManagePanel")?.classList.toggle("active", tabName === "contact");
+  els.filterToolbar?.classList.toggle("hidden", !["lessons", "trails"].includes(tabName));
+  if (tabName === "dashboard") renderAdminDashboard();
   if (tabName === "users") window.loadAdminAccessLogs?.();
   if (tabName === "communication") window.loadCommunicationCenter?.();
   if (tabName === "contact") window.loadAdminSiteInfo?.();
   if (tabName === "news") renderNotifications();
 }
+
+async function renderAdminDashboard() {
+  const stats = $("#adminDashboardStats");
+  if (!stats) return;
+  const lessons = state.lessons.length;
+  const videos = getTrailVideos().length;
+  const activeNews = getVisibleNotifications().length;
+  const devotionals = state.devotionals.length;
+  const trainings = state.trainings.length;
+  const ebfs = state.ebfs.length;
+  let pendingUsers = window.raizesAdminPendingUsers;
+  let lastAccess = window.raizesAdminLastAccessLabel || "Carregando...";
+  if (pendingUsers === undefined) {
+    try {
+      const data = await fetch("/api/admin/users", { cache: "no-store" }).then((res) => res.json());
+      const users = Array.isArray(data.users) ? data.users : [];
+      pendingUsers = users.filter((user) => user.role !== "admin" && !user.approved).length;
+      const latest = users
+        .map((user) => user.lastAccessAt || user.lastLoginAt)
+        .filter(Boolean)
+        .sort((a, b) => new Date(b) - new Date(a))[0];
+      lastAccess = latest ? new Date(latest).toLocaleString("pt-BR") : "Sem acesso registrado";
+      window.raizesAdminPendingUsers = pendingUsers;
+      window.raizesAdminLastAccessLabel = lastAccess;
+    } catch {
+      pendingUsers = 0;
+      lastAccess = "Não foi possível carregar";
+    }
+  }
+  stats.innerHTML = [
+    ["📖", lessons, "Lições cadastradas"],
+    ["▶️", videos, "Vídeos em trilhas"],
+    ["🔔", activeNews, "Novidades ativas"],
+    ["👥", pendingUsers, "Aguardando aprovação"],
+    ["🏠", devotionals, "Cultos em família"],
+    ["🎓", trainings + ebfs, "Treinamentos e EBF"],
+    ["🕘", "", `Último acesso: ${lastAccess}`]
+  ].map(([icon, value, label]) => `
+    <article>
+      <span>${icon}</span>
+      ${value !== "" ? `<strong>${value}</strong>` : ""}
+      <small>${label}</small>
+    </article>
+  `).join("");
+}
+
+window.renderAdminDashboard = renderAdminDashboard;
 
 function updateMobileChrome() {
   document.querySelectorAll("[data-mobile-tab]").forEach((item) => {
