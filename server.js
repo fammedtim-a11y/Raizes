@@ -163,12 +163,64 @@ const initialNotifications = [
   {
     id: "novidade-boas-vindas-raizes",
     title: "Bem-vindo às novidades do Raízes Kids",
-    summary: "Agora você verá aqui os novos materiais, trilhas e avisos importantes do ministério.",
+    summary: "Acompanhe por aqui os novos materiais, melhorias e avisos importantes para usar melhor a plataforma.",
     type: "Atualização",
     target: "home",
     linkLabel: "Ver novidades",
     active: true,
     featured: true,
+    publishAt: new Date().toISOString(),
+    expiresAt: "",
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "novidade-mobile-otimizado",
+    title: "Navegação mobile aprimorada",
+    summary: "As telas de lições, cultos em família e trilhas foram ajustadas para uso prático no celular, tablet e Smart TV.",
+    type: "Melhoria",
+    target: "home",
+    linkLabel: "Conhecer",
+    active: true,
+    featured: true,
+    publishAt: new Date().toISOString(),
+    expiresAt: "",
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "novidade-trilhas-youtube",
+    title: "Trilhas com títulos do YouTube",
+    summary: "Os vídeos passaram a exibir apenas o título oficial, com visual mais limpo para quem prepara aulas pelo celular.",
+    type: "Trilhas",
+    target: "trails",
+    linkLabel: "Abrir trilhas",
+    active: true,
+    featured: false,
+    publishAt: new Date().toISOString(),
+    expiresAt: "",
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "novidade-pdf-a4",
+    title: "Exportação em PDF ajustada",
+    summary: "As lições ganharam layout A4 revisado, margens padronizadas e páginas textuais com cabeçalho e rodapé institucional.",
+    type: "PDF",
+    target: "study",
+    linkLabel: "Ver lições",
+    active: true,
+    featured: false,
+    publishAt: new Date().toISOString(),
+    expiresAt: "",
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "novidade-controle-admin",
+    title: "Controle administrativo organizado",
+    summary: "O administrador conta com abas mais claras, analytics, comunicação, controle de usuários e definição de validade da licença.",
+    type: "Administração",
+    target: "home",
+    linkLabel: "Ver novidades",
+    active: true,
+    featured: false,
     publishAt: new Date().toISOString(),
     expiresAt: "",
     createdAt: new Date().toISOString()
@@ -226,9 +278,17 @@ function ensureData() {
     writeCommunications([]);
   }
   mergeSeedContent();
+  syncImportantNotifications();
   applyUserAdministrationUpdates();
   applySiteInfoContactUpdates();
   loadSessions();
+}
+
+function syncImportantNotifications() {
+  const notifications = readNotifications();
+  const existingIds = new Set(notifications.map((item) => item.id));
+  const missing = initialNotifications.filter((item) => !existingIds.has(item.id));
+  if (missing.length) writeNotifications([...missing, ...notifications]);
 }
 
 function mergeSeedContent() {
@@ -389,11 +449,6 @@ async function handleApi(req, res, url) {
 
   if (req.method === "POST" && url.pathname === "/api/register") {
     await register(req, res);
-    return;
-  }
-
-  if (req.method === "POST" && url.pathname === "/api/register-test") {
-    await registerTest(req, res);
     return;
   }
 
@@ -799,50 +854,6 @@ async function passwordResetRequest(req, res) {
     writeUsers(users);
   }
   sendJson(res, 200, { ok: true, message: "Se o usuário existir, o pedido será enviado ao administrador." });
-}
-
-async function registerTest(req, res) {
-  const body = await readBody(req);
-  const username = onlyDigits(body.cpf || "");
-  const password = String(body.password || "");
-  const confirmPassword = String(body.confirmPassword || "");
-
-  if (!body.name || !username || !body.email || !body.phone || !body.address || !body.church || !body.churchCity) {
-    sendJson(res, 400, { error: "Preencha todos os dados do cadastro teste." });
-    return;
-  }
-  if (!/^\d{6}$/.test(password) || password !== confirmPassword) {
-    sendJson(res, 400, { error: "A senha precisa ter 6 dÃ­gitos e a confirmaÃ§Ã£o deve ser igual." });
-    return;
-  }
-
-  const users = readUsers();
-  if (users.some((user) => user.username === username)) {
-    sendJson(res, 409, { error: "CPF jÃ¡ cadastrado." });
-    return;
-  }
-
-  users.push({
-    id: crypto.randomUUID(),
-    username,
-    role: "user",
-    accessLevel: "test",
-    approved: true,
-    active: true,
-    name: cleanText(body.name),
-    email: cleanText(body.email),
-    phone: onlyDigits(body.phone || ""),
-    address: cleanText(body.address),
-    church: cleanText(body.church),
-    churchCity: cleanText(body.churchCity),
-    resetRequested: false,
-    createdAt: new Date().toISOString(),
-    approvedAt: new Date().toISOString(),
-    licenseExpiresAt: new Date(Date.now() + 3 * DAY_MS).toISOString(),
-    passwordHash: hashPassword(password)
-  });
-  writeUsers(users);
-  sendJson(res, 201, { ok: true, message: "Cadastro teste liberado por 3 dias. Entre com seu CPF e senha." });
 }
 
 function updateUserApproval(res, id, approved) {

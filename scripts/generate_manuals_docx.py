@@ -261,7 +261,7 @@ def build_programmer_manual():
     )
 
     add_h1(doc, "1. Visão Geral")
-    add_para(doc, "O Raízes Kids é uma aplicação web para ministério infantil cristão. O sistema organiza lições bíblicas por faixa etária, trilhas com vídeos do YouTube, cultos em família, treinamentos, EBF, novidades, usuários, controle de acesso e comunicação com a base de membros.")
+    add_para(doc, "O Raízes Kids é uma aplicação web para ministério com crianças. O sistema organiza lições bíblicas por faixa etária, trilhas com vídeos do YouTube, cultos em família, treinamentos, EBF, novidades, usuários, controle de acesso e comunicação com a base de membros.")
     add_callout(doc, "Resumo técnico", "Aplicação Node.js sem framework web externo, front-end em HTML/CSS/JavaScript puro, persistência em arquivos JSON no diretório configurado por DATA_DIR e publicação prevista em Render conectada ao GitHub.", "EEF9FF", BLUE)
 
     add_h2(doc, "Objetivos do sistema")
@@ -371,7 +371,6 @@ def build_programmer_manual():
         ["/api/login", "POST", "Autentica usuário."],
         ["/api/logout", "POST", "Encerra sessão."],
         ["/api/register", "POST", "Cria cadastro aguardando aprovação."],
-        ["/api/register-test", "POST", "Cria cadastro de teste e tenta login imediato."],
         ["/api/password-reset", "POST", "Solicitação/redefinição simples de senha."],
         ["/api/profile", "GET/POST", "Consulta e edita perfil do usuário logado."],
         ["/api/lessons", "GET", "Lista lições para o catálogo público."],
@@ -476,7 +475,7 @@ def build_user_manual():
         "O banner principal apresenta a proposta do ministério e botões para conhecer o catálogo ou escolher faixa etária.",
         "Os cards de faixa etária direcionam a navegação para o grupo escolhido.",
         "A Central de Novidades mostra conteúdos recém-publicados ou avisos importantes.",
-        "O menu superior organiza conteúdos por Pais, Voluntários, Líderes e Administração."
+        "O menu superior organiza conteúdos por Famílias, Líderes, Coordenadores e Administração."
     ])
 
     add_h1(doc, "5. Catálogo de Lições")

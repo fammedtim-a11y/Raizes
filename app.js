@@ -151,6 +151,7 @@ const els = {
   devotionalView: $("#devotionalView"),
   trainingView: $("#trainingView"),
   ebfView: $("#ebfView"),
+  teamView: $("#teamView"),
   studyView: $("#studyView"),
   trailsView: $("#trailsView"),
   manageView: $("#manageView"),
@@ -268,7 +269,7 @@ function init() {
     setManageTab(location.hash === "#trilhas" ? "trails" : location.hash === "#novidades" ? "news" : location.hash === "#comunicacao" ? "communication" : location.hash === "#devocionais" ? "devotionals" : location.hash === "#treinamentos" ? "trainings" : location.hash === "#ebf" ? "ebf" : location.hash === "#usuarios" ? "users" : location.hash === "#acessos" ? "access" : location.hash === "#contato" ? "contact" : "dashboard");
     loadIntoForm(getActiveLesson());
   } else {
-    const initialTab = location.hash === "#trilhas" ? "trails" : location.hash === "#licoes" ? "study" : location.hash === "#treinamentos" ? "training" : location.hash === "#devocional" ? "devotional" : location.hash === "#ebf" ? "ebf" : "home";
+    const initialTab = location.hash === "#trilhas" ? "trails" : location.hash === "#licoes" ? "study" : location.hash === "#treinamentos" ? "training" : location.hash === "#devocional" ? "devotional" : location.hash === "#ebf" ? "ebf" : location.hash === "#quem-somos" ? "team" : "home";
     setTab(initialTab);
   }
   drawSky();
@@ -741,13 +742,15 @@ function scrollToActiveView() {
       ? els.studyView
       : state.tab === "trails"
         ? els.trailsView
-        : state.tab === "devotional"
-          ? els.devotionalView
-          : state.tab === "training"
-            ? els.trainingView
-            : state.tab === "ebf"
-              ? els.ebfView
-              : document.querySelector("main");
+        : state.tab === "team"
+          ? els.teamView
+          : state.tab === "devotional"
+            ? els.devotionalView
+            : state.tab === "training"
+              ? els.trainingView
+              : state.tab === "ebf"
+                ? els.ebfView
+                : document.querySelector("main");
   window.requestAnimationFrame(() => target?.scrollIntoView({ behavior: "smooth", block: "start" }));
 }
 
@@ -934,6 +937,7 @@ function setTab(tabName) {
   els.devotionalView?.classList.toggle("active", tabName === "devotional");
   els.trainingView?.classList.toggle("active", tabName === "training");
   els.ebfView?.classList.toggle("active", tabName === "ebf");
+  els.teamView?.classList.toggle("active", tabName === "team");
   els.studyView?.classList.toggle("active", tabName === "study");
   els.trailsView?.classList.toggle("active", tabName === "trails");
   els.manageView?.classList.toggle("active", tabName === "manage");
@@ -1096,6 +1100,7 @@ function applyAccessVisibility() {
 function canAccessTab(tabName) {
   if (!state.authUser || state.authUser.role === "admin") return true;
   if (tabName === "home") return true;
+  if (tabName === "team") return true;
   if (state.authUser.accessLevel === "test") return ["devotional", "trails", "study", "training"].includes(tabName);
   if (tabName === "devotional") return true;
   if (["study", "trails"].includes(tabName)) return canAccessLevel("leader");

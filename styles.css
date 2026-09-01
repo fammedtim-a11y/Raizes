@@ -2128,6 +2128,49 @@ button.master-only.visible,
   gap: 24px;
 }
 
+.team-view {
+  gap: 18px;
+  padding: clamp(18px, 3vw, 30px);
+  border: 1px solid rgba(45, 156, 255, 0.12);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(255, 217, 61, 0.24), transparent 26%),
+    radial-gradient(circle at 90% 18%, rgba(41, 199, 201, 0.18), transparent 30%),
+    rgba(255, 255, 255, 0.88);
+  box-shadow: 0 14px 34px rgba(31, 77, 117, 0.08);
+}
+
+.team-view-hero {
+  display: grid;
+  gap: 8px;
+  max-width: 760px;
+}
+
+.team-view-hero h2 {
+  color: #15456d;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 1;
+}
+
+.team-view-hero p {
+  color: var(--muted);
+  font-size: 1.08rem;
+  line-height: 1.55;
+}
+
+.team-members-showcase {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.team-members-showcase .team-member-card {
+  align-items: start;
+  padding: 16px;
+  border: 1px solid rgba(45, 156, 255, 0.14);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(31, 77, 117, 0.08);
+}
+
 .home-toolkit-section,
 .home-steps-section,
 .age-section {

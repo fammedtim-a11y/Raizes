@@ -99,7 +99,6 @@ function bindAuthTabs() {
 function bindAuthForms() {
   const loginForm = document.querySelector("#loginForm");
   const registerForm = document.querySelector("#registerForm");
-  const testRegisterForm = document.querySelector("#testRegisterForm");
   const resetForm = document.querySelector("#resetForm");
   const profileForm = document.querySelector("#profileForm");
   const siteInfoForm = document.querySelector("#siteInfoForm");
@@ -129,21 +128,6 @@ function bindAuthForms() {
       registerForm.reset();
       sessionStorage.setItem("raizes-auth-notice", result.message || "Cadastro enviado para aprovacao.");
       window.location.href = "vendas.html";
-    }
-  });
-
-  testRegisterForm?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const payload = formData(testRegisterForm);
-    const result = await apiPost("/api/register-test", payload);
-    setAuthMessage(result.error || result.message || "Cadastro teste liberado.", Boolean(result.error));
-    if (!result.error) {
-      const loginResult = await apiPost("/api/login", { username: payload.cpf, password: payload.password });
-      if (loginResult.error) {
-        testRegisterForm.reset();
-        return;
-      }
-      window.location.href = "index.html";
     }
   });
 
@@ -528,7 +512,7 @@ function renderAccessLogCard(log) {
 
 function renderAdminUserCard(user) {
   const accessLevel = user.accessLevel || "prime";
-  const accessLabel = accessLevel === "simple" ? "Simples" : accessLevel === "test" ? "Teste" : accessLevel === "leader" ? "Lideres" : "Prime";
+  const accessLabel = accessLevel === "simple" ? "Simples" : accessLevel === "leader" ? "Líderes" : "Prime";
   const licenseText = user.role === "admin" ? "Acesso administrativo" : `${Number(user.licenseDaysRemaining || 0)} dias de acesso disponivel`;
   const status = user.role === "admin"
     ? "Administrador"
@@ -544,8 +528,7 @@ function renderAdminUserCard(user) {
       <span>Categoria</span>
       <select data-access-level="${authEscapeHtml(user.id)}">
         <option value="simple" ${accessLevel === "simple" ? "selected" : ""}>Simples</option>
-        <option value="test" ${accessLevel === "test" ? "selected" : ""}>Teste</option>
-        <option value="leader" ${accessLevel === "leader" ? "selected" : ""}>Lideres</option>
+        <option value="leader" ${accessLevel === "leader" ? "selected" : ""}>Líderes</option>
         <option value="prime" ${accessLevel === "prime" ? "selected" : ""}>Prime</option>
       </select>
     </label>
@@ -593,7 +576,7 @@ function renderAdminUserCard(user) {
 function exportUsersCsv(users) {
   const headers = ["Nome", "CPF", "Email", "Telefone", "Igreja", "Cidade da Igreja", "Endereco", "Status", "Categoria", "Dias de acesso", "Vencimento da licenca", "Criado em", "Aprovado em", "Ultimo login", "Ultimo acesso"];
   const rows = users.map((user) => {
-    const accessLevel = user.accessLevel === "simple" ? "Simples" : user.accessLevel === "test" ? "Teste" : user.accessLevel === "leader" ? "Lideres" : "Prime";
+    const accessLevel = user.accessLevel === "simple" ? "Simples" : user.accessLevel === "leader" ? "Líderes" : "Prime";
     const status = user.role === "admin" ? "Administrador" : user.active === false ? "Desativado" : user.approved ? "Ativo" : "Aguardando aprovacao";
     return [
       user.name,
