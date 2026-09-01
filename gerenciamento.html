@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20260901-admin-clean" />
+    <link rel="stylesheet" href="styles.css?v=20260901-users-filter" />
   </head>
   <body data-page="admin">
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -525,6 +525,19 @@
                 <button id="clearAccessLogsBtn" class="icon-button danger" type="button">Apagar acessos</button>
               </div>
             </div>
+            <div class="user-filter-bar" aria-label="Filtros de usuários">
+              <label>
+                <span>Exibir usuários</span>
+                <select id="adminUserStatusFilter">
+                  <option value="all">Todos</option>
+                  <option value="active">Ativos</option>
+                  <option value="inactive">Inativos</option>
+                  <option value="pending">Aguardando aprovação</option>
+                  <option value="admin">Administradores</option>
+                </select>
+              </label>
+              <strong id="adminUsersCount">0 usuários</strong>
+            </div>
             <div id="adminUsersList" class="user-admin-list"></div>
             <div id="adminAccessLogsList" class="access-log-list compact-access-log-list"></div>
           </section>
@@ -652,8 +665,8 @@
       </main>
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
-    <script src="lessons-data.js?v=20260901-admin-clean"></script>
-    <script src="app.js?v=20260901-admin-clean"></script>
-    <script src="auth.js?v=20260901-admin-clean"></script>
+    <script src="lessons-data.js?v=20260901-users-filter"></script>
+    <script src="app.js?v=20260901-users-filter"></script>
+    <script src="auth.js?v=20260901-users-filter"></script>
   </body>
 </html>

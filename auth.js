@@ -1,4 +1,4 @@
-const authState = { user: null, initialized: false };
+const authState = { user: null, initialized: false, adminUsers: [] };
 
 document.addEventListener("DOMContentLoaded", () => {
   bindAuthTabs();
@@ -213,21 +213,36 @@ async function loadAdminUsers() {
     return;
   }
 
-  list.innerHTML = `
-    <div class="admin-export-row">
-      <button class="icon-button primary" type="button" id="exportUsersCsvBtn">Exportar Excel</button>
-    </div>
-    ${data.users.map(renderAdminUserCard).join("")}
-  `;
-  window.raizesAdminPendingUsers = data.users.filter((user) => user.role !== "admin" && !user.approved).length;
-  window.raizesAdminExpiringUsers = data.users.filter((user) => user.role !== "admin" && user.approved && user.active !== false && Number(user.licenseDaysRemaining || 0) <= 15).length;
-  const latestAccess = data.users
+  authState.adminUsers = Array.isArray(data.users) ? data.users : [];
+  renderAdminUsers();
+  window.raizesAdminPendingUsers = authState.adminUsers.filter((user) => user.role !== "admin" && !user.approved).length;
+  window.raizesAdminExpiringUsers = authState.adminUsers.filter((user) => user.role !== "admin" && user.approved && user.active !== false && Number(user.licenseDaysRemaining || 0) <= 15).length;
+  const latestAccess = authState.adminUsers
     .map((user) => user.lastAccessAt || user.lastLoginAt)
     .filter(Boolean)
     .sort((a, b) => new Date(b) - new Date(a))[0];
   window.raizesAdminLastAccessLabel = latestAccess ? new Date(latestAccess).toLocaleString("pt-BR") : "Sem acesso registrado";
   window.renderAdminDashboard?.();
-  document.querySelector("#exportUsersCsvBtn")?.addEventListener("click", () => exportUsersCsv(data.users));
+
+  const filter = document.querySelector("#adminUserStatusFilter");
+  if (filter && !filter.dataset.bound) {
+    filter.dataset.bound = "true";
+    filter.addEventListener("change", renderAdminUsers);
+  }
+  const exportButton = document.querySelector("#exportUsersCsvBtn");
+  if (exportButton) exportButton.onclick = () => exportUsersCsv(filteredAdminUsers());
+}
+
+function renderAdminUsers() {
+  const list = document.querySelector("#adminUsersList");
+  if (!list) return;
+  const users = filteredAdminUsers();
+  const count = document.querySelector("#adminUsersCount");
+  if (count) count.textContent = `${users.length} ${users.length === 1 ? "usuário" : "usuários"}`;
+  list.innerHTML = users.length
+    ? users.map(renderAdminUserCard).join("")
+    : '<p class="muted-line">Nenhum usuário encontrado neste filtro.</p>';
+
   list.querySelectorAll("[data-toggle-user-details]").forEach((button) => {
     button.addEventListener("click", () => {
       const card = button.closest(".user-admin-card");
@@ -280,6 +295,23 @@ async function loadAdminUsers() {
       adminAction(`/api/admin/users/${select.dataset.accessLevel}/access`, { accessLevel: select.value });
     });
   });
+}
+
+function filteredAdminUsers() {
+  const status = document.querySelector("#adminUserStatusFilter")?.value || "all";
+  return authState.adminUsers
+    .filter((user) => {
+      if (status === "active") return user.role !== "admin" && user.approved && user.active !== false;
+      if (status === "inactive") return user.role !== "admin" && user.active === false;
+      if (status === "pending") return user.role !== "admin" && !user.approved;
+      if (status === "admin") return user.role === "admin";
+      return true;
+    })
+    .sort((a, b) => {
+      const nameA = String(a.name || a.username || "").localeCompare(String(b.name || b.username || ""), "pt-BR", { sensitivity: "base" });
+      if (nameA !== 0) return nameA;
+      return String(a.username || "").localeCompare(String(b.username || ""), "pt-BR", { numeric: true });
+    });
 }
 
 async function loadAdminAccessLogs() {
