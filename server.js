@@ -417,6 +417,11 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (req.method === "POST" && url.pathname === "/api/track-content") {
+    await trackContentView(req, res);
+    return;
+  }
+
   const admin = requireAdmin(req, res);
   if (!admin) return;
 
@@ -427,6 +432,11 @@ async function handleApi(req, res, url) {
 
   if (req.method === "GET" && url.pathname === "/api/admin/access-logs") {
     sendJson(res, 200, { logs: adminAccessLogs().slice(-300).reverse() });
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/admin/analytics") {
+    sendJson(res, 200, { analytics: adminAnalytics() });
     return;
   }
 
@@ -1077,6 +1087,73 @@ function adminAccessLogs() {
   });
 }
 
+function adminAnalytics() {
+  const users = readUsers();
+  const logs = adminAccessLogs();
+  const now = Date.now();
+  const approvedUsers = users.filter((user) => user.role !== "admin" && user.approved && user.active !== false);
+  const pendingUsers = users.filter((user) => user.role !== "admin" && !user.approved);
+  const expiringUsers = approvedUsers
+    .map((user) => ({ ...publicAdminUser(user), days: licenseDaysRemaining(user) }))
+    .filter((user) => user.days <= 15)
+    .sort((a, b) => a.days - b.days);
+  const active7Days = new Set(logs
+    .filter((log) => now - new Date(log.at || 0).getTime() <= 7 * DAY_MS)
+    .map((log) => log.userId)
+    .filter(Boolean)).size;
+  const pageLogs = logs.filter((log) => log.event === "page");
+  const contentLogs = logs.filter((log) => log.event === "content");
+  return {
+    totals: {
+      users: users.filter((user) => user.role !== "admin").length,
+      approvedUsers: approvedUsers.length,
+      pendingUsers: pendingUsers.length,
+      expiringUsers: expiringUsers.length,
+      lessons: readLessons()?.length || 0,
+      videos: readManualVideos().length,
+      devotionals: readDevotionals().length,
+      trainings: readTrainings().length,
+      ebfs: readEbfs().length,
+      notifications: readNotifications().filter((item) => item.active !== false).length,
+      accessLogs: logs.length,
+      active7Days
+    },
+    recentAccesses: logs.slice(-12).reverse(),
+    popularPages: topCounts(pageLogs.map((log) => pageLabel(log.path)), 8),
+    popularContent: topCounts(contentLogs.map((log) => contentLabel(log.path)), 8),
+    devices: topCounts(logs.map((log) => log.device || "Dispositivo"), 6),
+    expiringUsers: expiringUsers.slice(0, 20)
+  };
+}
+
+function topCounts(values, limit = 8) {
+  const counts = new Map();
+  values.filter(Boolean).forEach((value) => counts.set(value, (counts.get(value) || 0) + 1));
+  return [...counts.entries()]
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "pt-BR"))
+    .slice(0, limit);
+}
+
+function pageLabel(value) {
+  const pathName = String(value || "").split("?")[0].replace(/\/$/, "") || "/";
+  const labels = {
+    "/": "Home",
+    "/index.html": "Home",
+    "/gerenciamento.html": "Gerenciamento",
+    "/perfil.html": "Perfil",
+    "/login.html": "Login",
+    "/vendas.html": "Planos"
+  };
+  return labels[pathName] || pathName.replace(/^\//, "");
+}
+
+function contentLabel(value) {
+  return String(value || "")
+    .replace(/\s+#.+$/, "")
+    .slice(0, 160);
+}
+
 function appendAccessLog(req, event, user, targetPath) {
   const logs = readAccessLogs();
   logs.push({
@@ -1681,6 +1758,25 @@ async function updateProfile(req, res) {
   sendJson(res, 200, { ok: true, user: publicProfileUser(user), message: "Perfil atualizado." });
 }
 
+async function trackContentView(req, res) {
+  const user = getSessionUser(req);
+  if (!user || user.role === "admin") {
+    sendJson(res, 200, { ok: true });
+    return;
+  }
+  const body = await readBody(req, 2048);
+  const type = cleanText(body.type || "Conteúdo");
+  const title = cleanText(body.title || "");
+  const id = cleanText(body.id || "");
+  if (!title) {
+    sendJson(res, 200, { ok: true });
+    return;
+  }
+  markUserAccess(user.id, { lastAccessAt: new Date().toISOString() });
+  appendAccessLog(req, "content", user, `${type}: ${title}${id ? ` #${id}` : ""}`);
+  sendJson(res, 200, { ok: true });
+}
+
 async function updateSiteInfo(req, res) {
   const body = await readBody(req);
   const info = {
@@ -1703,11 +1799,18 @@ function normalizeTeamMembers(items) {
       id: cleanText(item.id || crypto.randomUUID()),
       name: cleanText(item.name || ""),
       role: cleanText(item.role || ""),
-      photoUrl: cleanText(item.photoUrl || ""),
+      photoUrl: normalizeTeamPhoto(item.photoUrl || ""),
       summary: cleanText(item.summary || "")
     }))
     .filter((item) => item.name || item.role || item.photoUrl || item.summary)
     .slice(0, 30);
+}
+
+function normalizeTeamPhoto(value) {
+  const source = String(value || "").trim();
+  if (!source) return "";
+  if (source.startsWith("data:image/")) return storeDataImage(source, "team");
+  return cleanText(source);
 }
 
 async function passwordResetRequest(req, res) {

@@ -991,12 +991,14 @@ function setManageTab(tabName) {
   $("#trainingManagePanel")?.classList.toggle("active", tabName === "trainings");
   $("#ebfManagePanel")?.classList.toggle("active", tabName === "ebf");
   $("#userManagePanel")?.classList.toggle("active", tabName === "users");
+  $("#analyticsManagePanel")?.classList.toggle("active", tabName === "analytics");
   $("#communicationManagePanel")?.classList.toggle("active", tabName === "communication");
   $("#accessManagePanel")?.classList.toggle("active", false);
   $("#contactManagePanel")?.classList.toggle("active", tabName === "contact");
   els.filterToolbar?.classList.toggle("hidden", !["lessons", "trails"].includes(tabName));
   if (tabName === "dashboard") renderAdminDashboard();
   if (tabName === "users") window.loadAdminAccessLogs?.();
+  if (tabName === "analytics") window.loadAdminAnalytics?.();
   if (tabName === "communication") window.loadCommunicationCenter?.();
   if (tabName === "contact") window.loadAdminSiteInfo?.();
   if (tabName === "news") renderNotifications();
@@ -1012,21 +1014,25 @@ async function renderAdminDashboard() {
   const trainings = state.trainings.length;
   const ebfs = state.ebfs.length;
   let pendingUsers = window.raizesAdminPendingUsers;
+  let expiringUsers = window.raizesAdminExpiringUsers;
   let lastAccess = window.raizesAdminLastAccessLabel || "Carregando...";
-  if (pendingUsers === undefined) {
+  if (pendingUsers === undefined || expiringUsers === undefined) {
     try {
       const data = await fetch("/api/admin/users", { cache: "no-store" }).then((res) => res.json());
       const users = Array.isArray(data.users) ? data.users : [];
       pendingUsers = users.filter((user) => user.role !== "admin" && !user.approved).length;
+      expiringUsers = users.filter((user) => user.role !== "admin" && user.approved && user.active !== false && Number(user.licenseDaysRemaining || 0) <= 15).length;
       const latest = users
         .map((user) => user.lastAccessAt || user.lastLoginAt)
         .filter(Boolean)
         .sort((a, b) => new Date(b) - new Date(a))[0];
       lastAccess = latest ? new Date(latest).toLocaleString("pt-BR") : "Sem acesso registrado";
       window.raizesAdminPendingUsers = pendingUsers;
+      window.raizesAdminExpiringUsers = expiringUsers;
       window.raizesAdminLastAccessLabel = lastAccess;
     } catch {
       pendingUsers = 0;
+      expiringUsers = 0;
       lastAccess = "Não foi possível carregar";
     }
   }
@@ -1035,6 +1041,7 @@ async function renderAdminDashboard() {
     ["▶️", videos, "Vídeos em trilhas"],
     ["🔔", activeNews, "Novidades ativas"],
     ["👥", pendingUsers, "Aguardando aprovação"],
+    ["⚠️", expiringUsers, "Licenças vencendo"],
     ["🏠", devotionals, "Cultos em família"],
     ["🎓", trainings + ebfs, "Treinamentos e EBF"],
     ["🕘", "", `Último acesso: ${lastAccess}`]
@@ -1295,6 +1302,7 @@ function renderReader() {
   els.reader.innerHTML = "";
   els.reader.append(template);
   $("#printPdfBtn").addEventListener("click", printCurrentLesson);
+  trackContentView("Lição", lesson);
 }
 
 function renderDevotionals() {
@@ -1364,6 +1372,7 @@ function renderContentArea(config) {
     });
   });
   reader.innerHTML = renderContentReader(active, config);
+  trackContentView(config.typeLabel, active);
   reader.querySelector("[data-export-content-pdf]")?.addEventListener("click", () => {
     printContentPdf(contentTypeFromLabel(config.typeLabel), active);
   });
@@ -2238,6 +2247,8 @@ function renderVideoAdminList() {
   });
 }
 
+window.readCompressedImage = readCompressedImage;
+
 function activeNotifications() {
   const now = new Date();
   return state.notifications.filter((item) => {
@@ -2561,6 +2572,7 @@ function renderTrails() {
       state.activeVideoId = selectedVideo.id;
       state.trailAutoplay = true;
       saveLastTrailVideo(selectedVideo);
+      trackContentView("Trilha", selectedVideo);
       renderTrails();
       els.streamPlayer?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -2937,6 +2949,21 @@ function formatMonthYear(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "sem data";
   return date.toLocaleDateString("pt-BR", { month: "2-digit", year: "numeric" });
+}
+
+function trackContentView(type, item) {
+  if (!item || !item.id || !item.title || !state.authUser || state.authUser.role === "admin") return;
+  const key = `${type}:${item.id}`;
+  const now = Date.now();
+  window.raizesTrackedContent = window.raizesTrackedContent || {};
+  if (now - Number(window.raizesTrackedContent[key] || 0) < 1000 * 60 * 4) return;
+  window.raizesTrackedContent[key] = now;
+  fetch("/api/track-content", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type, id: item.id, title: item.title })
+  }).catch(() => {});
 }
 
 function renderTrailCard(video) {

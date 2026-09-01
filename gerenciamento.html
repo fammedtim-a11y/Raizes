@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20260831-admin-dashboard" />
+    <link rel="stylesheet" href="styles.css?v=20260831-admin-insights" />
   </head>
   <body data-page="admin">
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -120,6 +120,7 @@
                 <h3>Controle</h3>
                 <div class="admin-dashboard-grid compact">
                   <button class="admin-menu-card blue" data-manage-tab="users" type="button"><span>👥</span><strong>Pessoas</strong><small>Usuários, aprovações, acessos e licenças.</small></button>
+                  <button class="admin-menu-card purple" data-manage-tab="analytics" type="button"><span>📊</span><strong>Analytics</strong><small>Acessos, conteúdos vistos e licenças vencendo.</small></button>
                   <button class="admin-menu-card green master-only" data-manage-tab="communication" type="button"><span>💬</span><strong>Comunicação</strong><small>Email e WhatsApp para públicos filtrados.</small></button>
                   <button class="admin-menu-card yellow" data-manage-tab="contact" type="button"><span>🌱</span><strong>Institucional</strong><small>Contato, Sobre e Quem Somos.</small></button>
                 </div>
@@ -136,6 +137,7 @@
             <button class="manage-tab" data-manage-tab="ebf" type="button">🎪 EBF</button>
             <button class="manage-tab" data-manage-tab="news" type="button">🔔 Novidades</button>
             <button class="manage-tab" data-manage-tab="users" type="button">👥 Pessoas</button>
+            <button class="manage-tab" data-manage-tab="analytics" type="button">📊 Analytics</button>
             <button class="manage-tab master-only" data-manage-tab="communication" type="button">💬 Comunicação</button>
             <button class="manage-tab" data-manage-tab="contact" type="button">🌱 Institucional</button>
           </nav>
@@ -520,6 +522,17 @@
             <div id="adminAccessLogsList" class="access-log-list compact-access-log-list"></div>
           </section>
 
+          <section id="analyticsManagePanel" class="video-manager manage-panel">
+            <div class="manager-heading">
+              <div>
+                <h2>Analytics do sistema</h2>
+                <p>Acompanhe uso, acessos recentes, conteúdos mais visitados e licenças próximas do vencimento.</p>
+              </div>
+              <button id="refreshAnalyticsBtn" class="icon-button" type="button">Atualizar dados</button>
+            </div>
+            <div id="analyticsDashboard" class="analytics-dashboard"></div>
+          </section>
+
           <section id="communicationManagePanel" class="video-manager manage-panel master-only">
             <div class="manager-heading">
               <div>
@@ -617,7 +630,7 @@
                 <div class="manager-heading compact-heading">
                   <div>
                     <h3>Quem Somos</h3>
-                    <p>Cadastre colaboradores com foto 3x4, função e resumo.</p>
+                    <p>Cadastre colaboradores com foto 3x4, função e resumo. Você pode enviar a imagem direto do computador ou celular.</p>
                   </div>
                   <button id="addTeamMemberBtn" class="icon-button" type="button">Adicionar colaborador</button>
                 </div>
@@ -633,8 +646,8 @@
       </main>
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
-    <script src="lessons-data.js?v=20260831-admin-dashboard"></script>
-    <script src="app.js?v=20260831-admin-dashboard"></script>
-    <script src="auth.js?v=20260831-admin-dashboard"></script>
+    <script src="lessons-data.js?v=20260831-admin-insights"></script>
+    <script src="app.js?v=20260831-admin-insights"></script>
+    <script src="auth.js?v=20260831-admin-insights"></script>
   </body>
 </html>

@@ -30,6 +30,7 @@ async function refreshSession() {
   document.body.dataset.accessLevel = authState.user?.accessLevel || "";
   document.body.dataset.master = authState.user?.username === "08047232657" ? "true" : "false";
   if (userChanged) renderAuthSlots();
+  renderLicenseNotice();
   showStoredNotice();
   if (userChanged) window.onRaizesAuthChange?.(authState.user);
   authState.initialized = true;
@@ -44,6 +45,7 @@ async function refreshSession() {
     if (userChanged) loadAdminUsers();
     if (userChanged) loadAdminAccessLogs();
     if (userChanged) loadCommunicationCenter();
+    if (userChanged) loadAdminAnalytics();
   }
 }
 
@@ -168,7 +170,7 @@ function bindAuthForms() {
     loadAdminSiteInfo();
     siteInfoForm.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const result = await apiPost("/api/admin/site-info", siteInfoPayload(siteInfoForm));
+      const result = await apiPost("/api/admin/site-info", await siteInfoPayload(siteInfoForm));
       setActionMessage("#siteInfoMessage", result.error || result.message || "Informacoes salvas.", Boolean(result.error));
       if (!result.error && result.info) {
         fillSiteInfoForm(siteInfoForm, result.info);
@@ -176,6 +178,7 @@ function bindAuthForms() {
       }
     });
     document.querySelector("#addTeamMemberBtn")?.addEventListener("click", () => addTeamMemberEditor());
+    document.querySelector("#refreshAnalyticsBtn")?.addEventListener("click", loadAdminAnalytics);
   }
 }
 
@@ -202,6 +205,21 @@ function fillProfileForm(form, user) {
   });
 }
 
+function renderLicenseNotice() {
+  document.querySelectorAll(".license-expiry-notice").forEach((notice) => notice.remove());
+  const user = authState.user;
+  if (!user || user.role === "admin") return;
+  const days = Number(user.licenseDaysRemaining);
+  if (!Number.isFinite(days) || days > 15) return;
+  const notice = document.createElement("div");
+  notice.className = `license-expiry-notice${days <= 3 ? " urgent" : ""}`;
+  notice.innerHTML = `
+    <strong>${days <= 0 ? "Sua licença venceu" : `Sua licença vence em ${days} dia(s)`}</strong>
+    <span>Fale com o administrador para manter seu acesso ativo ao Raízes Kids.</span>
+  `;
+  document.body.prepend(notice);
+}
+
 async function loadAdminUsers() {
   const list = document.querySelector("#adminUsersList");
   if (!list) return;
@@ -218,6 +236,7 @@ async function loadAdminUsers() {
     ${data.users.map(renderAdminUserCard).join("")}
   `;
   window.raizesAdminPendingUsers = data.users.filter((user) => user.role !== "admin" && !user.approved).length;
+  window.raizesAdminExpiringUsers = data.users.filter((user) => user.role !== "admin" && user.approved && user.active !== false && Number(user.licenseDaysRemaining || 0) <= 15).length;
   const latestAccess = data.users
     .map((user) => user.lastAccessAt || user.lastLoginAt)
     .filter(Boolean)
@@ -303,6 +322,84 @@ async function loadAdminAccessLogs() {
 }
 
 window.loadAdminAccessLogs = loadAdminAccessLogs;
+
+async function loadAdminAnalytics() {
+  const panel = document.querySelector("#analyticsDashboard");
+  if (!panel || !authState.user || authState.user.role !== "admin") return;
+  const data = await apiGet("/api/admin/analytics");
+  if (data.error) {
+    panel.innerHTML = `<p class="muted-line">${authEscapeHtml(data.error)}</p>`;
+    return;
+  }
+  renderAdminAnalytics(data.analytics || {});
+}
+
+window.loadAdminAnalytics = loadAdminAnalytics;
+
+function renderAdminAnalytics(analytics) {
+  const panel = document.querySelector("#analyticsDashboard");
+  if (!panel) return;
+  const totals = analytics.totals || {};
+  const expiringUsers = analytics.expiringUsers || [];
+  panel.innerHTML = `
+    <section class="analytics-metric-grid">
+      ${analyticsMetric("👥", totals.users, "Usuários cadastrados")}
+      ${analyticsMetric("✅", totals.approvedUsers, "Usuários ativos")}
+      ${analyticsMetric("⏳", totals.pendingUsers, "Aguardando aprovação")}
+      ${analyticsMetric("⚠️", totals.expiringUsers, "Licenças vencendo")}
+      ${analyticsMetric("📖", totals.lessons, "Lições")}
+      ${analyticsMetric("▶️", totals.videos, "Vídeos manuais")}
+      ${analyticsMetric("🕘", totals.active7Days, "Usuários ativos em 7 dias")}
+      ${analyticsMetric("🔔", totals.notifications, "Novidades ativas")}
+    </section>
+    <section class="analytics-grid">
+      ${analyticsList("Licenças próximas do vencimento", expiringUsers.map((user) => ({
+        title: user.name || user.username,
+        meta: `${user.days} dia(s) restantes · ${user.email || "sem email"}`
+      })), "Nenhuma licença vencendo nos próximos 15 dias.")}
+      ${analyticsList("Conteúdos mais vistos", (analytics.popularContent || []).map((item) => ({
+        title: item.label,
+        meta: `${item.count} visualização(ões)`
+      })), "Os conteúdos vistos passarão a aparecer aqui.")}
+      ${analyticsList("Páginas mais acessadas", (analytics.popularPages || []).map((item) => ({
+        title: item.label,
+        meta: `${item.count} acesso(s)`
+      })), "Ainda não há páginas acessadas.")}
+      ${analyticsList("Dispositivos", (analytics.devices || []).map((item) => ({
+        title: item.label,
+        meta: `${item.count} registro(s)`
+      })), "Sem dados de dispositivo.")}
+      ${analyticsList("Últimos acessos", (analytics.recentAccesses || []).map((log) => ({
+        title: log.name || log.username || "Usuário",
+        meta: `${formatDateTime(log.at)} · ${log.path || log.event || "acesso"}`
+      })), "Nenhum acesso registrado.")}
+    </section>
+  `;
+}
+
+function analyticsMetric(icon, value, label) {
+  return `
+    <article class="analytics-metric">
+      <span>${icon}</span>
+      <strong>${Number(value || 0)}</strong>
+      <small>${authEscapeHtml(label)}</small>
+    </article>
+  `;
+}
+
+function analyticsList(title, items, emptyText) {
+  return `
+    <article class="analytics-card">
+      <h3>${authEscapeHtml(title)}</h3>
+      ${items.length ? items.map((item) => `
+        <div class="analytics-row">
+          <strong>${authEscapeHtml(item.title)}</strong>
+          <small>${authEscapeHtml(item.meta)}</small>
+        </div>
+      `).join("") : `<p class="muted-line">${authEscapeHtml(emptyText)}</p>`}
+    </article>
+  `;
+}
 
 async function loadCommunicationCenter() {
   const form = document.querySelector("#communicationForm");
@@ -593,10 +690,44 @@ function renderTeamMembersEditor(members) {
   if (!list) return;
   const items = members.length ? members : [{ id: "", name: "", role: "", photoUrl: "", summary: "" }];
   list.innerHTML = items.map((member) => teamMemberEditorHtml(member)).join("");
+  bindTeamMemberEditors(list);
+}
+
+function bindTeamMemberEditors(list) {
   list.querySelectorAll("[data-remove-team-member]").forEach((button) => {
+    if (button.dataset.bound) return;
+    button.dataset.bound = "true";
     button.addEventListener("click", () => {
       button.closest(".team-member-editor")?.remove();
       if (!list.querySelector(".team-member-editor")) addTeamMemberEditor();
+    });
+  });
+  list.querySelectorAll("[data-team-photo-file]").forEach((input) => {
+    if (input.dataset.bound) return;
+    input.dataset.bound = "true";
+    input.addEventListener("change", async () => {
+      const card = input.closest(".team-member-editor");
+      const file = input.files?.[0];
+      if (!card || !file) return;
+      try {
+        const image = await readTeamPhoto(file);
+        card.querySelector('[data-team-field="photoUrl"]').value = image;
+        renderTeamPhotoPreview(card, image);
+      } catch {
+        window.alert("Não foi possível carregar esta foto. Tente outra imagem.");
+      }
+    });
+  });
+  list.querySelectorAll("[data-remove-team-photo]").forEach((button) => {
+    if (button.dataset.bound) return;
+    button.dataset.bound = "true";
+    button.addEventListener("click", () => {
+      const card = button.closest(".team-member-editor");
+      if (!card) return;
+      card.querySelector('[data-team-field="photoUrl"]').value = "";
+      const input = card.querySelector("[data-team-photo-file]");
+      if (input) input.value = "";
+      renderTeamPhotoPreview(card, "");
     });
   });
 }
@@ -607,22 +738,61 @@ function addTeamMemberEditor(member = {}) {
   list.insertAdjacentHTML("beforeend", teamMemberEditorHtml(member));
   const card = list.lastElementChild;
   card?.querySelector("[data-remove-team-member]")?.addEventListener("click", () => card.remove());
+  bindTeamMemberEditors(list);
 }
 
 function teamMemberEditorHtml(member) {
   return `
     <article class="team-member-editor">
       <input type="hidden" data-team-field="id" value="${authEscapeHtml(member.id || "")}" />
+      <input type="hidden" data-team-field="photoUrl" value="${authEscapeHtml(member.photoUrl || "")}" />
       <label><span>Nome</span><input data-team-field="name" value="${authEscapeHtml(member.name || "")}" placeholder="Nome do colaborador" /></label>
       <label><span>Função</span><input data-team-field="role" value="${authEscapeHtml(member.role || "")}" placeholder="Ex.: Coordenação pedagógica" /></label>
-      <label><span>Foto 3x4 (URL)</span><input data-team-field="photoUrl" value="${authEscapeHtml(member.photoUrl || "")}" placeholder="https://..." /></label>
+      <label class="team-photo-field">
+        <span>Foto 3x4</span>
+        <input data-team-photo-file type="file" accept="image/png,image/jpeg,image/webp" />
+        <small>Envie uma imagem vertical, estilo 3x4.</small>
+      </label>
+      <div class="team-photo-preview" data-team-photo-preview>
+        ${teamPhotoPreviewHtml(member.photoUrl || "")}
+      </div>
       <label><span>Resumo</span><textarea data-team-field="summary" rows="3" placeholder="Pequeno resumo sobre o colaborador">${authEscapeHtml(member.summary || "")}</textarea></label>
       <button class="icon-button danger" type="button" data-remove-team-member>Remover</button>
     </article>
   `;
 }
 
-function siteInfoPayload(form) {
+function teamPhotoPreviewHtml(src) {
+  return src
+    ? `<img src="${authEscapeHtml(src)}" alt="Foto do colaborador" /><button class="icon-button danger" type="button" data-remove-team-photo>Remover foto</button>`
+    : '<p class="muted-line">Nenhuma foto cadastrada.</p>';
+}
+
+function renderTeamPhotoPreview(card, src) {
+  const preview = card.querySelector("[data-team-photo-preview]");
+  if (!preview) return;
+  preview.innerHTML = teamPhotoPreviewHtml(src);
+  preview.querySelector("[data-remove-team-photo]")?.addEventListener("click", () => {
+    card.querySelector('[data-team-field="photoUrl"]').value = "";
+    const input = card.querySelector("[data-team-photo-file]");
+    if (input) input.value = "";
+    renderTeamPhotoPreview(card, "");
+  });
+}
+
+async function readTeamPhoto(file) {
+  if (window.readCompressedImage) {
+    return window.readCompressedImage(file, { maxWidth: 520, maxHeight: 680, quality: 0.84 });
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function siteInfoPayload(form) {
   return {
     ...formData(form),
     teamMembers: [...document.querySelectorAll(".team-member-editor")].map((card) => ({
