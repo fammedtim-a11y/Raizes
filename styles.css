@@ -155,9 +155,9 @@
 
 .user-admin-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 1fr;
   gap: 16px;
-  align-items: center;
+  align-items: stretch;
   padding: 16px;
   background: #fff;
   border: 1px solid rgba(45, 156, 255, 0.16);
@@ -166,9 +166,33 @@
 
 .user-admin-summary {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(180px, auto) auto;
+  grid-template-columns: minmax(280px, 1fr) minmax(230px, auto) auto;
   gap: 12px;
   align-items: center;
+}
+
+.user-admin-summary > div {
+  min-width: 0;
+}
+
+.user-admin-summary strong,
+.user-admin-summary span,
+.user-admin-summary small,
+.user-admin-summary .icon-button,
+.user-access-control span,
+.user-actions .icon-button,
+.user-actions .pill {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.user-admin-summary strong {
+  line-height: 1.2;
+}
+
+.user-admin-summary small {
+  justify-self: end;
+  text-align: right;
 }
 
 .user-admin-summary .icon-button {
@@ -199,6 +223,10 @@
   display: block;
 }
 
+.user-admin-details small {
+  overflow-wrap: anywhere;
+}
+
 .user-admin-card em {
   color: var(--red);
   font-weight: 800;
@@ -209,7 +237,9 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  justify-content: flex-end;
+  justify-content: flex-start;
+  padding-top: 12px;
+  border-top: 1px solid rgba(45, 156, 255, 0.1);
 }
 
 .communication-grid {
@@ -5443,6 +5473,33 @@ summary {
 .news-drawer *,
 .auth-card * {
   overflow-wrap: anywhere;
+}
+
+.user-filter-bar *,
+.user-admin-card *,
+.access-log-card * {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.user-admin-details *,
+.access-log-card small {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1180px) {
+  .user-admin-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .user-admin-summary small {
+    justify-self: start;
+    text-align: left;
+  }
+
+  .user-admin-summary .icon-button {
+    justify-self: start;
+  }
 }
 
 @media (max-width: 720px) {
