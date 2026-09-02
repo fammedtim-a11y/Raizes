@@ -3472,13 +3472,37 @@ function buildPdfCopyFragments(text) {
 }
 
 function splitPdfTextFragments(text) {
-  const source = String(text || "").trim();
+  const source = String(text || "")
+    .replace(/\r/g, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
   if (!source) return [];
   const paragraphBlocks = source.split(/\n{2,}/).map((part) => part.trim()).filter(Boolean);
-  if (paragraphBlocks.length > 1) return paragraphBlocks;
+  if (paragraphBlocks.length > 1) return paragraphBlocks.flatMap(splitLongPdfBlock);
   const lineBlocks = source.split(/\n/).map((part) => part.trim()).filter(Boolean);
-  if (source.length > 700 && lineBlocks.length > 1) return lineBlocks;
-  return [source];
+  if (source.length > 700 && lineBlocks.length > 1) return lineBlocks.flatMap(splitLongPdfBlock);
+  return splitLongPdfBlock(source);
+}
+
+function splitLongPdfBlock(block) {
+  const source = String(block || "").trim();
+  if (source.length <= 1100) return [source];
+  const pieces = source.match(/[^.!?;:]+[.!?;:]?|\S+/g) || [source];
+  const chunks = [];
+  let current = "";
+  pieces.forEach((piece) => {
+    const next = `${current} ${piece}`.trim();
+    if (next.length > 900 && current) {
+      chunks.push(current.trim());
+      current = piece.trim();
+    } else {
+      current = next;
+    }
+  });
+  if (current) chunks.push(current.trim());
+  return chunks;
 }
 
 function buildPdfPageFooter() {

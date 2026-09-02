@@ -4344,6 +4344,17 @@ textarea,
     margin: 0;
   }
 
+  :root {
+    --pdf-page-width: 210mm;
+    --pdf-page-height: 297mm;
+    --pdf-page-safe-height: 296.5mm;
+    --pdf-side-margin: 20mm;
+    --pdf-header-height: 25mm;
+    --pdf-footer-height: 25mm;
+    --pdf-header-gap: 6mm;
+    --pdf-content-bottom: 30mm;
+  }
+
   body.ebook-printing {
     width: auto !important;
     min-width: 0 !important;
@@ -4392,10 +4403,10 @@ textarea,
   body.ebook-printing .ebook-toc,
   body.ebook-printing .ebook-lesson {
     position: relative !important;
-    width: 210mm !important;
+    width: var(--pdf-page-width) !important;
     max-width: none !important;
     margin: 0 !important;
-    min-height: 296mm !important;
+    min-height: var(--pdf-page-safe-height) !important;
     overflow: visible !important;
     background: transparent !important;
     box-shadow: none !important;
@@ -4403,12 +4414,12 @@ textarea,
 
   body.ebook-printing .ebook-cover {
     display: grid !important;
-    height: 296mm !important;
-    min-height: 296mm !important;
-    max-height: 296mm !important;
+    height: var(--pdf-page-safe-height) !important;
+    min-height: var(--pdf-page-safe-height) !important;
+    max-height: var(--pdf-page-safe-height) !important;
     align-content: start !important;
     justify-items: center !important;
-    padding: 36mm 32mm 28mm !important;
+    padding: 36mm var(--pdf-side-margin) 28mm !important;
     border: 0 !important;
     background: #fff !important;
     text-align: center !important;
@@ -4479,8 +4490,8 @@ textarea,
   }
 
   body.ebook-printing .ebook-toc {
-    min-height: 297mm !important;
-    padding: 0 20mm 32mm !important;
+    min-height: var(--pdf-page-safe-height) !important;
+    padding: 0 var(--pdf-side-margin) var(--pdf-content-bottom) !important;
     background: #fff !important;
     break-after: auto;
     page-break-after: auto;
@@ -4507,8 +4518,8 @@ textarea,
 
   body.ebook-printing .ebook-lesson {
     display: block !important;
-    min-height: 297mm !important;
-    padding: 0 20mm 32mm !important;
+    min-height: var(--pdf-page-safe-height) !important;
+    padding: 0 var(--pdf-side-margin) var(--pdf-content-bottom) !important;
     border: 0 !important;
     border-radius: 0 !important;
     background: #fff !important;
@@ -4528,6 +4539,11 @@ textarea,
     page-break-before: always;
   }
 
+  body.ebook-printing .ebook > section:last-child {
+    break-after: auto !important;
+    page-break-after: auto !important;
+  }
+
   body.ebook-printing .ebook-lesson::before {
     display: none !important;
   }
@@ -4537,9 +4553,9 @@ textarea,
     justify-content: flex-end !important;
     align-items: center !important;
     width: 100% !important;
-    height: 25mm !important;
-    min-height: 25mm !important;
-    margin: 0 0 6mm !important;
+    height: var(--pdf-header-height) !important;
+    min-height: var(--pdf-header-height) !important;
+    margin: 0 0 var(--pdf-header-gap) !important;
     padding: 6mm 0 4mm !important;
     border-bottom: 0.45mm solid rgba(31, 77, 117, 0.22) !important;
   }
@@ -4648,22 +4664,24 @@ textarea,
 
   body.ebook-printing .ebook-activity-image {
     max-width: 100% !important;
-    max-height: 150mm !important;
+    max-height: 138mm !important;
     margin: 3mm auto 0 !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
   body.ebook-printing .ebook-page-footer {
     position: absolute !important;
-    right: 20mm !important;
+    right: var(--pdf-side-margin) !important;
     bottom: 0 !important;
-    left: 20mm !important;
+    left: var(--pdf-side-margin) !important;
     display: grid !important;
     grid-template-columns: 18mm minmax(0, 1fr) minmax(0, 1fr) !important;
     gap: 4mm !important;
     align-items: center !important;
     width: auto !important;
-    height: 25mm !important;
-    min-height: 25mm !important;
+    height: var(--pdf-footer-height) !important;
+    min-height: var(--pdf-footer-height) !important;
     margin: 0 !important;
     padding: 4mm 0 3mm !important;
     border-top: 0.35mm solid rgba(31, 77, 117, 0.22) !important;
