@@ -1599,6 +1599,8 @@ async function printCurrentLesson() {
   els.ebookPrintArea.innerHTML = buildEbookHtml([lesson], { title: lesson.title, hideToc: true });
   document.body.classList.add("ebook-printing");
   await waitForEbookLayout();
+  paginateEbookPrintArea();
+  await waitForEbookLayout();
   const cleanup = () => {
     document.body.classList.remove("ebook-printing");
     els.ebookPrintArea.innerHTML = "";
@@ -3352,6 +3354,8 @@ async function printEbook() {
   // Aguarda o navegador aplicar o HTML/CSS do livro antes de abrir a impressão.
   // Sem esta pausa curta, alguns navegadores montam o PDF com medidas antigas da tela.
   await waitForEbookLayout();
+  paginateEbookPrintArea();
+  await waitForEbookLayout();
   const cleanup = () => {
     document.body.classList.remove("ebook-printing");
     els.ebookPrintArea.innerHTML = "";
@@ -3374,6 +3378,92 @@ function waitForEbookLayout() {
   return Promise.all(loadedImages).then(() => new Promise((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(resolve));
   }));
+}
+
+function paginateEbookPrintArea() {
+  if (!els.ebookPrintArea) return;
+  const article = els.ebookPrintArea.querySelector(".ebook");
+  if (!article) return;
+
+  const measureRoot = document.createElement("div");
+  measureRoot.className = "pdf-measure-root";
+  measureRoot.setAttribute("aria-hidden", "true");
+  document.body.appendChild(measureRoot);
+
+  const children = [...article.children];
+  const rebuilt = [];
+
+  for (let index = 0; index < children.length; index += 1) {
+    const child = children[index];
+    if (!child.classList.contains("ebook-lesson-page")) {
+      rebuilt.push(child.outerHTML);
+      continue;
+    }
+
+    const lessonKey = child.dataset.pdfLesson || "";
+    const group = [];
+    while (index < children.length) {
+      const page = children[index];
+      if (!page.classList.contains("ebook-lesson-page") || (page.dataset.pdfLesson || "") !== lessonKey) break;
+      group.push(page);
+      index += 1;
+    }
+    index -= 1;
+    rebuilt.push(...paginatePdfLessonGroup(group, measureRoot));
+  }
+
+  measureRoot.remove();
+  article.innerHTML = rebuilt.join("");
+}
+
+function paginatePdfLessonGroup(group, measureRoot) {
+  if (!group.length) return [];
+  const sourcePage = group[0];
+  const blocks = group.flatMap((page) => [...page.querySelectorAll(".ebook-section")].map((block) => block.outerHTML));
+  const pages = [];
+  let currentBlocks = [];
+
+  blocks.forEach((blockHtml) => {
+    currentBlocks.push(blockHtml);
+    const testPage = buildMeasuredPdfPage(sourcePage, currentBlocks, pages.length);
+    measureRoot.appendChild(testPage);
+    const fits = doesMeasuredPdfPageFit(testPage);
+    testPage.remove();
+
+    if (!fits && currentBlocks.length > 1) {
+      currentBlocks.pop();
+      pages.push(buildMeasuredPdfPage(sourcePage, currentBlocks, pages.length).outerHTML);
+      currentBlocks = [blockHtml];
+    }
+  });
+
+  if (currentBlocks.length) {
+    pages.push(buildMeasuredPdfPage(sourcePage, currentBlocks, pages.length).outerHTML);
+  }
+  return pages;
+}
+
+function buildMeasuredPdfPage(sourcePage, blocks, pageIndex) {
+  const page = sourcePage.cloneNode(true);
+  page.classList.toggle("first", pageIndex === 0);
+  page.classList.toggle("continued", pageIndex > 0);
+  const headerLine = page.querySelector(".ebook-lesson-header p");
+  if (headerLine) {
+    const base = headerLine.textContent.replace(/\s*·\s*continuação\s*$/i, "").trim();
+    headerLine.textContent = pageIndex > 0 ? `${base} · continuação` : base;
+  }
+  const sections = page.querySelector(".ebook-sections");
+  if (sections) sections.innerHTML = blocks.join("");
+  return page;
+}
+
+function doesMeasuredPdfPageFit(page) {
+  const sections = page.querySelector(".ebook-sections");
+  const footer = page.querySelector(".ebook-page-footer");
+  if (!sections || !footer) return true;
+  const contentBottom = sections.getBoundingClientRect().bottom;
+  const footerTop = footer.getBoundingClientRect().top;
+  return contentBottom <= footerTop - 8;
 }
 
 function buildEbookHtml(lessons, options = {}) {
@@ -3419,7 +3509,7 @@ function buildEbookLessonHtml(lesson, number) {
   const theme = categoryTheme(lesson.category);
   const pages = buildPdfLessonPages(lesson, number, theme);
   return pages.map((page, pageIndex) => `
-    <section class="ebook-lesson ebook-lesson-page ${pageIndex ? "continued" : "first"}" style="--theme:${theme.primary};--theme-soft:${theme.soft}">
+    <section class="ebook-lesson ebook-lesson-page ${pageIndex ? "continued" : "first"}" data-pdf-lesson="${number}" style="--theme:${theme.primary};--theme-soft:${theme.soft}">
       ${buildPdfPageHeader()}
       <header class="ebook-lesson-header">
         <span>${String(number).padStart(2, "0")}</span>
