@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Catálogo de Lições Bíblicas</title>
-    <link rel="stylesheet" href="styles.css?v=20260903-html-impressao" />
+    <link rel="stylesheet" href="styles.css?v=20260903-sem-html-impressao" />
   </head>
   <body data-active-tab="home">
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -360,22 +360,17 @@
           </div>
           <p class="reader-verse"><span>Versículo</span><strong></strong></p>
         </div>
-        <div class="reader-hero-actions no-print">
-          <button id="printHtmlBtn" class="icon-button light" type="button">
-            🖨️ HTML para Impressão
-          </button>
-          <button id="printPdfBtn" class="icon-button light" type="button">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z" /></svg>
-            Exportar PDF
-          </button>
-        </div>
+        <button id="printPdfBtn" class="icon-button light no-print" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z" /></svg>
+          Exportar PDF
+        </button>
       </header>
       <div class="section-timeline"></div>
     </template>
 
-    <script src="lessons-data.js?v=20260903-html-impressao"></script>
-    <script src="app.js?v=20260903-html-impressao"></script>
-    <script src="auth.js?v=20260903-html-impressao"></script>
+    <script src="lessons-data.js?v=20260903-sem-html-impressao"></script>
+    <script src="app.js?v=20260903-sem-html-impressao"></script>
+    <script src="auth.js?v=20260903-sem-html-impressao"></script>
   </body>
 </html>
 
