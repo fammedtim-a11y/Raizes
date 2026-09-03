@@ -3686,21 +3686,21 @@ function splitPdfTextFragments(text) {
     .trim();
   if (!source) return [];
   const paragraphBlocks = source.split(/\n{2,}/).map((part) => part.trim()).filter(Boolean);
-  if (paragraphBlocks.length > 1) return paragraphBlocks.flatMap(splitLongPdfBlock);
+  if (paragraphBlocks.length > 1) return paragraphBlocks.flatMap(splitCompactPdfBlock);
   const lineBlocks = source.split(/\n/).map((part) => part.trim()).filter(Boolean);
-  if (source.length > 700 && lineBlocks.length > 1) return lineBlocks.flatMap(splitLongPdfBlock);
-  return splitLongPdfBlock(source);
+  if (source.length > 360 && lineBlocks.length > 1) return lineBlocks.flatMap(splitCompactPdfBlock);
+  return splitCompactPdfBlock(source);
 }
 
-function splitLongPdfBlock(block) {
+function splitCompactPdfBlock(block) {
   const source = String(block || "").trim();
-  if (source.length <= 1100) return [source];
+  if (source.length <= 360) return [source];
   const pieces = source.match(/[^.!?;:]+[.!?;:]?|\S+/g) || [source];
   const chunks = [];
   let current = "";
   pieces.forEach((piece) => {
     const next = `${current} ${piece}`.trim();
-    if (next.length > 900 && current) {
+    if (next.length > 320 && current) {
       chunks.push(current.trim());
       current = piece.trim();
     } else {
