@@ -1310,6 +1310,7 @@ function renderReader() {
 
   els.reader.innerHTML = "";
   els.reader.append(template);
+  $("#printHtmlBtn")?.addEventListener("click", () => openLessonPrintHtml(lesson));
   $("#printPdfBtn").addEventListener("click", printCurrentLesson);
   trackContentView("Lição", lesson);
 }
@@ -1603,6 +1604,233 @@ async function printCurrentLesson() {
   };
   window.addEventListener("afterprint", cleanup);
   window.print();
+}
+
+function openLessonPrintHtml(lesson) {
+  if (!lesson) return;
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    window.alert("Permita pop-ups para abrir a versão HTML para impressão.");
+    return;
+  }
+  printWindow.document.open();
+  printWindow.document.write(buildLessonPrintHtml(lesson));
+  printWindow.document.close();
+}
+
+function buildLessonPrintHtml(lesson) {
+  const theme = categoryTheme(lesson.category);
+  const sections = SECTIONS.map(([key, label, icon, emoji]) => {
+    const text = lesson.sections?.[key]?.trim();
+    if (!text) return "";
+    return `
+      <section class="print-section">
+        <h2>${emoji} ${escapeHtml(label)}</h2>
+        <div class="print-copy">${linkify(richTextToHtml(text))}</div>
+      </section>
+    `;
+  }).join("");
+  const activityImage = lesson.activityImage ? `
+    <section class="print-section print-activity">
+      <h2>🖍️ Atividade para imprimir</h2>
+      <img src="${escapeHtml(lesson.activityImage)}" alt="Atividade de colorir" />
+    </section>
+  ` : "";
+  const title = escapeHtml(lesson.title || "Lição bíblica");
+  const logoUrl = new URL("assets/logo-raizes-kids.png", window.location.href).href;
+
+  return `<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${title} | Impressão</title>
+    <style>
+      @page { size: A4; margin: 16mm 18mm; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: #23324a;
+        background: #f4fbff;
+        font-family: Arial, sans-serif;
+        line-height: 1.45;
+      }
+      .print-toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.94);
+        border-bottom: 1px solid #d9e7f5;
+      }
+      .print-toolbar button {
+        min-height: 44px;
+        padding: 0 18px;
+        border: 0;
+        border-radius: 999px;
+        color: #fff;
+        background: #2d9cff;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      .sheet {
+        width: min(100%, 210mm);
+        min-height: 297mm;
+        margin: 18px auto;
+        padding: 16mm 18mm;
+        background: #fff;
+        box-shadow: 0 18px 50px rgba(31, 77, 117, 0.16);
+      }
+      header {
+        display: grid;
+        grid-template-columns: 34mm 1fr;
+        gap: 10mm;
+        align-items: center;
+        padding-bottom: 7mm;
+        border-bottom: 1.5mm solid ${theme.primary};
+      }
+      header img {
+        width: 32mm;
+        height: auto;
+      }
+      .kicker {
+        display: inline-block;
+        margin-bottom: 3mm;
+        color: ${theme.primary};
+        font-size: 10pt;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 0;
+        color: #173f64;
+        font-size: 25pt;
+        line-height: 1.08;
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 5mm;
+      }
+      .meta span {
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: ${theme.soft};
+        color: #173f64;
+        font-size: 9pt;
+        font-weight: 800;
+      }
+      .verse {
+        margin: 7mm 0 0;
+        padding: 4mm 5mm;
+        border-left: 1.5mm solid #ffd93d;
+        border-radius: 5mm;
+        background: #fff8d8;
+        font-size: 11pt;
+        font-weight: 800;
+      }
+      .print-section {
+        margin-top: 8mm;
+        break-inside: auto;
+      }
+      .print-section h2 {
+        margin: 0 0 3mm;
+        padding-bottom: 2mm;
+        border-bottom: 0.4mm solid rgba(45, 156, 255, 0.22);
+        color: ${theme.primary};
+        font-size: 15pt;
+        line-height: 1.2;
+      }
+      .print-copy {
+        font-size: 11.2pt;
+        white-space: pre-line;
+      }
+      .print-copy p,
+      .print-copy div {
+        margin: 0 0 3mm;
+      }
+      .print-copy ul,
+      .print-copy ol {
+        margin: 3mm 0 3mm 7mm;
+        padding-left: 5mm;
+      }
+      .print-copy li {
+        margin-bottom: 1.5mm;
+      }
+      .print-activity {
+        break-before: page;
+      }
+      .print-activity img {
+        display: block;
+        width: 100%;
+        max-height: 245mm;
+        margin: 4mm auto 0;
+        object-fit: contain;
+      }
+      footer {
+        margin-top: 10mm;
+        padding-top: 4mm;
+        border-top: 0.4mm solid rgba(31, 77, 117, 0.18);
+        color: #5f7187;
+        font-size: 9pt;
+        text-align: center;
+      }
+      @media print {
+        body { background: #fff; }
+        .print-toolbar { display: none; }
+        .sheet {
+          width: auto;
+          min-height: 0;
+          margin: 0;
+          padding: 0;
+          box-shadow: none;
+        }
+        a { color: inherit; text-decoration: none; }
+      }
+      @media screen and (max-width: 720px) {
+        .sheet {
+          margin: 0;
+          padding: 18px;
+          min-height: 0;
+          box-shadow: none;
+        }
+        header {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+        header img { width: 120px; }
+        h1 { font-size: 2rem; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="print-toolbar">
+      <button type="button" onclick="window.print()">🖨️ Imprimir lição/atividade</button>
+      <button type="button" onclick="window.close()">Fechar</button>
+    </div>
+    <main class="sheet">
+      <header>
+        <img src="${logoUrl}" alt="Raízes Kids" />
+        <div>
+          <span class="kicker">Lição bíblica infantil</span>
+          <h1>${title}</h1>
+          <div class="meta">
+            <span>${theme.emoji} ${escapeHtml(lesson.category || "Lição")}</span>
+            <span>👧 ${escapeHtml(ageText(lesson.age))}</span>
+          </div>
+          <p class="verse">${escapeHtml(lesson.verse || "Versículo não informado")}</p>
+        </div>
+      </header>
+      ${sections}
+      ${activityImage}
+      <footer>Raízes Kids · Ministério com Criança · administrador@raizeskids.com · www.raizeskids.com</footer>
+    </main>
+  </body>
+</html>`;
 }
 
 function filteredLessons() {

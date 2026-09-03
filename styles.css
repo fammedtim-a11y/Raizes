@@ -3654,8 +3654,10 @@ textarea,
   position: relative;
   z-index: 2;
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   align-items: flex-start;
+  gap: 10px;
   min-width: 150px;
 }
 
