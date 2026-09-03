@@ -22,7 +22,7 @@ const ACCESS_LOG_FILE = path.join(DATA_DIR, "access-log.json");
 const SITE_INFO_FILE = path.join(DATA_DIR, "site-info.json");
 const COMMUNICATIONS_FILE = path.join(DATA_DIR, "communications.json");
 const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
-const LICENSE_DAYS = 364;
+const LICENSE_DAYS = 31;
 const DAY_MS = 1000 * 60 * 60 * 24;
 const sessions = new Map();
 const revokedSessions = new Map();
@@ -345,6 +345,8 @@ function applyUserAdministrationUpdates() {
       user.accessLevel = "prime";
       user.approved = true;
       user.active = true;
+    } else if (["simple", "test"].includes(user.accessLevel)) {
+      user.accessLevel = "leader";
     }
     if (user.username === "349326076" && !user.licensePatch20260702) {
       user.licenseExpiresAt = new Date(Date.now() + DAY_MS).toISOString();
@@ -613,6 +615,12 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  const deleteUserMatch = url.pathname.match(/^\/api\/admin\/users\/([^/]+)\/delete$/);
+  if (req.method === "POST" && deleteUserMatch) {
+    deleteUser(res, deleteUserMatch[1]);
+    return;
+  }
+
   const resetMatch = url.pathname.match(/^\/api\/admin\/users\/([^/]+)\/password$/);
   if (req.method === "POST" && resetMatch) {
     await adminResetPassword(req, res, resetMatch[1]);
@@ -826,7 +834,7 @@ async function register(req, res) {
     id: crypto.randomUUID(),
     username,
     role: "user",
-    accessLevel: "simple",
+    accessLevel: "leader",
     approved: false,
     active: true,
     name: cleanText(body.name),
@@ -892,6 +900,18 @@ function updateUserActive(res, id, active) {
   sendJson(res, 200, { user: publicAdminUser(user) });
 }
 
+function deleteUser(res, id) {
+  const users = readUsers();
+  const user = users.find((item) => item.id === id);
+  if (!user || user.role === "admin") {
+    sendJson(res, 404, { error: "Usuario nao encontrado." });
+    return;
+  }
+  writeUsers(users.filter((item) => item.id !== id));
+  revokeUserSessions(user.id);
+  sendJson(res, 200, { ok: true, message: "Usuario excluido com sucesso." });
+}
+
 async function renewUserLicense(req, res, id) {
   const body = await readBody(req);
   const users = readUsers();
@@ -918,7 +938,7 @@ async function renewUserLicense(req, res, id) {
   writeUsers(users);
   sendJson(res, 200, {
     user: publicAdminUser(user),
-    message: expiresAt ? `Licenca atualizada ate ${expiresAt}.` : "Licenca renovada por 364 dias."
+    message: expiresAt ? `Licenca atualizada ate ${expiresAt}.` : `Licenca renovada por ${LICENSE_DAYS} dias.`
   });
 }
 
@@ -945,7 +965,7 @@ async function adminResetPassword(req, res, id) {
 async function updateUserAccess(req, res, id) {
   const body = await readBody(req);
   const accessLevel = String(body.accessLevel || "");
-  if (!["simple", "test", "leader", "prime"].includes(accessLevel)) {
+  if (!["leader", "prime"].includes(accessLevel)) {
     sendJson(res, 400, { error: "Categoria de usuario invalida." });
     return;
   }
@@ -1225,7 +1245,7 @@ function communicationAudience(params) {
       if (status === "inactive") return user.active === false;
       return true;
     })
-    .filter((user) => accessLevel === "all" || (user.accessLevel || "prime") === accessLevel)
+    .filter((user) => accessLevel === "all" || (user.accessLevel || "leader") === accessLevel)
     .filter((user) => {
       if (channel === "email") return Boolean(user.email);
       if (channel === "whatsapp") return Boolean(onlyDigits(user.phone || ""));
@@ -1309,7 +1329,7 @@ function publicCommunicationUser(user) {
     email: user.email || "",
     phone: onlyDigits(user.phone || ""),
     church: user.church || "",
-    accessLevel: user.accessLevel || "prime",
+    accessLevel: user.accessLevel || "leader",
     approved: Boolean(user.approved),
     active: user.active !== false
   };
@@ -1852,9 +1872,10 @@ async function passwordResetRequest(req, res) {
 }
 
 function normalizeUser(user) {
+  const accessLevel = ["simple", "test"].includes(user.accessLevel) ? "leader" : user.accessLevel;
   const normalized = {
     ...user,
-    accessLevel: user.role === "admin" ? "prime" : user.accessLevel || "prime",
+    accessLevel: user.role === "admin" ? "prime" : accessLevel || "leader",
     phone: user.phone || "",
     churchCity: user.churchCity || ""
   };
@@ -1930,14 +1951,14 @@ function readBody(req) {
 
 function publicUser(user) {
   if (!user) return null;
-  return { id: user.id, username: user.username, role: user.role, accessLevel: user.accessLevel || "prime", approved: user.approved, active: user.active !== false, name: user.name, ...publicLicenseFields(user) };
+  return { id: user.id, username: user.username, role: user.role, accessLevel: user.accessLevel || "leader", approved: user.approved, active: user.active !== false, name: user.name, ...publicLicenseFields(user) };
 }
 
 function publicProfileUser(user) {
   return {
     username: user.username,
     role: user.role,
-    accessLevel: user.accessLevel || "prime",
+    accessLevel: user.accessLevel || "leader",
     name: user.name || "",
     email: user.email || "",
     phone: user.phone || "",
@@ -1953,7 +1974,7 @@ function publicAdminUser(user) {
     id: user.id,
     username: user.username,
     role: user.role,
-    accessLevel: user.accessLevel || "prime",
+    accessLevel: user.accessLevel || "leader",
     approved: user.approved,
     active: user.active !== false,
     name: user.name,

@@ -1091,7 +1091,7 @@ function applyAccessVisibility() {
     el.classList.remove("hidden");
   });
   document.querySelectorAll("[data-min-access]").forEach((el) => {
-    const visible = !state.authUser || (state.authUser.accessLevel === "test" && el.dataset.tab === "ebf" ? false : canAccessLevel(el.dataset.minAccess));
+    const visible = !state.authUser || canAccessLevel(el.dataset.minAccess);
     el.classList.toggle("hidden", !visible);
   });
   document.querySelectorAll(".nav-menu").forEach((menu) => {
@@ -1106,8 +1106,7 @@ function canAccessTab(tabName) {
   if (!state.authUser || state.authUser.role === "admin") return true;
   if (tabName === "home") return true;
   if (tabName === "team") return true;
-  if (state.authUser.accessLevel === "test") return ["devotional", "trails", "study", "training"].includes(tabName);
-  if (tabName === "devotional") return true;
+  if (tabName === "devotional") return canAccessLevel("leader");
   if (["study", "trails"].includes(tabName)) return canAccessLevel("leader");
   if (tabName === "training") return canAccessLevel("prime");
   if (tabName === "ebf") return canAccessLevel("prime");
@@ -1116,8 +1115,8 @@ function canAccessTab(tabName) {
 
 function canAccessLevel(required) {
   if (!state.authUser || state.authUser.role === "admin") return true;
-  const order = { simple: 1, test: 3, leader: 2, prime: 3 };
-  const current = order[state.authUser.accessLevel || "prime"] || 1;
+  const order = { leader: 1, prime: 2 };
+  const current = order[state.authUser.accessLevel || "leader"] || 1;
   return current >= (order[required] || 1);
 }
 
@@ -1408,11 +1407,7 @@ function filteredContentItems(items) {
     const matchesCreatedMonth = !createdMonth || lessonMonthKey(item.createdAt) === createdMonth;
     return matchesTerm && matchesCategory && matchesCreatedMonth;
   });
-  return isTestUser() ? filtered.slice(0, 1) : filtered;
-}
-
-function isTestUser() {
-  return state.authUser?.accessLevel === "test" && state.authUser.role !== "admin";
+  return filtered;
 }
 
 function renderContentCard(item, active, typeLabel) {
@@ -1635,7 +1630,7 @@ function filteredLessons() {
     const matchesCreatedMonth = !createdMonth || lessonMonthKey(lesson.createdAt) === createdMonth;
     return matchesTerm && matchesCategory && matchesAge && matchesTestament && matchesSpecial && matchesCreatedMonth;
   });
-  return isTestUser() ? filtered.filter((lesson) => lesson.testOnly || lesson.source === "pais-import-20260702") : filtered;
+  return filtered;
 }
 
 function lessonMonthKey(value) {
@@ -3189,7 +3184,7 @@ function filteredVideos() {
     return matchesTerm && matchesCategory && matchesAge;
   });
 
-  return isTestUser() ? videos.slice(0, 1) : videos;
+  return videos;
 }
 
 function allVideos() {

@@ -274,7 +274,7 @@ function renderAdminUsers() {
     button.addEventListener("click", () => {
       const input = list.querySelector(`[data-license-date="${button.dataset.renewLicense}"]`);
       const licenseExpiresAt = input?.value || "";
-      if (!licenseExpiresAt && !window.confirm("Nenhuma data foi informada. Renovar por mais 364 dias?")) return;
+      if (!licenseExpiresAt && !window.confirm("Nenhuma data foi informada. Renovar por mais 31 dias?")) return;
       adminAction(`/api/admin/users/${button.dataset.renewLicense}/renew-license`, { licenseExpiresAt });
     });
   });
@@ -287,6 +287,14 @@ function renderAdminUsers() {
         return;
       }
       await adminAction(`/api/admin/users/${button.dataset.reset}/password`, { password });
+    });
+  });
+
+  list.querySelectorAll("[data-delete-user]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      if (!window.confirm("Excluir este usuario definitivamente? Esta acao nao pode ser desfeita.")) return;
+      const result = await adminAction(`/api/admin/users/${button.dataset.deleteUser}/delete`, {});
+      if (!result?.error) window.alert(result.message || "Usuario excluido com sucesso.");
     });
   });
 
@@ -543,8 +551,8 @@ function renderAccessLogCard(log) {
 }
 
 function renderAdminUserCard(user) {
-  const accessLevel = user.accessLevel || "prime";
-  const accessLabel = accessLevel === "simple" ? "Simples" : accessLevel === "leader" ? "Líderes" : "Prime";
+  const accessLevel = user.accessLevel === "prime" ? "prime" : "leader";
+  const accessLabel = accessLevel === "leader" ? "Líderes" : "Prime";
   const licenseText = user.role === "admin" ? "Acesso administrativo" : `${Number(user.licenseDaysRemaining || 0)} dias de acesso disponivel`;
   const status = user.role === "admin"
     ? "Administrador"
@@ -559,7 +567,6 @@ function renderAdminUserCard(user) {
     <label class="user-access-control">
       <span>Categoria</span>
       <select data-access-level="${authEscapeHtml(user.id)}">
-        <option value="simple" ${accessLevel === "simple" ? "selected" : ""}>Simples</option>
         <option value="leader" ${accessLevel === "leader" ? "selected" : ""}>Líderes</option>
         <option value="prime" ${accessLevel === "prime" ? "selected" : ""}>Prime</option>
       </select>
@@ -577,6 +584,7 @@ function renderAdminUserCard(user) {
       : `<button class="icon-button danger" type="button" data-deactivate="${authEscapeHtml(user.id)}">Desativar</button>`}
     <button class="icon-button accent" type="button" data-renew-license="${authEscapeHtml(user.id)}">Salvar licença</button>
     <button class="icon-button" type="button" data-reset="${authEscapeHtml(user.id)}">Nova senha</button>
+    <button class="icon-button danger" type="button" data-delete-user="${authEscapeHtml(user.id)}">Excluir usuário</button>
   `;
 
   return `
@@ -608,7 +616,7 @@ function renderAdminUserCard(user) {
 function exportUsersCsv(users) {
   const headers = ["Nome", "CPF", "Email", "Telefone", "Igreja", "Cidade da Igreja", "Endereco", "Status", "Categoria", "Dias de acesso", "Vencimento da licenca", "Criado em", "Aprovado em", "Ultimo login", "Ultimo acesso"];
   const rows = users.map((user) => {
-    const accessLevel = user.accessLevel === "simple" ? "Simples" : user.accessLevel === "leader" ? "Líderes" : "Prime";
+    const accessLevel = user.accessLevel === "prime" ? "Prime" : "Líderes";
     const status = user.role === "admin" ? "Administrador" : user.active === false ? "Desativado" : user.approved ? "Ativo" : "Aguardando aprovacao";
     return [
       user.name,
