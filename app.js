@@ -3415,40 +3415,144 @@ function buildEbookHtml(lessons, options = {}) {
   `;
 }
 
-function buildEbookLessonHtml(lesson, number, isLast = false) {
+function buildEbookLessonHtml(lesson, number) {
   const theme = categoryTheme(lesson.category);
-  return `
-    <section class="ebook-lesson" style="--theme:${theme.primary};--theme-soft:${theme.soft}">
+  const pages = buildPdfLessonPages(lesson, number, theme);
+  return pages.map((page, pageIndex) => `
+    <section class="ebook-lesson ebook-lesson-page ${pageIndex ? "continued" : "first"}" style="--theme:${theme.primary};--theme-soft:${theme.soft}">
       ${buildPdfPageHeader()}
       <header class="ebook-lesson-header">
         <span>${String(number).padStart(2, "0")}</span>
         <div>
-          <p>${theme.emoji} ${escapeHtml(lesson.category)} · ${escapeHtml(ageText(lesson.age))}</p>
+          <p>${theme.emoji} ${escapeHtml(lesson.category)} · ${escapeHtml(ageText(lesson.age))}${pageIndex ? " · continuação" : ""}</p>
           <h2>${escapeHtml(lesson.title)}</h2>
           <strong>${escapeHtml(lesson.verse || "Versículo não informado")}</strong>
         </div>
       </header>
       <div class="ebook-sections">
-        ${SECTIONS.map(([key, label, icon, emoji]) => {
-          const text = lesson.sections?.[key]?.trim();
-          if (!text) return "";
-          return `
-            <section class="ebook-section">
-              <h3>${emoji} ${label}</h3>
-              ${buildPdfCopyFragments(text)}
-            </section>
-          `;
-        }).join("")}
-        ${lesson.activityImage ? `
-          <section class="ebook-section">
-            <h3>🖍️ Imagem para atividade de colorir</h3>
-            <img class="ebook-activity-image" src="${escapeHtml(lesson.activityImage)}" alt="Atividade de colorir" />
-          </section>
-        ` : ""}
+        ${renderPdfLessonPageBlocks(page.blocks)}
       </div>
       ${buildPdfPageFooter()}
     </section>
+  `).join("");
+}
+
+function buildPdfLessonPages(lesson, number, theme) {
+  const blocks = buildPdfLessonBlocks(lesson);
+  const pages = [];
+  let current = [];
+  let currentUnits = 0;
+  let capacity = pdfPageCapacity(true, lesson);
+
+  blocks.forEach((block) => {
+    const units = estimatePdfBlockUnits(block);
+    if (current.length && currentUnits + units > capacity) {
+      pages.push({ blocks: current });
+      current = [];
+      currentUnits = 0;
+      capacity = pdfPageCapacity(false, lesson);
+    }
+    current.push(block);
+    currentUnits += units;
+  });
+
+  if (current.length) pages.push({ blocks: current });
+  if (!pages.length) {
+    pages.push({
+      blocks: [{
+        type: "copy",
+        label: "LIÇÃO",
+        emoji: theme.emoji,
+        fragment: "Conteúdo não informado.",
+        continued: false
+      }]
+    });
+  }
+  return pages;
+}
+
+function buildPdfLessonBlocks(lesson) {
+  const blocks = [];
+  SECTIONS.forEach(([key, label, icon, emoji]) => {
+    const text = lesson.sections?.[key]?.trim();
+    if (!text) return;
+    splitPdfTextFragments(text).forEach((fragment, index) => {
+      blocks.push({
+        type: "copy",
+        label,
+        emoji,
+        fragment,
+        continued: index > 0
+      });
+    });
+  });
+
+  if (lesson.activityImage) {
+    blocks.push({
+      type: "image",
+      label: "Imagem para atividade de colorir",
+      emoji: "🖍️",
+      src: lesson.activityImage
+    });
+  }
+  return blocks;
+}
+
+function renderPdfLessonBlock(block) {
+  const heading = `${block.emoji} ${block.label}${block.continued ? " (continuação)" : ""}`;
+  if (block.type === "image") {
+    return `
+      <section class="ebook-section ebook-section-image">
+        <h3>${escapeHtml(heading)}</h3>
+        <img class="ebook-activity-image" src="${escapeHtml(block.src)}" alt="${escapeHtml(block.label)}" />
+      </section>
+    `;
+  }
+
+  return `
+    <section class="ebook-section${block.continued ? " ebook-section-continued" : ""}">
+      <h3>${escapeHtml(heading)}</h3>
+      <div class="ebook-copy">${linkify(richTextToHtml(block.fragment))}</div>
+    </section>
   `;
+}
+
+function renderPdfLessonPageBlocks(blocks) {
+  const groups = [];
+  blocks.forEach((block) => {
+    const previous = groups[groups.length - 1];
+    if (previous && previous.type === block.type && previous.label === block.label && previous.emoji === block.emoji) {
+      previous.blocks.push(block);
+    } else {
+      groups.push({ type: block.type, label: block.label, emoji: block.emoji, blocks: [block] });
+    }
+  });
+
+  return groups.map((group) => {
+    if (group.type === "image") return group.blocks.map(renderPdfLessonBlock).join("");
+    const continued = group.blocks[0]?.continued;
+    const heading = `${group.emoji} ${group.label}${continued ? " (continuação)" : ""}`;
+    return `
+      <section class="ebook-section${continued ? " ebook-section-continued" : ""}">
+        <h3>${escapeHtml(heading)}</h3>
+        ${group.blocks.map((block) => `<div class="ebook-copy">${linkify(richTextToHtml(block.fragment))}</div>`).join("")}
+      </section>
+    `;
+  }).join("");
+}
+
+function pdfPageCapacity(isFirstPage, lesson) {
+  const titleSize = String(lesson.title || "").length;
+  if (isFirstPage && titleSize > 72) return 2300;
+  return isFirstPage ? 2500 : 3300;
+}
+
+function estimatePdfBlockUnits(block) {
+  if (block.type === "image") return 2200;
+  const text = String(block.fragment || "");
+  const lineBreaks = (text.match(/\n/g) || []).length;
+  const urls = (text.match(/https?:\/\/\S+/g) || []).length;
+  return text.length + lineBreaks * 42 + urls * 35 + 180;
 }
 
 function isFavoriteVideo(id) {

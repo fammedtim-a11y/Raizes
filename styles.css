@@ -4401,7 +4401,8 @@ textarea,
 
   body.ebook-printing .ebook-cover,
   body.ebook-printing .ebook-toc,
-  body.ebook-printing .ebook-lesson {
+  body.ebook-printing .ebook-lesson,
+  body.ebook-printing .ebook-lesson-page {
     position: relative !important;
     width: var(--pdf-page-width) !important;
     max-width: none !important;
@@ -4516,25 +4517,31 @@ textarea,
     word-break: normal;
   }
 
-  body.ebook-printing .ebook-lesson {
+  body.ebook-printing .ebook-lesson,
+  body.ebook-printing .ebook-lesson-page {
     display: block !important;
+    height: var(--pdf-page-safe-height) !important;
     min-height: var(--pdf-page-safe-height) !important;
+    max-height: var(--pdf-page-safe-height) !important;
     padding: 0 var(--pdf-side-margin) var(--pdf-content-bottom) !important;
     border: 0 !important;
     border-radius: 0 !important;
     background: #fff !important;
+    overflow: hidden !important;
     break-before: auto;
     page-break-before: auto;
   }
 
-  body.ebook-printing .ebook-lesson + .ebook-lesson {
+  body.ebook-printing .ebook-lesson + .ebook-lesson,
+  body.ebook-printing .ebook-lesson-page + .ebook-lesson-page {
     break-before: page;
     page-break-before: always;
   }
 
   body.ebook-printing .ebook-cover + .ebook-toc,
   body.ebook-printing .ebook-cover + .ebook-lesson,
-  body.ebook-printing .ebook-toc + .ebook-lesson {
+  body.ebook-printing .ebook-toc + .ebook-lesson,
+  body.ebook-printing .ebook-toc + .ebook-lesson-page {
     break-before: page;
     page-break-before: always;
   }
@@ -4544,7 +4551,8 @@ textarea,
     page-break-after: auto !important;
   }
 
-  body.ebook-printing .ebook-lesson::before {
+  body.ebook-printing .ebook-lesson::before,
+  body.ebook-printing .ebook-lesson-page::before {
     display: none !important;
   }
 
@@ -4591,6 +4599,21 @@ textarea,
     line-height: 1.12 !important;
   }
 
+  body.ebook-printing .ebook-lesson-page.continued .ebook-lesson-header {
+    grid-template-columns: 12mm minmax(0, 1fr) !important;
+    margin-bottom: 5mm !important;
+    padding-bottom: 3.5mm !important;
+  }
+
+  body.ebook-printing .ebook-lesson-page.continued .ebook-lesson-header h2 {
+    font-size: 15pt !important;
+    line-height: 1.08 !important;
+  }
+
+  body.ebook-printing .ebook-lesson-page.continued .ebook-lesson-header strong {
+    display: none !important;
+  }
+
   body.ebook-printing .ebook-sections {
     display: block !important;
     width: 100% !important;
@@ -4601,7 +4624,7 @@ textarea,
   body.ebook-printing .ebook-section {
     display: block !important;
     width: 100% !important;
-    margin: 0 0 4.2mm !important;
+    margin: 0 0 3.6mm !important;
     padding: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
@@ -4612,8 +4635,8 @@ textarea,
 
   body.ebook-printing .ebook-section h3 {
     display: block !important;
-    margin: 0 0 1.8mm !important;
-    padding: 2mm 0 1.8mm 3mm !important;
+    margin: 0 0 1.5mm !important;
+    padding: 1.8mm 0 1.5mm 3mm !important;
     border-left: 1mm solid var(--theme, #1f4d75) !important;
     background: rgba(255, 255, 255, 0.92) !important;
     font-size: 10.5pt !important;
@@ -4625,11 +4648,11 @@ textarea,
   body.ebook-printing .ebook-section p,
   body.ebook-printing .ebook-copy {
     display: block !important;
-    margin: 0 0 2.2mm !important;
+    margin: 0 0 1.8mm !important;
     padding: 0 0 0 3mm !important;
     border-left: 0.35mm solid rgba(31, 77, 117, 0.16) !important;
-    font-size: 9.2pt !important;
-    line-height: 1.46 !important;
+    font-size: 9pt !important;
+    line-height: 1.38 !important;
     white-space: pre-line !important;
     background: transparent !important;
     break-inside: auto !important;
@@ -4672,14 +4695,15 @@ textarea,
 
   body.ebook-printing .ebook-page-footer {
     position: absolute !important;
-    right: var(--pdf-side-margin) !important;
+    right: auto !important;
     bottom: 0 !important;
     left: var(--pdf-side-margin) !important;
     display: grid !important;
-    grid-template-columns: 18mm minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-template-columns: 18mm minmax(0, 58mm) minmax(0, 58mm) !important;
+    justify-content: center !important;
     gap: 4mm !important;
     align-items: center !important;
-    width: auto !important;
+    width: calc(var(--pdf-page-width) - (var(--pdf-side-margin) * 2)) !important;
     height: var(--pdf-footer-height) !important;
     min-height: var(--pdf-footer-height) !important;
     margin: 0 !important;
@@ -4698,6 +4722,14 @@ textarea,
     max-height: 12mm !important;
     object-fit: contain !important;
     margin: 0 auto !important;
+  }
+
+  body.ebook-printing .ebook-page-footer span {
+    display: block !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
   }
 
   body.ebook-printing .ebook-page-footer strong {
