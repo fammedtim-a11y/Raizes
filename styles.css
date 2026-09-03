@@ -4394,9 +4394,7 @@ textarea,
 }
 
 .pdf-measure-root .ebook-lesson-page.continued .ebook-lesson-header {
-  grid-template-columns: 12mm minmax(0, 1fr);
-  margin-bottom: 5mm;
-  padding-bottom: 3.5mm;
+  display: none;
 }
 
 .pdf-measure-root .ebook-lesson-header > span {
@@ -4428,15 +4426,6 @@ textarea,
   color: #1f2b3d;
   font-size: 20pt;
   line-height: 1.12;
-}
-
-.pdf-measure-root .ebook-lesson-page.continued .ebook-lesson-header h2 {
-  font-size: 15pt;
-  line-height: 1.08;
-}
-
-.pdf-measure-root .ebook-lesson-page.continued .ebook-lesson-header strong {
-  display: none;
 }
 
 .pdf-measure-root .ebook-lesson-header strong {
@@ -4793,17 +4782,6 @@ textarea,
   }
 
   body.ebook-printing .ebook-lesson-page.continued .ebook-lesson-header {
-    grid-template-columns: 12mm minmax(0, 1fr) !important;
-    margin-bottom: 5mm !important;
-    padding-bottom: 3.5mm !important;
-  }
-
-  body.ebook-printing .ebook-lesson-page.continued .ebook-lesson-header h2 {
-    font-size: 15pt !important;
-    line-height: 1.08 !important;
-  }
-
-  body.ebook-printing .ebook-lesson-page.continued .ebook-lesson-header strong {
     display: none !important;
   }
 

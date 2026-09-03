@@ -3419,12 +3419,18 @@ function paginateEbookPrintArea() {
 function paginatePdfLessonGroup(group, measureRoot) {
   if (!group.length) return [];
   const sourcePage = group[0];
-  const blocks = group.flatMap((page) => [...page.querySelectorAll(".ebook-section")].map((block) => block.outerHTML));
+  const blocks = group.flatMap((page) => [...page.querySelectorAll(".ebook-section")].map((block) => ({
+    type: block.dataset.pdfBlockType || "copy",
+    label: block.dataset.pdfLabel || "",
+    emoji: block.dataset.pdfEmoji || "",
+    continued: block.dataset.pdfContinued === "true",
+    html: block.outerHTML
+  })));
   const pages = [];
   let currentBlocks = [];
 
-  blocks.forEach((blockHtml) => {
-    currentBlocks.push(blockHtml);
+  blocks.forEach((block) => {
+    currentBlocks.push(block);
     const testPage = buildMeasuredPdfPage(sourcePage, currentBlocks, pages.length);
     measureRoot.appendChild(testPage);
     const fits = doesMeasuredPdfPageFit(testPage);
@@ -3433,7 +3439,7 @@ function paginatePdfLessonGroup(group, measureRoot) {
     if (!fits && currentBlocks.length > 1) {
       currentBlocks.pop();
       pages.push(buildMeasuredPdfPage(sourcePage, currentBlocks, pages.length).outerHTML);
-      currentBlocks = [blockHtml];
+      currentBlocks = [block];
     }
   });
 
@@ -3453,7 +3459,7 @@ function buildMeasuredPdfPage(sourcePage, blocks, pageIndex) {
     headerLine.textContent = pageIndex > 0 ? `${base} · continuação` : base;
   }
   const sections = page.querySelector(".ebook-sections");
-  if (sections) sections.innerHTML = blocks.join("");
+  if (sections) sections.innerHTML = renderPdfMeasuredBlocks(blocks);
   return page;
 }
 
@@ -3520,7 +3526,7 @@ function buildEbookLessonHtml(lesson, number) {
         </div>
       </header>
       <div class="ebook-sections">
-        ${renderPdfLessonPageBlocks(page.blocks)}
+        ${page.blocks.map(renderPdfLessonBlock).join("")}
       </div>
       ${buildPdfPageFooter()}
     </section>
@@ -3592,7 +3598,7 @@ function renderPdfLessonBlock(block) {
   const heading = `${block.emoji} ${block.label}${block.continued ? " (continuação)" : ""}`;
   if (block.type === "image") {
     return `
-      <section class="ebook-section ebook-section-image">
+      <section class="ebook-section ebook-section-image" data-pdf-block-type="image" data-pdf-label="${escapeHtml(block.label)}" data-pdf-emoji="${escapeHtml(block.emoji)}" data-pdf-continued="${block.continued ? "true" : "false"}">
         <h3>${escapeHtml(heading)}</h3>
         <img class="ebook-activity-image" src="${escapeHtml(block.src)}" alt="${escapeHtml(block.label)}" />
       </section>
@@ -3600,14 +3606,14 @@ function renderPdfLessonBlock(block) {
   }
 
   return `
-    <section class="ebook-section${block.continued ? " ebook-section-continued" : ""}">
+    <section class="ebook-section${block.continued ? " ebook-section-continued" : ""}" data-pdf-block-type="copy" data-pdf-label="${escapeHtml(block.label)}" data-pdf-emoji="${escapeHtml(block.emoji)}" data-pdf-continued="${block.continued ? "true" : "false"}">
       <h3>${escapeHtml(heading)}</h3>
       <div class="ebook-copy">${linkify(richTextToHtml(block.fragment))}</div>
     </section>
   `;
 }
 
-function renderPdfLessonPageBlocks(blocks) {
+function renderPdfMeasuredBlocks(blocks) {
   const groups = [];
   blocks.forEach((block) => {
     const previous = groups[groups.length - 1];
@@ -3619,16 +3625,22 @@ function renderPdfLessonPageBlocks(blocks) {
   });
 
   return groups.map((group) => {
-    if (group.type === "image") return group.blocks.map(renderPdfLessonBlock).join("");
+    if (group.type === "image") return group.blocks.map((block) => block.html).join("");
     const continued = group.blocks[0]?.continued;
     const heading = `${group.emoji} ${group.label}${continued ? " (continuação)" : ""}`;
     return `
       <section class="ebook-section${continued ? " ebook-section-continued" : ""}">
         <h3>${escapeHtml(heading)}</h3>
-        ${group.blocks.map((block) => `<div class="ebook-copy">${linkify(richTextToHtml(block.fragment))}</div>`).join("")}
+        ${group.blocks.map((block) => extractPdfCopyHtml(block.html)).join("")}
       </section>
     `;
   }).join("");
+}
+
+function extractPdfCopyHtml(html) {
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  return [...template.content.querySelectorAll(".ebook-copy")].map((node) => node.outerHTML).join("");
 }
 
 function pdfPageCapacity(isFirstPage, lesson) {
