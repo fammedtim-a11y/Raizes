@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20260903-sem-html-impressao" />
+    <link rel="stylesheet" href="styles.css?v=20260903-admin-limpo" />
   </head>
   <body data-page="admin">
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -156,8 +156,8 @@
           <div id="lessonManagePanel" class="manage-panel">
             <div class="manager-heading">
               <div>
-                <h2>Lições cadastradas</h2>
-                <p>Selecione uma lição existente para editar no formulário abaixo.</p>
+                <h2>Gerenciar lições</h2>
+                <p>Cadastre, edite, duplique e exporte materiais em um fluxo mais organizado.</p>
               </div>
             </div>
             <div class="admin-work-actions">
@@ -165,6 +165,13 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
                 Nova lição
               </button>
+            </div>
+            <details class="export-center">
+              <summary>
+                <span>📤 Central de Exportação</span>
+                <small>Gere materiais filtrados ou faça backup do acervo.</small>
+              </summary>
+              <div class="export-center-actions">
               <button id="ebookPrintBtn" class="icon-button accent" type="button" title="Exportar ebook filtrado">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5V5.8A2.8 2.8 0 0 1 6.8 3H20v15H7a3 3 0 0 0-3 3Z" /><path d="M8 7h8M8 11h6" /></svg>
                 Exportar Ebook
@@ -187,53 +194,73 @@
                   </label>
                 </div>
               </details>
-            </div>
+              </div>
+            </details>
             <div id="lessonAdminList" class="admin-item-list admin-card-rail lesson-admin-rail"></div>
 
             <form id="lessonForm" class="editor">
               <input type="hidden" id="lessonId" />
-              <div class="form-grid">
-                <label>
-                  <span>Título</span>
-                  <input id="titleInput" required placeholder="Ex.: Deus criou tudo" />
-                </label>
-                <label>
-                  <span>Categoria</span>
-                  <input id="categoryInput" list="categoryOptions" required placeholder="Ex.: Deus Pai" />
-                  <datalist id="categoryOptions"></datalist>
-                </label>
-                <label>
-                  <span>Idade</span>
-                  <select id="ageInput" required>
-                    <option>0 a 2 anos - Berçário</option>
-                    <option>3 a 4 anos - Maternal</option>
-                    <option>5 a 6 anos - Jardim</option>
-                    <option>7 a 10 anos - Primários</option>
-                    <option>11 a 12 anos - Juniores</option>
-                  </select>
-                </label>
-                <label>
-                  <span>Versículo</span>
-                  <input id="verseInput" placeholder="Ex.: Genesis 1:31" />
-                </label>
-              </div>
-              <label class="image-field">
-                <span>Imagem do card da lição</span>
-                <input id="cardImageInput" type="file" accept="image/png,image/jpeg,image/webp" />
-                <small>Opcional. Esta imagem será usada como capa do card na lista de lições e no gerenciamento.</small>
-              </label>
-              <div id="cardImagePreview" class="activity-image-preview card-image-preview"></div>
+              <details class="editor-section" open>
+                <summary>
+                  <span>1. Informações principais</span>
+                  <small>Título, categoria, idade e versículo.</small>
+                </summary>
+                <div class="form-grid">
+                  <label>
+                    <span>Título</span>
+                    <input id="titleInput" required placeholder="Ex.: Deus criou tudo" />
+                  </label>
+                  <label>
+                    <span>Categoria</span>
+                    <input id="categoryInput" list="categoryOptions" required placeholder="Ex.: Deus Pai" />
+                    <datalist id="categoryOptions"></datalist>
+                  </label>
+                  <label>
+                    <span>Idade</span>
+                    <select id="ageInput" required>
+                      <option>0 a 2 anos - Berçário</option>
+                      <option>3 a 4 anos - Maternal</option>
+                      <option>5 a 6 anos - Jardim</option>
+                      <option>7 a 10 anos - Primários</option>
+                      <option>11 a 12 anos - Juniores</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Versículo</span>
+                    <input id="verseInput" placeholder="Ex.: Genesis 1:31" />
+                  </label>
+                </div>
+              </details>
 
-              <label class="image-field">
-                <span>Imagem da atividade de colorir</span>
-                <input id="activityImageInput" type="file" accept="image/png,image/jpeg,image/webp" />
-                <small>Opcional. A imagem será salva no navegador e usada na visualização/PDF da lição.</small>
-              </label>
-              <div id="activityImagePreview" class="activity-image-preview"></div>
+              <details class="editor-section">
+                <summary>
+                  <span>2. Imagens e atividades</span>
+                  <small>Capa do card e atividade de colorir.</small>
+                </summary>
+                <label class="image-field">
+                  <span>Imagem do card da lição</span>
+                  <input id="cardImageInput" type="file" accept="image/png,image/jpeg,image/webp" />
+                  <small>Opcional. Esta imagem será usada como capa do card na lista de lições e no gerenciamento.</small>
+                </label>
+                <div id="cardImagePreview" class="activity-image-preview card-image-preview"></div>
 
-              <div id="sectionFields" class="section-fields"></div>
+                <label class="image-field">
+                  <span>Imagem da atividade de colorir</span>
+                  <input id="activityImageInput" type="file" accept="image/png,image/jpeg,image/webp" />
+                  <small>Opcional. A imagem será salva no navegador e usada na visualização/PDF da lição.</small>
+                </label>
+                <div id="activityImagePreview" class="activity-image-preview"></div>
+              </details>
 
-              <div class="form-actions">
+              <details class="editor-section">
+                <summary>
+                  <span>3. Conteúdo da lição</span>
+                  <small>Abra somente a etapa que deseja editar.</small>
+                </summary>
+                <div id="sectionFields" class="section-fields"></div>
+              </details>
+
+              <div class="form-actions editor-actions-bar">
                 <button class="icon-button primary" type="submit">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" /><path d="M17 21v-8H7v8M7 3v5h8" /></svg>
                   Salvar
@@ -273,23 +300,41 @@
             <div id="devotionalAdminList" class="admin-item-list admin-card-rail lesson-admin-rail"></div>
             <form id="devotionalForm" class="editor content-editor" data-content-type="devotional">
               <input type="hidden" name="id" />
-              <div class="form-grid">
-                <label><span>Título</span><input name="title" required placeholder="Ex.: Culto em Família - Semana 16" /></label>
-                <label><span>Categoria</span><input name="category" placeholder="Ex.: Família" /></label>
-                <label><span>Temporada/Semana</span><input name="season" placeholder="Ex.: Semana 16" /></label>
-                <label><span>Mês de inclusão</span><input name="createdMonth" type="month" /></label>
-                <label><span>Princípio</span><input name="principle" placeholder="Ex.: Vou valorizar tudo o que Deus me der." /></label>
-                <label><span>Texto bíblico</span><input name="bibleText" placeholder="Ex.: Gn 25.29-34" /></label>
-              </div>
-              <label><span>Versículo</span><textarea name="verse" rows="3"></textarea></label>
-              <label class="image-field"><span>Imagem do card</span><input name="cardImageFile" type="file" accept="image/png,image/jpeg,image/webp" /></label>
-              <label class="inline-check"><input name="removeCardImage" type="checkbox" /> Remover imagem do card ao salvar</label>
-              <label class="image-field"><span>Desenho/atividade</span><input name="activityImageFile" type="file" accept="image/png,image/jpeg,image/webp" /></label>
-              <label class="inline-check"><input name="removeActivityImage" type="checkbox" /> Remover desenho/atividade ao salvar</label>
-              <label><span>Culto em Família</span><textarea name="devotional" rows="8"></textarea></label>
-              <label><span>Oração</span><textarea name="prayer" rows="4"></textarea></label>
-              <label><span>Vamos brincar?</span><textarea name="activity" rows="5"></textarea></label>
-              <div class="form-actions">
+              <details class="editor-section" open>
+                <summary>
+                  <span>1. Informações principais</span>
+                  <small>Identificação do culto e texto bíblico.</small>
+                </summary>
+                <div class="form-grid">
+                  <label><span>Título</span><input name="title" required placeholder="Ex.: Culto em Família - Semana 16" /></label>
+                  <label><span>Categoria</span><input name="category" placeholder="Ex.: Família" /></label>
+                  <label><span>Temporada/Semana</span><input name="season" placeholder="Ex.: Semana 16" /></label>
+                  <label><span>Mês de inclusão</span><input name="createdMonth" type="month" /></label>
+                  <label><span>Princípio</span><input name="principle" placeholder="Ex.: Vou valorizar tudo o que Deus me der." /></label>
+                  <label><span>Texto bíblico</span><input name="bibleText" placeholder="Ex.: Gn 25.29-34" /></label>
+                </div>
+                <label><span>Versículo</span><textarea name="verse" rows="3"></textarea></label>
+              </details>
+              <details class="editor-section">
+                <summary>
+                  <span>2. Imagens e atividades</span>
+                  <small>Capa e desenho para uso em família.</small>
+                </summary>
+                <label class="image-field"><span>Imagem do card</span><input name="cardImageFile" type="file" accept="image/png,image/jpeg,image/webp" /></label>
+                <label class="inline-check"><input name="removeCardImage" type="checkbox" /> Remover imagem do card ao salvar</label>
+                <label class="image-field"><span>Desenho/atividade</span><input name="activityImageFile" type="file" accept="image/png,image/jpeg,image/webp" /></label>
+                <label class="inline-check"><input name="removeActivityImage" type="checkbox" /> Remover desenho/atividade ao salvar</label>
+              </details>
+              <details class="editor-section">
+                <summary>
+                  <span>3. Conteúdo do culto</span>
+                  <small>Devocional, oração e brincadeira.</small>
+                </summary>
+                <label><span>Culto em Família</span><textarea name="devotional" rows="8"></textarea></label>
+                <label><span>Oração</span><textarea name="prayer" rows="4"></textarea></label>
+                <label><span>Vamos brincar?</span><textarea name="activity" rows="5"></textarea></label>
+              </details>
+              <div class="form-actions editor-actions-bar">
                 <button class="icon-button primary" type="submit">Salvar culto</button>
                 <button class="icon-button" type="button" data-content-clear>Limpar</button>
                 <button class="icon-button danger" type="button" data-content-delete>Excluir</button>
@@ -664,9 +709,9 @@
       </main>
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
-    <script src="lessons-data.js?v=20260903-sem-html-impressao"></script>
-    <script src="app.js?v=20260903-sem-html-impressao"></script>
-    <script src="auth.js?v=20260903-sem-html-impressao"></script>
+    <script src="lessons-data.js?v=20260903-admin-limpo"></script>
+    <script src="app.js?v=20260903-admin-limpo"></script>
+    <script src="auth.js?v=20260903-admin-limpo"></script>
   </body>
 </html>
 

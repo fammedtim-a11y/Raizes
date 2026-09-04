@@ -1185,10 +1185,16 @@ function fillSelect(select, values) {
 function renderSectionFields() {
   if (!els.sectionFields) return;
   els.sectionFields.innerHTML = SECTIONS.map(([key, label]) => `
-    <label>
-      <span>${label}</span>
-      <textarea id="section-${key}" placeholder="Digite o conteúdo de ${label.toLowerCase()}"></textarea>
-    </label>
+    <details class="editor-section lesson-editor-section">
+      <summary>
+        <span>${label}</span>
+        <small>Editar conteúdo</small>
+      </summary>
+      <label>
+        <span>${label}</span>
+        <textarea id="section-${key}" placeholder="Digite o conteúdo de ${label.toLowerCase()}"></textarea>
+      </label>
+    </details>
   `).join("");
 }
 
