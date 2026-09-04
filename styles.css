@@ -3060,6 +3060,26 @@ button.master-only.visible,
   line-height: 1.72;
 }
 
+.lesson-section-copy p,
+.lesson-section-copy div {
+  margin: 0 0 0.55rem;
+}
+
+.lesson-section-copy p:last-child,
+.lesson-section-copy div:last-child {
+  margin-bottom: 0;
+}
+
+.lesson-section-copy ul,
+.lesson-section-copy ol {
+  margin: 0.45rem 0 0.65rem 1.35rem;
+  padding-left: 1rem;
+}
+
+.lesson-section-copy li {
+  margin: 0 0 0.25rem;
+}
+
 .lesson-inline-video {
   display: block;
   width: min(100%, 460px);
@@ -4149,7 +4169,7 @@ textarea,
     color: #28384d;
     font-size: 9.2pt;
     line-height: 1.46;
-    white-space: pre-line;
+    white-space: normal;
   }
 }
 
@@ -4579,20 +4599,34 @@ textarea,
 
 .pdf-measure-root .ebook-copy {
   display: block;
-  margin: 0 0 1.8mm;
+  margin: 0 0 1.1mm;
   padding: 0 0 0 3mm;
   border-left: 0.35mm solid rgba(31, 77, 117, 0.16);
   background: transparent;
   font-size: 9pt;
-  line-height: 1.38;
-  white-space: pre-line;
+  line-height: 1.3;
+  white-space: normal;
+}
+
+.pdf-measure-root .ebook-copy div,
+.pdf-measure-root .ebook-copy p {
+  margin: 0 0 0.8mm;
+}
+
+.pdf-measure-root .ebook-copy div:last-child,
+.pdf-measure-root .ebook-copy p:last-child {
+  margin-bottom: 0;
 }
 
 .pdf-measure-root .ebook-copy ul,
 .pdf-measure-root .ebook-copy ol {
-  margin: 2mm 0 2mm 5mm;
+  margin: 0.8mm 0 1mm 5mm;
   padding-left: 4mm;
   white-space: normal;
+}
+
+.pdf-measure-root .ebook-copy li {
+  margin: 0 0 0.4mm;
 }
 
 .pdf-measure-root .ebook-activity-image {
@@ -4940,12 +4974,12 @@ textarea,
   body.ebook-printing .ebook-section p,
   body.ebook-printing .ebook-copy {
     display: block !important;
-    margin: 0 0 1.8mm !important;
+    margin: 0 0 1.1mm !important;
     padding: 0 0 0 3mm !important;
     border-left: 0.35mm solid rgba(31, 77, 117, 0.16) !important;
     font-size: 9pt !important;
-    line-height: 1.38 !important;
-    white-space: pre-line !important;
+    line-height: 1.3 !important;
+    white-space: normal !important;
     background: transparent !important;
     break-inside: auto !important;
     page-break-inside: auto !important;
@@ -4966,15 +5000,25 @@ textarea,
     page-break-inside: auto !important;
   }
 
+  body.ebook-printing .ebook-copy div,
+  body.ebook-printing .ebook-copy p {
+    margin: 0 0 0.8mm !important;
+  }
+
+  body.ebook-printing .ebook-copy div:last-child,
+  body.ebook-printing .ebook-copy p:last-child {
+    margin-bottom: 0 !important;
+  }
+
   body.ebook-printing .ebook-copy ul,
   body.ebook-printing .ebook-copy ol {
-    margin: 2mm 0 2mm 5mm !important;
+    margin: 0.8mm 0 1mm 5mm !important;
     padding-left: 4mm !important;
     white-space: normal !important;
   }
 
   body.ebook-printing .ebook-copy li {
-    margin-bottom: 1mm !important;
+    margin: 0 0 0.4mm !important;
   }
 
   body.ebook-printing .ebook-activity-image {

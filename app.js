@@ -3609,7 +3609,7 @@ function renderPdfLessonBlock(block) {
   return `
     <section class="ebook-section${block.continued ? " ebook-section-continued" : ""}" data-pdf-block-type="copy" data-pdf-label="${escapeHtml(block.label)}" data-pdf-emoji="${escapeHtml(block.emoji)}" data-pdf-continued="${block.continued ? "true" : "false"}">
       <h3>${escapeHtml(heading)}</h3>
-      <div class="ebook-copy">${linkify(richTextToHtml(block.fragment))}</div>
+      <div class="ebook-copy">${formatPdfCopyHtml(block.fragment)}</div>
     </section>
   `;
 }
@@ -3674,7 +3674,7 @@ function toggleFavoriteVideo(id) {
 
 function buildPdfCopyFragments(text) {
   return splitPdfTextFragments(text)
-    .map((fragment) => `<div class="ebook-copy">${linkify(richTextToHtml(fragment))}</div>`)
+    .map((fragment) => `<div class="ebook-copy">${formatPdfCopyHtml(fragment)}</div>`)
     .join("");
 }
 
@@ -3688,20 +3688,20 @@ function splitPdfTextFragments(text) {
   if (!source) return [];
   const paragraphBlocks = source.split(/\n{2,}/).map((part) => part.trim()).filter(Boolean);
   if (paragraphBlocks.length > 1) return paragraphBlocks.flatMap(splitCompactPdfBlock);
-  const lineBlocks = source.split(/\n/).map((part) => part.trim()).filter(Boolean);
-  if (source.length > 360 && lineBlocks.length > 1) return lineBlocks.flatMap(splitCompactPdfBlock);
   return splitCompactPdfBlock(source);
 }
 
 function splitCompactPdfBlock(block) {
   const source = String(block || "").trim();
-  if (source.length <= 360) return [source];
+  if (source.length <= 900) return [source];
+  const lineChunks = splitPdfLinesIntoChunks(source);
+  if (lineChunks.length > 1) return lineChunks.flatMap(splitCompactPdfBlock);
   const pieces = source.match(/[^.!?;:]+[.!?;:]?|\S+/g) || [source];
   const chunks = [];
   let current = "";
   pieces.forEach((piece) => {
     const next = `${current} ${piece}`.trim();
-    if (next.length > 320 && current) {
+    if (next.length > 760 && current) {
       chunks.push(current.trim());
       current = piece.trim();
     } else {
@@ -3710,6 +3710,45 @@ function splitCompactPdfBlock(block) {
   });
   if (current) chunks.push(current.trim());
   return chunks;
+}
+
+function splitPdfLinesIntoChunks(source) {
+  const lines = String(source || "").split(/\n|<br\s*\/?>/i).map((line) => line.trim()).filter(Boolean);
+  if (lines.length <= 1) return [source];
+  const chunks = [];
+  let current = "";
+  lines.forEach((line) => {
+    const separator = current ? "\n" : "";
+    const next = `${current}${separator}${line}`;
+    if (next.length > 820 && current) {
+      chunks.push(current.trim());
+      current = line;
+    } else {
+      current = next;
+    }
+  });
+  if (current) chunks.push(current.trim());
+  return chunks;
+}
+
+function formatPdfCopyHtml(value) {
+  return normalizePdfCopyHtml(linkify(richTextToHtml(value)));
+}
+
+function normalizePdfCopyHtml(html) {
+  return String(html || "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\r\n?/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/\n\n+/g, "<br><br>")
+    .replace(/\n/g, "<br>")
+    .replace(/(?:<br\s*\/?>\s*){3,}/gi, "<br><br>")
+    .replace(/^(?:\s|<br\s*\/?>)+/gi, "")
+    .replace(/(?:\s|<br\s*\/?>)+$/gi, "")
+    .replace(/>\s+</g, "><")
+    .trim();
 }
 
 function buildPdfPageFooter() {
