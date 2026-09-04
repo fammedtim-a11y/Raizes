@@ -769,6 +769,7 @@ function enhanceRichTextEditors() {
       <button type="button" data-rich="lower" title="Caixa baixa">aa</button>
       <button type="button" data-rich="insertUnorderedList" title="Marcadores">• Lista</button>
       <button type="button" data-rich="insertOrderedList" title="Lista numerada">1. Lista</button>
+      <button type="button" data-rich="standard" title="Aplicar padrão Arial 12, simples e justificado">Padrão</button>
       <select data-rich-font title="Fonte">
         <option value="">Fonte</option>
         <option value="Arial">Arial</option>
@@ -802,6 +803,7 @@ function enhanceRichTextEditors() {
     textarea.parentElement?.insertBefore(surface, textarea);
     surface.addEventListener("input", () => syncRichSurfaceToTextarea(surface, textarea));
     surface.addEventListener("blur", () => syncRichSurfaceToTextarea(surface, textarea));
+    surface.addEventListener("paste", (event) => handleRichPaste(event, surface, textarea));
     toolbar.addEventListener("click", (event) => {
       const action = event.target.closest("[data-rich]")?.dataset.rich;
       if (action) applyRichAction(surface, textarea, action);
@@ -833,6 +835,8 @@ function applyRichAction(surface, textarea, action, value = null) {
     document.execCommand("removeFormat", false, null);
   } else if (action === "fontSize") {
     document.execCommand("fontSize", false, richFontSizeCommand(value));
+  } else if (action === "standard") {
+    applyStandardRichFormatting();
   } else if (["strong", "em", "u", "insertUnorderedList", "insertOrderedList", "fontName", "foreColor"].includes(action)) {
     const command = action === "strong" ? "bold" : action === "em" ? "italic" : action === "u" ? "underline" : action;
     document.execCommand(command, false, value);
@@ -844,6 +848,16 @@ function applyRichAction(surface, textarea, action, value = null) {
 function syncRichSurfaceToTextarea(surface, textarea) {
   textarea.value = normalizeRichHtml(surface.innerHTML);
   textarea.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function handleRichPaste(event, surface, textarea) {
+  event.preventDefault();
+  const clipboard = event.clipboardData || window.clipboardData;
+  const text = clipboard?.getData("text/plain") || "";
+  const html = buildStandardPasteHtml(text || clipboard?.getData("text/html") || "");
+  document.execCommand("insertHTML", false, html);
+  normalizeRichSurface(surface);
+  syncRichSurfaceToTextarea(surface, textarea);
 }
 
 function syncAllRichTextEditors() {
@@ -866,6 +880,22 @@ function findRichSurface(textarea) {
 }
 
 function normalizeRichSurface(surface) {
+  surface.querySelectorAll("p, div").forEach((node) => {
+    node.style.margin = "0";
+  });
+  surface.querySelectorAll("ul, ol").forEach((list) => {
+    list.style.margin = "0";
+    list.style.paddingLeft = "22px";
+  });
+  surface.querySelectorAll("li").forEach((item) => {
+    item.style.margin = "0";
+    item.querySelectorAll("p, div").forEach((child) => {
+      child.replaceWith(...child.childNodes);
+    });
+  });
+  surface.querySelectorAll("li").forEach((item) => {
+    if (!item.textContent.trim() && !item.querySelector("img")) item.remove();
+  });
   surface.querySelectorAll("font[size]").forEach((font) => {
     const span = document.createElement("span");
     span.style.fontSize = richFontSizePx(font.getAttribute("size"));
@@ -886,6 +916,58 @@ function normalizeRichSurface(surface) {
   });
 }
 
+function applyStandardRichFormatting() {
+  document.execCommand("removeFormat", false, null);
+  document.execCommand("fontName", false, "Arial");
+  document.execCommand("fontSize", false, richFontSizeCommand(12));
+  document.execCommand("justifyFull", false, null);
+}
+
+function buildStandardPasteHtml(value) {
+  const source = stripHtmlToText(value)
+    .replace(/\r\n?/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  if (!source) return "";
+
+  const paragraphs = source.split(/\n{2,}/).map((part) => part.trim()).filter(Boolean);
+  return paragraphs.map((paragraph) => {
+    const lines = paragraph.split("\n").map((line) => line.trim()).filter(Boolean);
+    if (lines.length && lines.every(isUnorderedListLine)) {
+      return `<ul>${lines.map((line) => `<li>${escapeHtml(cleanListLine(line))}</li>`).join("")}</ul>`;
+    }
+    if (lines.length && lines.every(isOrderedListLine)) {
+      return `<ol>${lines.map((line) => `<li>${escapeHtml(cleanListLine(line))}</li>`).join("")}</ol>`;
+    }
+    return `<p>${escapeHtml(lines.join(" "))}</p>`;
+  }).join("");
+}
+
+function stripHtmlToText(value) {
+  const source = String(value || "");
+  if (!/<\/?[a-z][\s\S]*>/i.test(source)) return source;
+  const template = document.createElement("template");
+  template.innerHTML = source
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
+    .replace(/<\/(ul|ol)>/gi, "\n");
+  return template.content.textContent || "";
+}
+
+function isUnorderedListLine(line) {
+  return /^\s*(?:[-*•●◦▪])\s+/.test(line);
+}
+
+function isOrderedListLine(line) {
+  return /^\s*\d+[\.)]\s+/.test(line);
+}
+
+function cleanListLine(line) {
+  return line.replace(/^\s*(?:[-*•●◦▪]|\d+[\.)])\s+/, "").trim();
+}
+
 function normalizeRichHtml(html) {
   const template = document.createElement("template");
   template.innerHTML = html || "";
@@ -900,7 +982,7 @@ function normalizeRichHtml(html) {
       style.split(";").forEach((part) => {
         const [property, rawValue] = part.split(":").map((item) => item?.trim());
         if (!property || !rawValue) return;
-        if (["color", "font-size", "font-family"].includes(property)) allowed.push(`${property}:${rawValue}`);
+        if (["color", "font-size", "font-family", "text-align", "line-height", "margin", "padding-left"].includes(property)) allowed.push(`${property}:${rawValue}`);
       });
       if (allowed.length) node.setAttribute("style", `${allowed.join(";")};`);
       else node.removeAttribute("style");
@@ -3736,6 +3818,7 @@ function formatPdfCopyHtml(value) {
 }
 
 function normalizePdfCopyHtml(html) {
+  const paragraphToken = "%%RAIZES_PDF_PARAGRAPH%%";
   return String(html || "")
     .replace(/&nbsp;/gi, " ")
     .replace(/\r\n?/g, "\n")
@@ -3745,6 +3828,10 @@ function normalizePdfCopyHtml(html) {
     .replace(/\n\n+/g, "<br><br>")
     .replace(/\n/g, "<br>")
     .replace(/(?:<br\s*\/?>\s*){3,}/gi, "<br><br>")
+    .replace(/<br\s*\/?>\s*<br\s*\/?>/gi, paragraphToken)
+    .replace(/\s*<br\s*\/?>\s*/gi, " ")
+    .replace(new RegExp(paragraphToken, "g"), "<br><br>")
+    .replace(/[ \t]{2,}/g, " ")
     .replace(/^(?:\s|<br\s*\/?>)+/gi, "")
     .replace(/(?:\s|<br\s*\/?>)+$/gi, "")
     .replace(/>\s+</g, "><")
@@ -3846,9 +3933,13 @@ function sanitizeRichStyle(element) {
   const color = sanitizeCssColor(element.style.color);
   const fontSize = sanitizeCssSize(element.style.fontSize);
   const fontFamily = sanitizeCssFont(element.style.fontFamily);
+  const textAlign = sanitizeCssTextAlign(element.style.textAlign);
+  const lineHeight = sanitizeCssLineHeight(element.style.lineHeight);
   if (color) styles.push(`color:${color}`);
   if (fontSize) styles.push(`font-size:${fontSize}`);
   if (fontFamily) styles.push(`font-family:${fontFamily}`);
+  if (textAlign) styles.push(`text-align:${textAlign}`);
+  if (lineHeight) styles.push(`line-height:${lineHeight}`);
   return styles.length ? `${styles.join(";")};` : "";
 }
 
@@ -3876,6 +3967,16 @@ function sanitizeCssSize(value) {
 function sanitizeCssFont(value) {
   const font = String(value || "").replace(/["']/g, "").trim();
   return /^(Arial|Georgia|Nunito|Poppins|Times New Roman)$/i.test(font) ? font : "";
+}
+
+function sanitizeCssTextAlign(value) {
+  const align = String(value || "").trim().toLowerCase();
+  return /^(left|right|center|justify)$/.test(align) ? align : "";
+}
+
+function sanitizeCssLineHeight(value) {
+  const lineHeight = String(value || "").trim();
+  return /^(1|1\.0|1\.1|1\.2|1\.3|1\.4|1\.5|normal)$/.test(lineHeight) ? lineHeight : "";
 }
 
 function linkify(text) {
