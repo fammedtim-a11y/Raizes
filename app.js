@@ -3424,7 +3424,7 @@ function decodeHtmlEntities(value) {
 }
 
 function repairMojibake(value) {
-  if (!/[ÃÂ]/.test(value) || typeof TextDecoder === "undefined") return value;
+  if (!/[ÃÂ][\u0080-\u00BF]/.test(value) || typeof TextDecoder === "undefined") return value;
   try {
     const bytes = Uint8Array.from([...value].map((char) => char.charCodeAt(0) & 255));
     return new TextDecoder("utf-8").decode(bytes).replace(/\uFFFD/g, "");

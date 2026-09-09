@@ -281,6 +281,7 @@ function ensureData() {
   syncImportantNotifications();
   applyUserAdministrationUpdates();
   applySiteInfoContactUpdates();
+  sanitizeStoredLessonContent();
   loadSessions();
 }
 
@@ -331,6 +332,44 @@ function mergeSeedFile(filePath, seedItems, writeFn) {
   } catch {
     writeFn(seedItems);
   }
+}
+
+function sanitizeStoredLessonContent() {
+  sanitizeJsonFile(LESSONS_FILE);
+  sanitizeJsonFile(DEVOTIONALS_FILE);
+}
+
+function sanitizeJsonFile(filePath) {
+  if (!fs.existsSync(filePath)) return;
+  try {
+    const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    const sanitized = sanitizeTextContent(parsed);
+    if (JSON.stringify(parsed) !== JSON.stringify(sanitized)) {
+      fs.writeFileSync(filePath, JSON.stringify(sanitized, null, 2), "utf8");
+    }
+  } catch {
+    // Se o arquivo estiver inconsistente, preserva o conteúdo para revisão manual.
+  }
+}
+
+function sanitizeTextContent(value) {
+  if (typeof value === "string") return sanitizeTextValue(value);
+  if (Array.isArray(value)) return value.map(sanitizeTextContent);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, sanitizeTextContent(item)]));
+  }
+  return value;
+}
+
+function sanitizeTextValue(value) {
+  return value
+    .replace(/||□|�/g, "-")
+    .replace(/(?:^|\n)\s*[●○]\s*/g, (match) => `${match.startsWith("\n") ? "\n" : ""}- `)
+    .replace(/(?:^|\n)\s*→\s*/g, (match) => `${match.startsWith("\n") ? "\n" : ""}Orientação: `)
+    .replace(/\b0 (?=homem|que)\b/gi, (match) => match.replace("0", "O"))
+    .replace(/\b12: (?=fica\b)/gi, "L2: ")
+    .replace(/³¹/g, "31")
+    .replace(/¹¹/g, "11");
 }
 
 function applyUserAdministrationUpdates() {
