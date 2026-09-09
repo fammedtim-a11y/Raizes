@@ -568,7 +568,7 @@ function renderAdminUserCard(user) {
       <span>Categoria</span>
       <select data-access-level="${authEscapeHtml(user.id)}">
         <option value="leader" ${accessLevel === "leader" ? "selected" : ""}>Líderes</option>
-        <option value="prime" ${accessLevel === "prime" ? "selected" : ""}>Prime</option>
+        <option value="prime" ${accessLevel === "prime" ? "selected" : ""}>Prime (exporta PDF)</option>
       </select>
     </label>
   `;
