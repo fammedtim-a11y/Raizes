@@ -176,15 +176,14 @@ body.print-v2 .print-lesson {
   padding: 0 !important;
   color: #1f2b3d !important;
   background: #fff !important;
-  break-before: page !important;
-  page-break-before: always !important;
+  break-before: auto !important;
+  page-break-before: auto !important;
   overflow: visible !important;
 }
 
-body.print-v2 .print-cover + .print-lesson,
-body.print-v2 .print-toc + .print-lesson {
-  break-before: auto !important;
-  page-break-before: auto !important;
+body.print-v2 .print-lesson + .print-lesson {
+  break-before: page !important;
+  page-break-before: always !important;
 }
 
 body.print-v2 .print-lesson-header {
