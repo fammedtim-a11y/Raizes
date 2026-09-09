@@ -1368,6 +1368,8 @@ function renderReader() {
   template.querySelector(".reader-category").textContent = `${theme.emoji} ${lesson.category}`;
   template.querySelector(".reader-age").textContent = `👧 ${ageText(lesson.age)}`;
   template.querySelector(".reader-verse strong").textContent = lesson.verse || "Versículo não informado";
+  const printButton = template.querySelector("#printPdfBtn");
+  if (!canExportPdf()) printButton?.remove();
   const timeline = template.querySelector(".section-timeline");
 
   timeline.innerHTML = SECTIONS.map(([key, label, icon, emoji]) => {
@@ -1398,7 +1400,7 @@ function renderReader() {
 
   els.reader.innerHTML = "";
   els.reader.append(template);
-  $("#printPdfBtn").addEventListener("click", printCurrentLesson);
+  $("#printPdfBtn")?.addEventListener("click", printCurrentLesson);
   trackContentView("Lição", lesson);
 }
 
@@ -1548,7 +1550,7 @@ function renderContentReader(item, config) {
         </div>
         ${item.verse ? `<p class="reader-verse"><span>Versículo</span><strong>${escapeHtml(item.verse)}</strong></p>` : ""}
       </div>
-      ${config.typeLabel === "EBF Completa" ? '<div class="reader-hero-actions"><button class="icon-button accent" type="button" data-export-content-pdf>Exportar PDF</button></div>' : ""}
+      ${config.typeLabel === "EBF Completa" && canExportPdf() ? '<div class="reader-hero-actions"><button class="icon-button accent" type="button" data-export-content-pdf>Exportar PDF</button></div>' : ""}
     </header>
     <div class="section-timeline">
       ${linkedVideo}
@@ -1677,6 +1679,10 @@ function renderLockedReader(lesson) {
 }
 
 async function printCurrentLesson() {
+  if (!canExportPdf()) {
+    window.alert("Exportação em PDF disponível apenas para administradores.");
+    return;
+  }
   const lesson = getActiveLesson();
   if (!lesson || !els.ebookPrintArea) return;
   els.ebookPrintArea.innerHTML = buildEbookHtml([lesson], { title: lesson.title, hideToc: true });
@@ -2928,6 +2934,10 @@ function renderCurrentAttachments(form, attachments) {
 }
 
 async function printContentPdf(type, item) {
+  if (!canExportPdf()) {
+    window.alert("Exportação em PDF disponível apenas para administradores.");
+    return;
+  }
   if (!els.ebookPrintArea) return;
   els.ebookPrintArea.innerHTML = buildContentPdfHtml(type, item);
   document.body.classList.add("ebook-printing");
@@ -3426,6 +3436,10 @@ function repairMojibake(value) {
 }
 
 async function printEbook() {
+  if (!canExportPdf()) {
+    window.alert("Exportação em PDF disponível apenas para administradores.");
+    return;
+  }
   const lessons = filteredLessons();
   if (!lessons.length) {
     window.alert("Nenhuma lição ativa nos filtros para exportar.");
@@ -3461,6 +3475,10 @@ function waitForEbookLayout() {
   return Promise.all(loadedImages).then(() => new Promise((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(resolve));
   }));
+}
+
+function canExportPdf() {
+  return state.authUser?.role === "admin";
 }
 
 function paginateEbookPrintArea() {
