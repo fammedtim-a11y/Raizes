@@ -1685,13 +1685,11 @@ async function printCurrentLesson() {
   }
   const lesson = getActiveLesson();
   if (!lesson || !els.ebookPrintArea) return;
-  els.ebookPrintArea.innerHTML = buildEbookHtml([lesson], { title: lesson.title, hideToc: true });
-  document.body.classList.add("ebook-printing");
-  await waitForEbookLayout();
-  paginateEbookPrintArea();
+  els.ebookPrintArea.innerHTML = buildPrintEbookHtml([lesson], { title: lesson.title, hideToc: true });
+  document.body.classList.add("ebook-printing", "print-v2");
   await waitForEbookLayout();
   const cleanup = () => {
-    document.body.classList.remove("ebook-printing");
+    document.body.classList.remove("ebook-printing", "print-v2");
     els.ebookPrintArea.innerHTML = "";
     window.removeEventListener("afterprint", cleanup);
   };
@@ -2939,11 +2937,11 @@ async function printContentPdf(type, item) {
     return;
   }
   if (!els.ebookPrintArea) return;
-  els.ebookPrintArea.innerHTML = buildContentPdfHtml(type, item);
-  document.body.classList.add("ebook-printing");
+  els.ebookPrintArea.innerHTML = buildPrintContentHtml(type, item);
+  document.body.classList.add("ebook-printing", "print-v2");
   await waitForEbookLayout();
   const cleanup = () => {
-    document.body.classList.remove("ebook-printing");
+    document.body.classList.remove("ebook-printing", "print-v2");
     els.ebookPrintArea.innerHTML = "";
     window.removeEventListener("afterprint", cleanup);
   };
@@ -3446,15 +3444,11 @@ async function printEbook() {
     return;
   }
 
-  els.ebookPrintArea.innerHTML = buildEbookHtml(lessons);
-  document.body.classList.add("ebook-printing");
-  // Aguarda o navegador aplicar o HTML/CSS do livro antes de abrir a impressão.
-  // Sem esta pausa curta, alguns navegadores montam o PDF com medidas antigas da tela.
-  await waitForEbookLayout();
-  paginateEbookPrintArea();
+  els.ebookPrintArea.innerHTML = buildPrintEbookHtml(lessons);
+  document.body.classList.add("ebook-printing", "print-v2");
   await waitForEbookLayout();
   const cleanup = () => {
-    document.body.classList.remove("ebook-printing");
+    document.body.classList.remove("ebook-printing", "print-v2");
     els.ebookPrintArea.innerHTML = "";
     window.removeEventListener("afterprint", cleanup);
   };
@@ -3479,6 +3473,143 @@ function waitForEbookLayout() {
 
 function canExportPdf() {
   return state.authUser?.role === "admin";
+}
+
+function buildPrintEbookHtml(lessons, options = {}) {
+  const category = els.categoryFilter?.value && els.categoryFilter.value !== "Todas" ? els.categoryFilter.value : "Todas as categorias";
+  const age = els.ageFilter?.value && els.ageFilter.value !== "Todas" ? els.ageFilter.value : "Todas as idades";
+  const today = new Date().toLocaleDateString("pt-BR");
+  const title = options.title || "Catálogo de Lições Bíblicas";
+  const coverLesson = lessons[0] || {};
+  const coverCategory = options.hideToc ? coverLesson.category || category : category;
+  const coverVerse = options.hideToc ? coverLesson.verse || "Versículo não informado" : `${lessons.length} lição(ões)`;
+  const coverAge = options.hideToc ? ageText(coverLesson.age, age) : `${age} - ${today}`;
+  const toc = options.hideToc ? "" : `
+    <section class="print-toc">
+      <h2>Sumário</h2>
+      ${lessons.map((lesson, index) => `
+        <div class="print-toc-row">
+          <strong>${String(index + 1).padStart(2, "0")}</strong>
+          <span>${escapeHtml(lesson.title)}</span>
+          <em>${escapeHtml(lesson.category)} · ${escapeHtml(ageText(lesson.age))}</em>
+        </div>
+      `).join("")}
+    </section>
+  `;
+
+  return `
+    <article class="print-document">
+      ${buildPrintCover({ title, category: coverCategory, verse: coverVerse, meta: coverAge })}
+      ${toc}
+      ${lessons.map((lesson, index) => buildPrintLessonHtml(lesson, index + 1)).join("")}
+    </article>
+  `;
+}
+
+function buildPrintCover({ title, category, verse, meta }) {
+  return `
+    <section class="print-cover">
+      <img src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
+      <h1>${escapeHtml(title)}</h1>
+      <span>${escapeHtml(category)}</span>
+      <strong>${escapeHtml(verse)}</strong>
+      <small>${escapeHtml(meta)}</small>
+    </section>
+  `;
+}
+
+function buildPrintLessonHtml(lesson, number) {
+  const theme = categoryTheme(lesson.category);
+  return `
+    <section class="print-lesson" style="--theme:${theme.primary};--theme-soft:${theme.soft}">
+      <header class="print-lesson-header">
+        <span>${String(number).padStart(2, "0")}</span>
+        <div>
+          <p>${theme.emoji} ${escapeHtml(lesson.category)} · ${escapeHtml(ageText(lesson.age))}</p>
+          <h2>${escapeHtml(lesson.title)}</h2>
+          <strong>${escapeHtml(lesson.verse || "Versículo não informado")}</strong>
+        </div>
+      </header>
+      <div class="print-sections">
+        ${SECTIONS.map(([key, label, icon, emoji]) => {
+          const text = lesson.sections?.[key]?.trim();
+          if (!text) return "";
+          return buildPrintCopySection(label, emoji, text);
+        }).join("")}
+        ${lesson.activityImage ? buildPrintImageSection("Imagem para atividade de colorir", "🖍️", lesson.activityImage) : ""}
+      </div>
+      ${buildPrintFooter()}
+    </section>
+  `;
+}
+
+function buildPrintContentHtml(type, item) {
+  const isTraining = type === "training";
+  const isEbf = type === "ebf";
+  const fields = isEbf ? EBF_FIELDS : isTraining ? TRAINING_FIELDS : DEVOTIONAL_FIELDS;
+  const typeLabel = isEbf ? "EBF Completa" : isTraining ? "Treinamento" : "Culto em Família";
+  const theme = categoryTheme(item.category || typeLabel);
+
+  return `
+    <article class="print-document">
+      ${buildPrintCover({
+        title: item.title || typeLabel,
+        category: item.category || typeLabel,
+        verse: item.bibleText || item.verse || item.description || "Conteúdo de apoio",
+        meta: item.season || formatMonthYear(item.createdAt)
+      })}
+      <section class="print-lesson" style="--theme:${theme.primary};--theme-soft:${theme.soft}">
+        <header class="print-lesson-header">
+          <span>${theme.emoji}</span>
+          <div>
+            <p>${escapeHtml(item.category || typeLabel)} · ${escapeHtml(item.season || formatMonthYear(item.createdAt))}</p>
+            <h2>${escapeHtml(item.title || typeLabel)}</h2>
+            <strong>${escapeHtml(item.verse || item.principle || item.description || "Conteúdo de apoio")}</strong>
+          </div>
+        </header>
+        <div class="print-sections">
+          ${item.youtubeUrl ? buildPrintCopySection("Vídeo", "🎬", item.youtubeUrl) : ""}
+          ${item.principle ? buildPrintCopySection("Princípio", "🌱", item.principle) : ""}
+          ${item.bibleText ? buildPrintCopySection("Texto bíblico", "📖", item.bibleText) : ""}
+          ${fields.map(([key, label, emoji]) => {
+            const text = item.sections?.[key]?.trim();
+            if (!text) return "";
+            return buildPrintCopySection(label, emoji, text);
+          }).join("")}
+          ${item.activityImage ? buildPrintImageSection(isTraining ? "Imagem do treinamento" : "Atividade", "🎨", item.activityImage) : ""}
+        </div>
+        ${buildPrintFooter()}
+      </section>
+    </article>
+  `;
+}
+
+function buildPrintCopySection(label, emoji, text) {
+  return `
+    <section class="print-section">
+      <h3>${emoji} ${escapeHtml(label)}</h3>
+      <div class="print-copy">${formatPdfCopyHtml(text)}</div>
+    </section>
+  `;
+}
+
+function buildPrintImageSection(label, emoji, src) {
+  return `
+    <section class="print-section print-image-section">
+      <h3>${emoji} ${escapeHtml(label)}</h3>
+      <img class="print-activity-image" src="${escapeHtml(src)}" alt="${escapeHtml(label)}" />
+    </section>
+  `;
+}
+
+function buildPrintFooter() {
+  return `
+    <footer class="print-footer-block">
+      <img src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
+      <span><strong>Sobre</strong> Plataforma para apoiar líderes e discipuladores de crianças com lições, trilhas, cultos em família, treinamentos e EBF.</span>
+      <span><strong>Contato</strong> administrador@raizeskids.com | (31) 97177-3756 | @raizeskids_ | www.raizeskids.com</span>
+    </footer>
+  `;
 }
 
 function paginateEbookPrintArea() {
