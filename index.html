@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Catálogo de Lições Bíblicas</title>
-    <link rel="stylesheet" href="styles.css?v=20260914-sales-funnel" />
-    <link rel="stylesheet" href="print.css?v=20260914-sales-funnel" media="print" />
+    <link rel="stylesheet" href="styles.css?v=20260914-home-sales" />
+    <link rel="stylesheet" href="print.css?v=20260914-home-sales" media="print" />
   </head>
   <body data-active-tab="home">
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -131,19 +131,23 @@
           <section class="home-hero">
             <div class="home-copy">
               <span class="home-kicker">🌱 Ministério com Criança Raízes Kids</span>
-              <h2>Lições bíblicas prontas para líderes, famílias e ministérios com crianças</h2>
-              <p>Organize aulas, cultos em família, trilhas em vídeo, EBF e treinamentos em uma plataforma simples de usar.</p>
-              <div class="home-actions">
-                <button class="icon-button primary" type="button" data-jump-tab="devotional">👨‍👩‍👧 Sou Pai ou Mãe</button>
-                <button class="icon-button primary" type="button" data-jump-tab="study">📖 Sou Professor</button>
-                <button class="icon-button primary" type="button" data-jump-tab="training">🌱 Sou Líder</button>
-                <a class="icon-button accent" href="vendas.html">💛 Ver Planos</a>
+              <h2>Ensine a Palavra de Deus às crianças com organização, criatividade e propósito</h2>
+              <p>Uma plataforma para igrejas, famílias e líderes acessarem lições bíblicas, trilhas em vídeo, cultos em família, treinamentos e materiais prontos para usar.</p>
+              <div class="home-actions visitor-only">
+                <a class="icon-button primary" href="vendas.html">💛 Conhecer planos</a>
+                <a class="icon-button" href="login.html">Entrar</a>
+              </div>
+              <div class="home-actions member-only">
+                <button class="icon-button primary" type="button" data-jump-tab="study">📖 Preparar uma aula</button>
+                <button class="icon-button primary" type="button" data-jump-tab="devotional">🏠 Culto em Família</button>
+                <button class="icon-button primary" type="button" data-jump-tab="trails">▶️ Assistir trilhas</button>
+                <button class="icon-button accent" type="button" data-jump-tab="training">🌱 Treinar equipe</button>
               </div>
             </div>
             <aside class="home-login-panel visitor-only" aria-label="Acesso ao conteúdo completo">
               <img src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
-              <h3>Crie sua conta e aguarde liberação do administrador</h3>
-              <p>Depois da aprovação, você acessa os materiais conforme o seu perfil.</p>
+              <h3>Comece a organizar seu Ministério com Criança</h3>
+              <p>Planos a partir de <strong>R$ 19,90/mês</strong>. Conheça a proposta, faça seu cadastro e finalize o pagamento.</p>
               <div class="home-login-actions">
                 <a class="icon-button primary" href="login.html">Entrar</a>
                 <a class="icon-button accent" href="vendas.html">Cadastrar</a>
@@ -160,16 +164,26 @@
           <section class="home-toolkit-section" aria-label="O que voce encontra no Raizes Kids">
             <div class="section-heading">
               <span class="home-kicker">O que você encontra aqui</span>
-              <h2>Um ambiente completo para ensinar a Palavra com organização</h2>
+              <h2>Comece por onde seu ministério precisa hoje</h2>
             </div>
             <div class="home-feature-grid" aria-label="Destaques do sistema">
-              <button type="button" data-jump-tab="study"><span>📖</span><strong>Lições Bíblicas</strong><small>Aulas prontas por tema e faixa etária.</small></button>
-              <button type="button" data-jump-tab="devotional"><span>🏠</span><strong>Culto em Família</strong><small>Devocionais para continuar a fé em casa.</small></button>
-              <button type="button" data-jump-tab="trails"><span>▶️</span><strong>Trilhas em Vídeo</strong><small>Conteúdos visuais para apoiar o ensino.</small></button>
-              <button type="button" data-jump-tab="training"><span>🎓</span><strong>Treinamentos</strong><small>Capacitação para líderes e professores.</small></button>
-              <button type="button" data-jump-tab="ebf"><span>🎪</span><strong>EBF Completa</strong><small>Materiais para eventos especiais.</small></button>
+              <button type="button" data-jump-tab="study"><span>📖</span><strong>Preparar uma aula</strong><small>Lições prontas por tema e faixa etária.</small></button>
+              <button type="button" data-jump-tab="devotional"><span>🏠</span><strong>Discipular em casa</strong><small>Culto em Família para continuar a fé durante a semana.</small></button>
+              <button type="button" data-jump-tab="trails"><span>▶️</span><strong>Usar vídeos</strong><small>Trilhas visuais para apoiar o ensino bíblico.</small></button>
+              <button type="button" data-jump-tab="training"><span>🎓</span><strong>Treinar líderes</strong><small>Capacitação para professores e voluntários.</small></button>
+              <button type="button" data-jump-tab="ebf"><span>🎪</span><strong>Organizar EBF</strong><small>Materiais para eventos especiais.</small></button>
               <button id="homeNewsShortcut" type="button"><span>🔔</span><strong>Novidades</strong><small>Atualizações para manter o ministério em movimento.</small></button>
             </div>
+          </section>
+
+          <section class="home-mobile-section" aria-label="Acesso pelo celular">
+            <div>
+              <span class="home-kicker">Feito para o dia a dia</span>
+              <h2>Acesse pelo celular, prepare sua aula e consulte tudo de onde estiver</h2>
+              <p>O Raízes Kids foi pensado para líderes que precisam de praticidade antes, durante e depois da aula.</p>
+            </div>
+            <a class="icon-button primary visitor-only" href="vendas.html">Conhecer planos</a>
+            <button class="icon-button primary member-only" type="button" data-jump-tab="study">Abrir minhas lições</button>
           </section>
 
           <section id="ageCards" class="age-section" aria-label="Faixas etárias">
@@ -314,7 +328,7 @@
         <a class="member-only" href="perfil.html">👤 Perfil</a>
         <a class="admin-only" href="gerenciamento.html">⚙️ Gerenciamento</a>
         <a href="#contato">💬 Contato</a>
-        <a class="visitor-only" href="login.html">🔐 Entrar / Cadastrar</a>
+        <a class="visitor-only" href="vendas.html">💛 Planos / Cadastro</a>
       </aside>
       <nav class="mobile-bottom-nav" aria-label="Navegação principal mobile">
         <button type="button" data-mobile-tab="home"><span>🏠</span><strong>Início</strong></button>
@@ -369,9 +383,9 @@
       <div class="section-timeline"></div>
     </template>
 
-    <script src="lessons-data.js?v=20260914-sales-funnel"></script>
-    <script src="app.js?v=20260914-sales-funnel"></script>
-    <script src="auth.js?v=20260914-sales-funnel"></script>
+    <script src="lessons-data.js?v=20260914-home-sales"></script>
+    <script src="app.js?v=20260914-home-sales"></script>
+    <script src="auth.js?v=20260914-home-sales"></script>
   </body>
 </html>
 
