@@ -162,6 +162,7 @@ function bindAuthForms() {
       }
     });
     document.querySelector("#addTeamMemberBtn")?.addEventListener("click", () => addTeamMemberEditor());
+    bindPaymentQrEditor();
     document.querySelector("#refreshAnalyticsBtn")?.addEventListener("click", loadAdminAnalytics);
   }
 }
@@ -678,9 +679,10 @@ async function loadAdminSiteInfo() {
 window.loadAdminSiteInfo = loadAdminSiteInfo;
 
 function fillSiteInfoForm(form, info) {
-  ["about", "contactEmail", "whatsapp", "instagram", "siteUrl"].forEach((key) => {
+  ["about", "contactEmail", "whatsapp", "instagram", "siteUrl", "paymentUrl", "paymentQrImage"].forEach((key) => {
     if (form.elements[key]) form.elements[key].value = info?.[key] || "";
   });
+  renderPaymentQrPreview(info?.paymentQrImage || "");
   renderTeamMembersEditor(Array.isArray(info?.teamMembers) ? info.teamMembers : []);
 }
 
@@ -705,7 +707,19 @@ function applySiteInfo(info) {
     const siteUrl = info?.siteUrl || "www.raizeskids.com";
     el.href = normalizePublicUrl(siteUrl);
   });
+  document.querySelectorAll("[data-site-link='payment']").forEach((el) => {
+    el.href = normalizePublicUrl(info?.paymentUrl || "https://pag.ae/81WaCzV4m");
+  });
+  renderSalesPaymentQr(info?.paymentQrImage || "");
   renderPublicTeamMembers(info?.teamMembers || []);
+}
+
+function renderSalesPaymentQr(src) {
+  const target = document.querySelector("#salesPaymentQr");
+  if (!target) return;
+  target.innerHTML = src
+    ? `<img src="${authEscapeHtml(src)}" alt="QR Code de pagamento do Raízes Kids" /><small>Aponte a câmera para pagar pelo QR.</small>`
+    : '<span>QR Code de pagamento</span><small>Cadastre a imagem no Gerenciamento.</small>';
 }
 
 function renderTeamMembersEditor(members) {
@@ -752,6 +766,39 @@ function bindTeamMemberEditors(list) {
       if (input) input.value = "";
       renderTeamPhotoPreview(card, "");
     });
+  });
+}
+
+function bindPaymentQrEditor() {
+  const input = document.querySelector("#paymentQrFileInput");
+  const form = document.querySelector("#siteInfoForm");
+  if (!input || !form || input.dataset.bound) return;
+  input.dataset.bound = "true";
+  input.addEventListener("change", async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      const image = await readTeamPhoto(file);
+      if (form.elements.paymentQrImage) form.elements.paymentQrImage.value = image;
+      renderPaymentQrPreview(image);
+    } catch {
+      window.alert("Não foi possível carregar esta imagem de QR. Tente outra imagem.");
+    }
+  });
+}
+
+function renderPaymentQrPreview(src) {
+  const preview = document.querySelector("#paymentQrPreview");
+  const form = document.querySelector("#siteInfoForm");
+  if (!preview) return;
+  preview.innerHTML = src
+    ? `<img src="${authEscapeHtml(src)}" alt="QR de pagamento cadastrado" /><button class="icon-button danger" type="button" data-remove-payment-qr>Remover QR</button>`
+    : '<p class="muted-line">Nenhuma imagem de QR cadastrada.</p>';
+  preview.querySelector("[data-remove-payment-qr]")?.addEventListener("click", () => {
+    if (form?.elements.paymentQrImage) form.elements.paymentQrImage.value = "";
+    const input = document.querySelector("#paymentQrFileInput");
+    if (input) input.value = "";
+    renderPaymentQrPreview("");
   });
 }
 

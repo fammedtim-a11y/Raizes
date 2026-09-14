@@ -100,6 +100,8 @@ const defaultSiteInfo = {
   whatsapp: "31971773756",
   instagram: "@raizeskids_",
   siteUrl: "www.raizeskids.com",
+  paymentUrl: "https://pag.ae/81WaCzV4m",
+  paymentQrImage: "",
   teamMembers: []
 };
 
@@ -412,6 +414,8 @@ function applySiteInfoContactUpdates() {
   if (!next.whatsapp || onlyDigits(next.whatsapp) === "31971773756") next.whatsapp = defaultSiteInfo.whatsapp;
   if (!next.instagram || next.instagram === "@raizeskids" || next.instagram === "@raizes_r12") next.instagram = defaultSiteInfo.instagram;
   if (!next.siteUrl || next.siteUrl === "https://raizes-fic9.onrender.com/") next.siteUrl = defaultSiteInfo.siteUrl;
+  if (!next.paymentUrl) next.paymentUrl = defaultSiteInfo.paymentUrl;
+  if (typeof next.paymentQrImage !== "string") next.paymentQrImage = "";
   if (!Array.isArray(next.teamMembers)) next.teamMembers = defaultSiteInfo.teamMembers;
   if (JSON.stringify(next) !== JSON.stringify(info)) writeSiteInfo(next);
 }
@@ -786,10 +790,11 @@ async function login(req, res) {
 
   if (user.active === false) {
     if (user.renewalRequested || (user.licenseExpiresAt && licenseDaysRemaining(user) <= 0)) {
+      const paymentUrl = readSiteInfo().paymentUrl || defaultSiteInfo.paymentUrl;
       sendJson(res, 403, {
         error: "Sua licenca venceu. Renove o acesso para continuar usando o Raizes Kids.",
         renewalRequired: true,
-        paymentUrl: "https://pag.ae/81WaCzV4m"
+        paymentUrl
       });
       return;
     }
@@ -806,10 +811,11 @@ async function login(req, res) {
       savedUser.updatedAt = new Date().toISOString();
       writeUsers(users);
     }
+    const paymentUrl = readSiteInfo().paymentUrl || defaultSiteInfo.paymentUrl;
     sendJson(res, 403, {
       error: "Sua licenca venceu. Renove o acesso para continuar usando o Raizes Kids.",
       renewalRequired: true,
-      paymentUrl: "https://pag.ae/81WaCzV4m"
+      paymentUrl
     });
     return;
   }
@@ -1855,6 +1861,8 @@ async function updateSiteInfo(req, res) {
     whatsapp: onlyDigits(body.whatsapp || defaultSiteInfo.whatsapp),
     instagram: cleanText(body.instagram || defaultSiteInfo.instagram),
     siteUrl: cleanText(body.siteUrl || defaultSiteInfo.siteUrl),
+    paymentUrl: cleanText(body.paymentUrl || defaultSiteInfo.paymentUrl),
+    paymentQrImage: normalizePaymentQrImage(body.paymentQrImage || ""),
     teamMembers: normalizeTeamMembers(body.teamMembers),
     updatedAt: new Date().toISOString()
   };
@@ -1880,6 +1888,13 @@ function normalizeTeamPhoto(value) {
   const source = String(value || "").trim();
   if (!source) return "";
   if (source.startsWith("data:image/")) return storeDataImage(source, "team");
+  return cleanText(source);
+}
+
+function normalizePaymentQrImage(value) {
+  const source = String(value || "").trim();
+  if (!source) return "";
+  if (source.startsWith("data:image/")) return storeDataImage(source, "payment-qr");
   return cleanText(source);
 }
 

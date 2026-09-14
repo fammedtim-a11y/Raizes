@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20260908-pdf-admin" />
-    <link rel="stylesheet" href="print.css?v=20260909-prime-pdf" media="print" />
+    <link rel="stylesheet" href="styles.css?v=20260914-sales-page" />
+    <link rel="stylesheet" href="print.css?v=20260914-sales-page" media="print" />
   </head>
   <body data-page="admin">
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -693,6 +693,28 @@
               <section class="team-editor">
                 <div class="manager-heading compact-heading">
                   <div>
+                    <h3>Página de vendas e pagamento</h3>
+                    <p>Cadastre o link de pagamento e a imagem do QR Code que aparecerão na página comercial.</p>
+                  </div>
+                  <a class="icon-button" href="vendas.html" target="_blank" rel="noreferrer">Ver página</a>
+                </div>
+                <div class="form-grid">
+                  <label>
+                    <span>Link de pagamento</span>
+                    <input name="paymentUrl" placeholder="https://..." />
+                  </label>
+                  <label class="team-photo-field">
+                    <span>Imagem do QR de pagamento</span>
+                    <input id="paymentQrFileInput" type="file" accept="image/png,image/jpeg,image/webp" />
+                    <input name="paymentQrImage" type="hidden" />
+                    <small>Envie a foto ou imagem do QR Code. Ela será exibida na página de vendas.</small>
+                  </label>
+                </div>
+                <div id="paymentQrPreview" class="payment-qr-preview"></div>
+              </section>
+              <section class="team-editor">
+                <div class="manager-heading compact-heading">
+                  <div>
                     <h3>Quem Somos</h3>
                     <p>Cadastre colaboradores com foto 3x4, função e resumo. Você pode enviar a imagem direto do computador ou celular.</p>
                   </div>
@@ -710,9 +732,9 @@
       </main>
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
-    <script src="lessons-data.js?v=20260909-prime-pdf"></script>
-    <script src="app.js?v=20260909-prime-pdf"></script>
-    <script src="auth.js?v=20260909-prime-pdf"></script>
+    <script src="lessons-data.js?v=20260914-sales-page"></script>
+    <script src="app.js?v=20260914-sales-page"></script>
+    <script src="auth.js?v=20260914-sales-page"></script>
   </body>
 </html>
 
