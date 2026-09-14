@@ -5248,6 +5248,12 @@ body.is-authenticated .visitor-only {
 .sales-section,
 .sales-feature-grid article,
 .sales-audience,
+.sales-process,
+.sales-plans,
+.sales-faq,
+.sales-step-grid article,
+.sales-plan-grid article,
+.sales-faq-list details,
 .sales-final-cta {
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 8px;
@@ -5398,6 +5404,9 @@ body.is-authenticated .visitor-only {
 }
 
 .sales-section,
+.sales-process,
+.sales-plans,
+.sales-faq,
 .sales-final-cta {
   display: grid;
   gap: 14px;
@@ -5411,6 +5420,7 @@ body.is-authenticated .visitor-only {
 
 .sales-section h2,
 .sales-audience h2,
+.sales-section-heading h2,
 .sales-final-cta h2 {
   color: #15456d;
   font-size: clamp(1.9rem, 4vw, 3.1rem);
@@ -5418,6 +5428,7 @@ body.is-authenticated .visitor-only {
 }
 
 .sales-section p,
+.sales-section-heading p,
 .sales-final-cta p {
   max-width: 920px;
   color: var(--muted);
@@ -5484,6 +5495,11 @@ body.is-authenticated .visitor-only {
   border-top: 7px solid var(--creative-purple);
 }
 
+.sales-section-heading {
+  display: grid;
+  gap: 10px;
+}
+
 .sales-audience-list {
   display: grid;
   gap: 12px;
@@ -5496,6 +5512,135 @@ body.is-authenticated .visitor-only {
   border: 1px solid rgba(45, 156, 255, 0.14);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.74);
+}
+
+.sales-process {
+  border-top: 7px solid var(--turquoise);
+}
+
+.sales-plans {
+  border-top: 7px solid var(--discovery-yellow);
+}
+
+.sales-faq {
+  border-top: 7px solid var(--growth-green);
+}
+
+.sales-step-grid,
+.sales-plan-grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 6px;
+}
+
+.sales-step-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.sales-plan-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.sales-step-grid article,
+.sales-plan-grid article {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.sales-step-grid article span {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--joy-blue);
+  font-weight: 1000;
+  font-size: 1.15rem;
+}
+
+.sales-step-grid article:nth-child(2) span {
+  background: var(--growth-green);
+}
+
+.sales-step-grid article:nth-child(3) span {
+  background: var(--creative-purple);
+}
+
+.sales-step-grid article:nth-child(4) span {
+  background: var(--energy-red);
+}
+
+.sales-step-grid strong,
+.sales-plan-grid strong {
+  color: #15456d;
+  font-size: 1.2rem;
+}
+
+.sales-step-grid p,
+.sales-plan-grid p,
+.sales-plan-grid li,
+.sales-faq-list p {
+  color: var(--muted);
+  line-height: 1.55;
+  font-weight: 800;
+}
+
+.sales-plan-grid article {
+  position: relative;
+  border-top: 6px solid rgba(45, 156, 255, 0.68);
+}
+
+.sales-plan-grid article.featured {
+  border-color: rgba(255, 217, 61, 0.9);
+  background:
+    linear-gradient(135deg, rgba(255, 249, 234, 0.94), rgba(255, 255, 255, 0.84)),
+    #fff;
+  transform: translateY(-6px);
+}
+
+.sales-plan-grid ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.plan-badge {
+  justify-self: start;
+  padding: 7px 10px;
+  border-radius: 999px;
+  color: #775714;
+  background: rgba(255, 217, 61, 0.4);
+  font-weight: 1000;
+  font-size: 0.82rem;
+}
+
+.sales-faq-list {
+  display: grid;
+  gap: 12px;
+}
+
+.sales-faq-list details {
+  padding: 0;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.sales-faq-list summary {
+  cursor: pointer;
+  padding: 18px 20px;
+  color: #15456d;
+  font-weight: 1000;
+  list-style-position: inside;
+}
+
+.sales-faq-list p {
+  margin: 0;
+  padding: 0 20px 18px;
 }
 
 .sales-final-cta {
@@ -5634,7 +5779,9 @@ body.is-authenticated .visitor-only {
 
   .sales-hero,
   .sales-audience,
-  .sales-feature-grid {
+  .sales-feature-grid,
+  .sales-step-grid,
+  .sales-plan-grid {
     grid-template-columns: 1fr;
   }
 
@@ -5643,6 +5790,12 @@ body.is-authenticated .visitor-only {
   .sales-section,
   .sales-feature-grid article,
   .sales-audience,
+  .sales-process,
+  .sales-plans,
+  .sales-faq,
+  .sales-step-grid article,
+  .sales-plan-grid article,
+  .sales-faq-list details,
   .sales-final-cta {
     border-radius: 16px;
   }
@@ -5658,6 +5811,10 @@ body.is-authenticated .visitor-only {
 
   .sales-payment-qr {
     min-height: 210px;
+  }
+
+  .sales-plan-grid article.featured {
+    transform: none;
   }
 
   .app-shell {
