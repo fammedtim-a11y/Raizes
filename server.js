@@ -893,7 +893,11 @@ async function register(req, res) {
     passwordHash: hashPassword(password)
   });
   writeUsers(users);
-  sendJson(res, 201, { ok: true, message: "Cadastro enviado. Aguarde aprovação do administrador." });
+  sendJson(res, 201, {
+    ok: true,
+    message: "Cadastro enviado. Agora finalize o pagamento para o administrador liberar seu acesso.",
+    paymentUrl: readSiteInfo().paymentUrl || defaultSiteInfo.paymentUrl
+  });
 }
 
 async function passwordResetRequest(req, res) {

@@ -5376,6 +5376,18 @@ body.is-authenticated .visitor-only {
   gap: 10px;
 }
 
+.sales-main-cta {
+  min-height: 56px;
+  justify-content: center;
+  padding-inline: 24px;
+  font-size: 1.02rem;
+  box-shadow: 0 16px 34px rgba(45, 156, 255, 0.24);
+}
+
+.sales-payment-card .sales-main-cta {
+  width: 100%;
+}
+
 .sales-benefits {
   display: grid;
   align-content: center;

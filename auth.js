@@ -86,14 +86,20 @@ function renderAuthSlots() {
 function bindAuthTabs() {
   const buttons = document.querySelectorAll("[data-auth-tab]");
   buttons.forEach((button) => {
-    button.addEventListener("click", () => {
-      buttons.forEach((item) => item.classList.toggle("active", item === button));
-      document.querySelectorAll("[data-auth-panel]").forEach((panel) => {
-        panel.classList.toggle("active", panel.dataset.authPanel === button.dataset.authTab);
-      });
-      setAuthMessage("");
-    });
+    button.addEventListener("click", () => selectAuthTab(button.dataset.authTab));
   });
+  const requestedTab = new URLSearchParams(location.search).get("tab");
+  if (["login", "register", "reset"].includes(requestedTab)) selectAuthTab(requestedTab, false);
+}
+
+function selectAuthTab(tabName, clearMessage = true) {
+  document.querySelectorAll("[data-auth-tab]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.authTab === tabName);
+  });
+  document.querySelectorAll("[data-auth-panel]").forEach((panel) => {
+    panel.classList.toggle("active", panel.dataset.authPanel === tabName);
+  });
+  if (clearMessage) setAuthMessage("");
 }
 
 function bindAuthForms() {
@@ -127,7 +133,7 @@ function bindAuthForms() {
     if (!result.error) {
       registerForm.reset();
       sessionStorage.setItem("raizes-auth-notice", result.message || "Cadastro enviado para aprovacao.");
-      window.location.href = "vendas.html";
+      window.location.href = result.paymentUrl || "vendas.html";
     }
   });
 
