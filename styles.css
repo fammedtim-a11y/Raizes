@@ -5638,6 +5638,11 @@ body.is-authenticated .visitor-only {
   font-weight: 1000;
 }
 
+.plan-price.annual-price small {
+  flex-basis: 100%;
+  color: #1f6b45;
+}
+
 .plan-price.contact-price {
   color: #775714;
   font-size: clamp(1.55rem, 3vw, 2.2rem);

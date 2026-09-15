@@ -1188,7 +1188,8 @@ function canAccessTab(tabName) {
   if (!state.authUser || state.authUser.role === "admin") return true;
   if (tabName === "home") return true;
   if (tabName === "team") return true;
-  if (["devotional", "study", "trails", "training", "ebf"].includes(tabName)) return canAccessLevel("leader");
+  if (["training", "ebf"].includes(tabName)) return canAccessLevel("prime");
+  if (["devotional", "study", "trails"].includes(tabName)) return canAccessLevel("leader");
   return canAccessLevel("leader");
 }
 
@@ -1439,7 +1440,7 @@ function renderEbfs() {
     countSelector: "#ebfCount",
     readerSelector: "#ebfReader",
     emptyTitle: "Nenhuma EBF cadastrada",
-    emptyText: "Cadastre materiais completos de EBF no gerenciamento para usuarios Prime.",
+    emptyText: "Cadastre materiais completos de EBF no gerenciamento para usuários Premium.",
     typeLabel: "EBF Completa",
     fields: EBF_FIELDS,
     onChange: renderEbfs
@@ -1677,7 +1678,7 @@ function renderLockedReader(lesson) {
 
 async function printCurrentLesson() {
   if (!canExportPdf()) {
-    window.alert("Exportação em PDF disponível apenas para administradores e usuários Prime.");
+    window.alert("Exportação em PDF disponível apenas para administradores e usuários Premium.");
     return;
   }
   const lesson = getActiveLesson();
@@ -2930,7 +2931,7 @@ function renderCurrentAttachments(form, attachments) {
 
 async function printContentPdf(type, item) {
   if (!canExportPdf()) {
-    window.alert("Exportação em PDF disponível apenas para administradores e usuários Prime.");
+    window.alert("Exportação em PDF disponível apenas para administradores e usuários Premium.");
     return;
   }
   if (!els.ebookPrintArea) return;
@@ -3432,7 +3433,7 @@ function repairMojibake(value) {
 
 async function printEbook() {
   if (!canExportPdf()) {
-    window.alert("Exportação em PDF disponível apenas para administradores e usuários Prime.");
+    window.alert("Exportação em PDF disponível apenas para administradores e usuários Premium.");
     return;
   }
   const lessons = filteredLessons();
