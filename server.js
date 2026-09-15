@@ -101,6 +101,7 @@ const defaultSiteInfo = {
   instagram: "@raizeskids_",
   siteUrl: "www.raizeskids.com",
   paymentUrl: "https://pag.ae/81WaCzV4m",
+  premiumPaymentUrl: "https://pag.ae/81WaCzV4m",
   paymentQrImage: "",
   teamMembers: []
 };
@@ -415,6 +416,7 @@ function applySiteInfoContactUpdates() {
   if (!next.instagram || next.instagram === "@raizeskids" || next.instagram === "@raizes_r12") next.instagram = defaultSiteInfo.instagram;
   if (!next.siteUrl || next.siteUrl === "https://raizes-fic9.onrender.com/") next.siteUrl = defaultSiteInfo.siteUrl;
   if (!next.paymentUrl) next.paymentUrl = defaultSiteInfo.paymentUrl;
+  if (!next.premiumPaymentUrl) next.premiumPaymentUrl = next.paymentUrl || defaultSiteInfo.premiumPaymentUrl;
   if (typeof next.paymentQrImage !== "string") next.paymentQrImage = "";
   if (!Array.isArray(next.teamMembers)) next.teamMembers = defaultSiteInfo.teamMembers;
   if (JSON.stringify(next) !== JSON.stringify(info)) writeSiteInfo(next);
@@ -790,7 +792,7 @@ async function login(req, res) {
 
   if (user.active === false) {
     if (user.renewalRequested || (user.licenseExpiresAt && licenseDaysRemaining(user) <= 0)) {
-      const paymentUrl = readSiteInfo().paymentUrl || defaultSiteInfo.paymentUrl;
+      const paymentUrl = paymentUrlForPlan(user.accessLevel === "prime" ? "premium" : "monthly");
       sendJson(res, 403, {
         error: "Sua licenca venceu. Renove o acesso para continuar usando o Raizes Kids.",
         renewalRequired: true,
@@ -811,7 +813,7 @@ async function login(req, res) {
       savedUser.updatedAt = new Date().toISOString();
       writeUsers(users);
     }
-    const paymentUrl = readSiteInfo().paymentUrl || defaultSiteInfo.paymentUrl;
+    const paymentUrl = paymentUrlForPlan(user.accessLevel === "prime" ? "premium" : "monthly");
     sendJson(res, 403, {
       error: "Sua licenca venceu. Renove o acesso para continuar usando o Raizes Kids.",
       renewalRequired: true,
@@ -859,6 +861,7 @@ async function register(req, res) {
   const username = onlyDigits(body.cpf || "");
   const password = String(body.password || "");
   const confirmPassword = String(body.confirmPassword || "");
+  const desiredPlan = normalizeDesiredPlan(body.desiredPlan || body.plan || "monthly");
 
   if (!body.name || !username || !body.email || !body.phone || !body.address || !body.church || !body.churchCity) {
     sendJson(res, 400, { error: "Preencha todos os dados do cadastro." });
@@ -888,6 +891,7 @@ async function register(req, res) {
     address: cleanText(body.address),
     church: cleanText(body.church),
     churchCity: cleanText(body.churchCity),
+    requestedPlan: desiredPlan,
     resetRequested: false,
     createdAt: new Date().toISOString(),
     passwordHash: hashPassword(password)
@@ -896,8 +900,18 @@ async function register(req, res) {
   sendJson(res, 201, {
     ok: true,
     message: "Cadastro enviado. Agora finalize o pagamento para o administrador liberar seu acesso.",
-    paymentUrl: readSiteInfo().paymentUrl || defaultSiteInfo.paymentUrl
+    paymentUrl: paymentUrlForPlan(desiredPlan)
   });
+}
+
+function normalizeDesiredPlan(value) {
+  return String(value || "").toLowerCase() === "premium" ? "premium" : "monthly";
+}
+
+function paymentUrlForPlan(plan) {
+  const info = readSiteInfo();
+  if (normalizeDesiredPlan(plan) === "premium") return info.premiumPaymentUrl || info.paymentUrl || defaultSiteInfo.premiumPaymentUrl;
+  return info.paymentUrl || defaultSiteInfo.paymentUrl;
 }
 
 async function passwordResetRequest(req, res) {
@@ -925,6 +939,7 @@ function updateUserApproval(res, id, approved) {
     user.active = true;
     user.approvalNotice = true;
     user.approvedAt = new Date().toISOString();
+    if (normalizeDesiredPlan(user.requestedPlan) === "premium") user.accessLevel = "prime";
     ensureUserLicense(user);
   }
   user.updatedAt = new Date().toISOString();
@@ -1866,6 +1881,7 @@ async function updateSiteInfo(req, res) {
     instagram: cleanText(body.instagram || defaultSiteInfo.instagram),
     siteUrl: cleanText(body.siteUrl || defaultSiteInfo.siteUrl),
     paymentUrl: cleanText(body.paymentUrl || defaultSiteInfo.paymentUrl),
+    premiumPaymentUrl: cleanText(body.premiumPaymentUrl || body.paymentUrl || defaultSiteInfo.premiumPaymentUrl),
     paymentQrImage: normalizePaymentQrImage(body.paymentQrImage || ""),
     teamMembers: normalizeTeamMembers(body.teamMembers),
     updatedAt: new Date().toISOString()
@@ -1934,6 +1950,7 @@ function normalizeUser(user) {
   const normalized = {
     ...user,
     accessLevel: user.role === "admin" ? "prime" : accessLevel || "leader",
+    requestedPlan: normalizeDesiredPlan(user.requestedPlan || (accessLevel === "prime" ? "premium" : "monthly")),
     phone: user.phone || "",
     churchCity: user.churchCity || ""
   };
@@ -2033,6 +2050,7 @@ function publicAdminUser(user) {
     username: user.username,
     role: user.role,
     accessLevel: user.accessLevel || "leader",
+    requestedPlan: user.requestedPlan || "",
     approved: user.approved,
     active: user.active !== false,
     name: user.name,

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes Kids | Acesso</title>
-    <link rel="stylesheet" href="styles.css?v=20260914-home-sales" />
+    <link rel="stylesheet" href="styles.css?v=20260915-plan-links" />
   </head>
   <body class="auth-page">
     <main class="auth-shell">
@@ -38,6 +38,13 @@
           <label><span>Endereço</span><input name="address" required /></label>
           <label><span>Igreja que pertence</span><input name="church" required /></label>
           <label><span>Cidade da Igreja</span><input name="churchCity" required /></label>
+          <label>
+            <span>Plano desejado</span>
+            <select name="desiredPlan" required>
+              <option value="monthly">Plano Mensal - R$ 19,90/mês</option>
+              <option value="premium">Plano Premium - R$ 349,90 por 12 meses</option>
+            </select>
+          </label>
           <label><span>Senha de 6 dígitos</span><input name="password" type="password" inputmode="numeric" minlength="6" maxlength="6" required /></label>
           <label><span>Confirmar senha</span><input name="confirmPassword" type="password" inputmode="numeric" minlength="6" maxlength="6" required /></label>
           <button class="icon-button primary" type="submit">Enviar para aprovação</button>
@@ -58,7 +65,7 @@
         <a class="auth-back" href="index.html">Voltar para o site</a>
       </section>
     </main>
-    <script src="auth.js?v=20260914-home-sales"></script>
+    <script src="auth.js?v=20260915-plan-links"></script>
   </body>
 </html>
 

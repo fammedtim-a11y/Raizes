@@ -90,6 +90,13 @@ function bindAuthTabs() {
   });
   const requestedTab = new URLSearchParams(location.search).get("tab");
   if (["login", "register", "reset"].includes(requestedTab)) selectAuthTab(requestedTab, false);
+  applyRequestedPlanFromUrl();
+}
+
+function applyRequestedPlanFromUrl() {
+  const plan = new URLSearchParams(location.search).get("plan");
+  const select = document.querySelector('#registerForm select[name="desiredPlan"]');
+  if (select && ["monthly", "premium"].includes(plan)) select.value = plan;
 }
 
 function selectAuthTab(tabName, clearMessage = true) {
@@ -559,7 +566,8 @@ function renderAccessLogCard(log) {
 
 function renderAdminUserCard(user) {
   const accessLevel = user.accessLevel === "prime" ? "prime" : "leader";
-  const accessLabel = accessLevel === "leader" ? "Líderes" : "Prime";
+  const accessLabel = accessLevelLabel(accessLevel);
+  const requestedPlanLabel = planLabel(user.requestedPlan || accessLevel);
   const licenseText = user.role === "admin" ? "Acesso administrativo" : `${Number(user.licenseDaysRemaining || 0)} dias de acesso disponivel`;
   const status = user.role === "admin"
     ? "Administrador"
@@ -574,8 +582,8 @@ function renderAdminUserCard(user) {
     <label class="user-access-control">
       <span>Categoria</span>
       <select data-access-level="${authEscapeHtml(user.id)}">
-        <option value="leader" ${accessLevel === "leader" ? "selected" : ""}>Líderes</option>
-        <option value="prime" ${accessLevel === "prime" ? "selected" : ""}>Prime (exporta PDF)</option>
+        <option value="leader" ${accessLevel === "leader" ? "selected" : ""}>Mensal</option>
+        <option value="prime" ${accessLevel === "prime" ? "selected" : ""}>Premium</option>
       </select>
     </label>
   `;
@@ -610,6 +618,7 @@ function renderAdminUserCard(user) {
         <small>Telefone: ${authEscapeHtml(user.phone || "Nao informado")}</small>
         <small>Igreja: ${authEscapeHtml(user.church || "Igreja nao informada")} - ${authEscapeHtml(user.churchCity || "Cidade nao informada")}</small>
         <small>Endereço: ${authEscapeHtml(user.address || "Endereco nao informado")}</small>
+        <small>Plano desejado: ${authEscapeHtml(requestedPlanLabel)}</small>
         <small>Licença: ${authEscapeHtml(licenseText)}${user.licenseExpiresAt ? ` - vence em ${formatDate(user.licenseExpiresAt)}` : ""}</small>
         <small>Criado: ${formatDateTime(user.createdAt)} - Aprovado: ${formatDateTime(user.approvedAt)}</small>
         ${user.renewalRequested ? "<em>Solicitou renovacao de licenca</em>" : ""}
@@ -621,9 +630,9 @@ function renderAdminUserCard(user) {
 }
 
 function exportUsersCsv(users) {
-  const headers = ["Nome", "CPF", "Email", "Telefone", "Igreja", "Cidade da Igreja", "Endereco", "Status", "Categoria", "Dias de acesso", "Vencimento da licenca", "Criado em", "Aprovado em", "Ultimo login", "Ultimo acesso"];
+  const headers = ["Nome", "CPF", "Email", "Telefone", "Igreja", "Cidade da Igreja", "Endereco", "Status", "Categoria", "Plano desejado", "Dias de acesso", "Vencimento da licenca", "Criado em", "Aprovado em", "Ultimo login", "Ultimo acesso"];
   const rows = users.map((user) => {
-    const accessLevel = user.accessLevel === "prime" ? "Prime" : "Líderes";
+    const accessLevel = accessLevelLabel(user.accessLevel);
     const status = user.role === "admin" ? "Administrador" : user.active === false ? "Desativado" : user.approved ? "Ativo" : "Aguardando aprovacao";
     return [
       user.name,
@@ -635,6 +644,7 @@ function exportUsersCsv(users) {
       user.address,
       status,
       accessLevel,
+      planLabel(user.requestedPlan || user.accessLevel),
       user.role === "admin" ? "Admin" : Number(user.licenseDaysRemaining || 0),
       formatDate(user.licenseExpiresAt),
       formatDateTime(user.createdAt),
@@ -685,7 +695,7 @@ async function loadAdminSiteInfo() {
 window.loadAdminSiteInfo = loadAdminSiteInfo;
 
 function fillSiteInfoForm(form, info) {
-  ["about", "contactEmail", "whatsapp", "instagram", "siteUrl", "paymentUrl", "paymentQrImage"].forEach((key) => {
+  ["about", "contactEmail", "whatsapp", "instagram", "siteUrl", "paymentUrl", "premiumPaymentUrl", "paymentQrImage"].forEach((key) => {
     if (form.elements[key]) form.elements[key].value = info?.[key] || "";
   });
   renderPaymentQrPreview(info?.paymentQrImage || "");
@@ -718,6 +728,16 @@ function applySiteInfo(info) {
   });
   renderSalesPaymentQr(info?.paymentQrImage || "");
   renderPublicTeamMembers(info?.teamMembers || []);
+}
+
+function accessLevelLabel(value) {
+  return value === "prime" ? "Premium" : "Mensal";
+}
+
+function planLabel(value) {
+  if (value === "premium" || value === "prime") return "Plano Premium";
+  if (value === "monthly" || value === "leader") return "Plano Mensal";
+  return "Não informado";
 }
 
 function renderSalesPaymentQr(src) {

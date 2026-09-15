@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20260914-home-sales" />
-    <link rel="stylesheet" href="print.css?v=20260914-home-sales" media="print" />
+    <link rel="stylesheet" href="styles.css?v=20260915-plan-links" />
+    <link rel="stylesheet" href="print.css?v=20260915-plan-links" media="print" />
   </head>
   <body data-page="admin">
     <canvas id="skyCanvas" aria-hidden="true"></canvas>
@@ -620,8 +620,8 @@
                   <span>Grupo de acesso</span>
                   <select id="communicationAccessInput">
                     <option value="all">Todos</option>
-                    <option value="leader">Líderes</option>
-                    <option value="prime">Prime (exporta PDF)</option>
+                    <option value="leader">Mensal</option>
+                    <option value="prime">Premium</option>
                   </select>
                 </label>
                 <label>
@@ -700,8 +700,12 @@
                 </div>
                 <div class="form-grid">
                   <label>
-                    <span>Link de pagamento</span>
+                    <span>Link de pagamento do Plano Mensal</span>
                     <input name="paymentUrl" placeholder="https://..." />
+                  </label>
+                  <label>
+                    <span>Link de pagamento do Plano Premium</span>
+                    <input name="premiumPaymentUrl" placeholder="https://..." />
                   </label>
                 </div>
               </section>
@@ -725,9 +729,9 @@
       </main>
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
-    <script src="lessons-data.js?v=20260914-home-sales"></script>
-    <script src="app.js?v=20260914-home-sales"></script>
-    <script src="auth.js?v=20260914-home-sales"></script>
+    <script src="lessons-data.js?v=20260915-plan-links"></script>
+    <script src="app.js?v=20260915-plan-links"></script>
+    <script src="auth.js?v=20260915-plan-links"></script>
   </body>
 </html>
 

@@ -5677,6 +5677,12 @@ body.is-authenticated .visitor-only {
   padding-left: 20px;
 }
 
+.sales-plan-grid .icon-button {
+  align-self: end;
+  justify-content: center;
+  margin-top: 6px;
+}
+
 .plan-badge {
   justify-self: start;
   padding: 7px 10px;
