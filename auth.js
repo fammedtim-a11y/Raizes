@@ -80,14 +80,14 @@ function renderAuthSlots() {
       slot.innerHTML = '<a class="tab" href="index.html#contato">Contato</a><a class="tab auth-login" href="login.html">Entrar / Cadastrar</a>';
     }
   });
-  bindLogoutButtons();
 }
 
-function bindLogoutButtons() {
-  document.querySelectorAll(".auth-logout").forEach((button) => {
-    button.onclick = logout;
-  });
-}
+document.addEventListener("click", (event) => {
+  const button = event.target.closest?.(".auth-logout");
+  if (!button) return;
+  event.preventDefault();
+  logout();
+});
 
 function bindAuthTabs() {
   const buttons = document.querySelectorAll("[data-auth-tab]");
