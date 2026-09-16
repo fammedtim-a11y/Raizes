@@ -7754,6 +7754,12 @@ summary {
     text-decoration: none;
   }
 
+  .mobile-more-sheet .mobile-logout-button {
+    color: #9b2430;
+    border-color: rgba(255, 90, 90, 0.22);
+    background: rgba(255, 245, 245, 0.96);
+  }
+
   .mobile-bottom-nav {
     position: fixed;
     left: 8px;

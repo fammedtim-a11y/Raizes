@@ -76,10 +76,16 @@ function renderAuthSlots() {
         </span>
         <button class="tab auth-logout" type="button">Sair</button>
       `;
-      slot.querySelector(".auth-logout").addEventListener("click", logout);
     } else {
       slot.innerHTML = '<a class="tab" href="index.html#contato">Contato</a><a class="tab auth-login" href="login.html">Entrar / Cadastrar</a>';
     }
+  });
+  bindLogoutButtons();
+}
+
+function bindLogoutButtons() {
+  document.querySelectorAll(".auth-logout").forEach((button) => {
+    button.onclick = logout;
   });
 }
 
