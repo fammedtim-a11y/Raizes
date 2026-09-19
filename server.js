@@ -97,7 +97,7 @@ const mimeTypes = {
 const defaultSiteInfo = {
   about: "Raízes Kids é uma plataforma criada para facilitar a vida de líderes e discipuladores de crianças, reunindo lições, trilhas, cultos em família e materiais de apoio em um só lugar.",
   contactEmail: "administrador@raizeskids.com",
-  whatsapp: "31971773756",
+  whatsapp: "3175466907",
   instagram: "@raizeskids_",
   siteUrl: "www.raizeskids.com",
   paymentUrl: "https://pag.ae/81WaCzV4m",

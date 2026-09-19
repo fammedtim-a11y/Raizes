@@ -3605,7 +3605,7 @@ function buildPrintFooter() {
     <footer class="print-footer-block">
       <img src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
       <span><strong>Sobre</strong> Plataforma para apoiar líderes e discipuladores de crianças com lições, trilhas, cultos em família, treinamentos e EBF.</span>
-      <span><strong>Contato</strong> administrador@raizeskids.com | (31) 97177-3756 | @raizeskids_ | www.raizeskids.com</span>
+      <span><strong>Contato</strong> administrador@raizeskids.com | (31) 97546-6907 | @raizeskids_ | www.raizeskids.com</span>
     </footer>
   `;
 }
@@ -3990,7 +3990,7 @@ function buildPdfPageFooter() {
     <footer class="ebook-page-footer">
       <img src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
       <span><strong>Sobre</strong> Plataforma para apoiar líderes e discipuladores de crianças com lições, trilhas, cultos em família, treinamentos e EBF.</span>
-      <span><strong>Contato</strong> administrador@raizeskids.com | (31) 97177-3756 | @raizeskids_ | www.raizeskids.com</span>
+      <span><strong>Contato</strong> administrador@raizeskids.com | (31) 97546-6907 | @raizeskids_ | www.raizeskids.com</span>
     </footer>
   `;
 }
