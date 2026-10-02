@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20260915-plan-links" />
+    <link rel="stylesheet" href="styles.css?v=20261001-family-free" />
     <link rel="stylesheet" href="print.css?v=20260915-plan-links" media="print" />
   </head>
   <body data-page="admin">
@@ -115,6 +115,7 @@
                 <button class="manage-tab" data-manage-tab="users" type="button">👥 Pessoas</button>
                 <button class="manage-tab" data-manage-tab="analytics" type="button">📊 Analytics</button>
                 <button class="manage-tab master-only" data-manage-tab="communication" type="button">💬 Comunicação</button>
+                <button class="manage-tab master-only" data-manage-tab="automation" type="button">⚙️ Automações</button>
                 <button class="manage-tab" data-manage-tab="contact" type="button">🌱 Institucional</button>
               </div>
             </details>
@@ -148,6 +149,7 @@
                   <button class="admin-menu-card blue" data-manage-tab="users" type="button"><span>👥</span><strong>Pessoas</strong><small>Usuários, aprovações, acessos e licenças.</small></button>
                   <button class="admin-menu-card purple" data-manage-tab="analytics" type="button"><span>📊</span><strong>Analytics</strong><small>Acessos, conteúdos vistos e licenças vencendo.</small></button>
                   <button class="admin-menu-card green master-only" data-manage-tab="communication" type="button"><span>💬</span><strong>Comunicação</strong><small>Email e WhatsApp para públicos filtrados.</small></button>
+                  <button class="admin-menu-card teal master-only" data-manage-tab="automation" type="button"><span>⚙️</span><strong>Automações</strong><small>Funil comercial, interessados e conexões da Meta.</small></button>
                   <button class="admin-menu-card yellow" data-manage-tab="contact" type="button"><span>🌱</span><strong>Institucional</strong><small>Contato, Sobre e Quem Somos.</small></button>
                 </div>
               </section>
@@ -459,6 +461,8 @@
                   <span>Texto do botão</span>
                   <input id="newsLinkLabelInput" placeholder="Ex.: Conhecer agora" />
                 </label>
+                <label><span>Público</span><select id="newsAudienceInput"><option value="all">Todos</option><option value="family">Família Grátis</option><option value="leader">Plano Líder</option><option value="prime">Premium</option></select></label>
+                <label><span>Imagem (URL)</span><input id="newsImageInput" type="url" placeholder="https://..." /></label>
                 <label>
                   <span>Publicar em</span>
                   <input id="newsPublishAtInput" type="date" />
@@ -476,6 +480,8 @@
                 <legend>Exibição</legend>
                 <label><input id="newsActiveInput" type="checkbox" checked /> Ativa</label>
                 <label><input id="newsFeaturedInput" type="checkbox" /> Destaque principal</label>
+                <label><input id="newsPaidInput" type="checkbox" /> Prévia de conteúdo pago</label>
+                <label><input id="newsInstagramFeaturedInput" type="checkbox" /> Destacar no Instagram</label>
               </fieldset>
               <div class="form-actions">
                 <button class="icon-button primary" type="submit">Salvar novidade</button>
@@ -582,6 +588,7 @@
                   <option value="admin">Administradores</option>
                 </select>
               </label>
+              <label><span>Plano</span><select id="adminUserAccessFilter"><option value="all">Todos os planos</option><option value="family">Família Grátis</option><option value="leader">Plano Líder</option><option value="prime">Premium</option></select></label>
               <strong id="adminUsersCount">0 usuários</strong>
             </div>
             <div id="adminUsersList" class="user-admin-list"></div>
@@ -620,7 +627,8 @@
                   <span>Grupo de acesso</span>
                   <select id="communicationAccessInput">
                     <option value="all">Todos</option>
-                    <option value="leader">Mensal</option>
+                    <option value="family">Família Grátis</option>
+                    <option value="leader">Plano Líder</option>
                     <option value="prime">Premium</option>
                   </select>
                 </label>
@@ -658,6 +666,79 @@
                 <div id="communicationCampaignList" class="user-admin-list"></div>
               </section>
             </div>
+          </section>
+
+          <section id="automationManagePanel" class="video-manager manage-panel master-only">
+            <div class="manager-heading">
+              <div>
+                <h2>Automações de vendas</h2>
+                <p>Organize interessados, acompanhe o funil e conecte Instagram e WhatsApp pelas APIs oficiais da Meta.</p>
+              </div>
+              <button id="refreshAutomationBtn" class="icon-button" type="button">Atualizar</button>
+            </div>
+
+            <div id="automationStats" class="automation-stats"></div>
+
+            <div class="automation-layout">
+              <section class="automation-card">
+                <div class="manager-heading compact-heading">
+                  <div>
+                    <h3>Conexões</h3>
+                    <p>As credenciais permanecem protegidas nas variáveis do Render.</p>
+                  </div>
+                </div>
+                <div id="automationIntegrationStatus" class="automation-status-list"></div>
+              </section>
+
+              <section class="automation-card">
+                <h3>Regras do atendimento</h3>
+                <form id="automationSettingsForm" class="automation-settings-form">
+                  <label class="inline-check"><input name="enabled" type="checkbox" /> Automação geral ativa</label>
+                  <label class="inline-check"><input name="whatsappAutoReply" type="checkbox" /> Resposta automática no WhatsApp</label>
+                  <label class="inline-check"><input name="instagramAutoReply" type="checkbox" /> Resposta automática no Instagram</label>
+                  <label class="inline-check"><input name="humanHandoff" type="checkbox" checked /> Permitir atendimento humano</label>
+                  <label><span>Palavra-chave principal</span><input name="keyword" value="QUERO" maxlength="40" /></label>
+                  <label><span>Mensagem inicial</span><textarea name="welcomeMessage" rows="8"></textarea></label>
+                  <button class="icon-button primary" type="submit">Salvar regras</button>
+                  <p id="automationSettingsMessage" class="action-message" role="status"></p>
+                </form>
+              </section>
+            </div>
+
+            <section class="automation-card automation-leads-section">
+              <div class="manager-heading compact-heading">
+                <div>
+                  <h3>Funil de interessados</h3>
+                  <p>Filtre por etapa, assuma conversas e registre o avanço de cada contato.</p>
+                </div>
+                <div class="automation-toolbar">
+                  <select id="automationStageFilter" aria-label="Filtrar por etapa">
+                    <option value="all">Todas as etapas</option>
+                    <option value="novo">Novos</option>
+                    <option value="conversando">Conversando</option>
+                    <option value="cadastro">Cadastro</option>
+                    <option value="pagamento">Pagamento</option>
+                    <option value="cliente">Clientes</option>
+                    <option value="encerrado">Encerrados</option>
+                  </select>
+                  <button id="newAutomationLeadBtn" class="icon-button primary" type="button">Novo interessado</button>
+                </div>
+              </div>
+              <div id="automationLeadFormWrap" class="automation-lead-form-wrap" hidden>
+                <form id="automationLeadForm" class="form-grid">
+                  <label><span>Nome</span><input name="name" required /></label>
+                  <label><span>WhatsApp</span><input name="phone" inputmode="tel" /></label>
+                  <label><span>Email</span><input name="email" type="email" /></label>
+                  <label><span>Origem</span><input name="source" value="Contato manual" /></label>
+                  <label class="inline-check"><input name="consentWhatsapp" type="checkbox" /> Autorizou contato pelo WhatsApp</label>
+                  <div class="form-actions">
+                    <button class="icon-button primary" type="submit">Cadastrar</button>
+                    <button id="cancelAutomationLeadBtn" class="icon-button" type="button">Cancelar</button>
+                  </div>
+                </form>
+              </div>
+              <div id="automationLeadsList" class="automation-leads-list"></div>
+            </section>
           </section>
 
           <section id="contactManagePanel" class="video-manager manage-panel">
@@ -700,7 +781,7 @@
                 </div>
                 <div class="form-grid">
                   <label>
-                    <span>Link de pagamento do Plano Mensal</span>
+                    <span>Link de pagamento do Plano Líder</span>
                     <input name="paymentUrl" placeholder="https://..." />
                   </label>
                   <label>
@@ -730,8 +811,8 @@
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
     <script src="lessons-data.js?v=20260915-plan-links"></script>
-    <script src="app.js?v=20260915-plan-links"></script>
-    <script src="auth.js?v=20260916-mobile-logout-fix"></script>
+    <script src="app.js?v=20261001-family-free"></script>
+    <script src="auth.js?v=20261001-family-free"></script>
   </body>
 </html>
 

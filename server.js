@@ -21,12 +21,15 @@ const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
 const ACCESS_LOG_FILE = path.join(DATA_DIR, "access-log.json");
 const SITE_INFO_FILE = path.join(DATA_DIR, "site-info.json");
 const COMMUNICATIONS_FILE = path.join(DATA_DIR, "communications.json");
+const AUTOMATION_LEADS_FILE = path.join(DATA_DIR, "automation-leads.json");
+const AUTOMATION_SETTINGS_FILE = path.join(DATA_DIR, "automation-settings.json");
 const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 const LICENSE_DAYS = 31;
 const DAY_MS = 1000 * 60 * 60 * 24;
 const sessions = new Map();
 const revokedSessions = new Map();
 const loginAttempts = new Map();
+const leadCaptureAttempts = new Map();
 const youtubeTitleCache = new Map();
 
 const initialUsers = [
@@ -164,6 +167,36 @@ const initialEbfs = seededEbfs;
 const initialVideos = [];
 const initialNotifications = [
   {
+    id: "novidade-familia-gratis",
+    title: "Cultos em Família agora têm acesso gratuito",
+    summary: "Pais e responsáveis podem acessar todos os Cultos em Família sem pagamento e sem vencimento.",
+    type: "Famílias",
+    target: "devotional",
+    linkLabel: "Abrir Cultos em Família",
+    audience: "all",
+    active: true,
+    featured: true,
+    publishAt: new Date().toISOString(),
+    expiresAt: "",
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "novidade-plano-lider-licoes-trilhas",
+    title: "Novas lições e trilhas para preparar suas próximas aulas",
+    summary: "O Plano Líder reúne aulas completas por faixa etária e vídeos organizados para apoiar o ensino.",
+    type: "Plano Líder",
+    target: "study",
+    linkLabel: "Conhecer Plano Líder",
+    audience: "all",
+    paid: true,
+    instagramFeatured: true,
+    active: true,
+    featured: true,
+    publishAt: new Date().toISOString(),
+    expiresAt: "",
+    createdAt: new Date().toISOString()
+  },
+  {
     id: "novidade-boas-vindas-raizes",
     title: "Bem-vindo às novidades do Raízes Kids",
     summary: "Acompanhe por aqui os novos materiais, melhorias e avisos importantes para usar melhor a plataforma.",
@@ -280,6 +313,8 @@ function ensureData() {
   if (!fs.existsSync(COMMUNICATIONS_FILE)) {
     writeCommunications([]);
   }
+  if (!fs.existsSync(AUTOMATION_LEADS_FILE)) writeAutomationLeads([]);
+  if (!fs.existsSync(AUTOMATION_SETTINGS_FILE)) writeAutomationSettings(defaultAutomationSettings());
   mergeSeedContent();
   syncImportantNotifications();
   applyUserAdministrationUpdates();
@@ -524,6 +559,21 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (req.method === "POST" && url.pathname === "/api/automacao/interessados") {
+    await captureAutomationLead(req, res);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/meta/webhook") {
+    verifyMetaWebhook(res, url.searchParams);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/meta/webhook") {
+    await receiveMetaWebhook(req, res);
+    return;
+  }
+
   const admin = requireAdmin(req, res);
   if (!admin) return;
 
@@ -568,6 +618,37 @@ async function handleApi(req, res, url) {
 
     if (req.method === "POST" && url.pathname === "/api/admin/comunicacao/campanhas") {
       await createCommunicationCampaign(req, res);
+      return;
+    }
+  }
+
+  if (url.pathname.startsWith("/api/admin/automacao")) {
+    if (!requireMasterAdmin(req, res)) return;
+
+    if (req.method === "GET" && url.pathname === "/api/admin/automacao") {
+      sendJson(res, 200, automationDashboard());
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/automacao/configuracao") {
+      await updateAutomationSettings(req, res);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/automacao/interessados") {
+      await createAutomationLead(req, res);
+      return;
+    }
+
+    const leadMatch = url.pathname.match(/^\/api\/admin\/automacao\/interessados\/([^/]+)$/);
+    if (req.method === "POST" && leadMatch) {
+      await updateAutomationLead(req, res, leadMatch[1]);
+      return;
+    }
+
+    const messageMatch = url.pathname.match(/^\/api\/admin\/automacao\/interessados\/([^/]+)\/mensagem$/);
+    if (req.method === "POST" && messageMatch) {
+      await sendAutomationMessage(req, res, messageMatch[1]);
       return;
     }
   }
@@ -785,10 +866,12 @@ async function login(req, res) {
     return;
   }
 
-  if (!user.approved) {
+  if (!user.approved && user.accessLevel !== "family") {
     sendJson(res, 403, { error: "Seu cadastro ainda aguarda aprovação do administrador." });
     return;
   }
+
+  const downgraded = downgradeExpiredUserToFamily(user);
 
   if (user.active === false) {
     if (user.renewalRequested || (user.licenseExpiresAt && licenseDaysRemaining(user) <= 0)) {
@@ -801,24 +884,6 @@ async function login(req, res) {
       return;
     }
     sendJson(res, 403, { error: "Seu acesso esta desativado. Fale com o administrador." });
-    return;
-  }
-
-  if (user.role !== "admin" && licenseDaysRemaining(user) <= 0) {
-    const users = readUsers();
-    const savedUser = users.find((item) => item.id === user.id);
-    if (savedUser) {
-      savedUser.active = false;
-      savedUser.renewalRequested = true;
-      savedUser.updatedAt = new Date().toISOString();
-      writeUsers(users);
-    }
-    const paymentUrl = paymentUrlForPlan(user.accessLevel === "prime" ? "premium" : "monthly");
-    sendJson(res, 403, {
-      error: "Sua licenca venceu. Renove o acesso para continuar usando o Raizes Kids.",
-      renewalRequired: true,
-      paymentUrl
-    });
     return;
   }
 
@@ -843,7 +908,7 @@ async function login(req, res) {
   const sharedPasswordMessage = removedSessions
     ? "Sua senha foi usada em outro dispositivo. Por seguranca, a sessao anterior foi encerrada."
     : "";
-  sendJson(res, 200, { user: publicUser(user), message: [approvalMessage, sharedPasswordMessage].filter(Boolean).join(" ") });
+  sendJson(res, 200, { user: publicUser(user), message: [approvalMessage, downgraded ? "Sua licença paga venceu, mas seu acesso Família Grátis continua ativo." : "", sharedPasswordMessage].filter(Boolean).join(" ") });
 }
 
 function logout(req, res) {
@@ -861,10 +926,10 @@ async function register(req, res) {
   const username = onlyDigits(body.cpf || "");
   const password = String(body.password || "");
   const confirmPassword = String(body.confirmPassword || "");
-  const desiredPlan = normalizeDesiredPlan(body.desiredPlan || body.plan || "monthly");
+  const desiredPlan = normalizeDesiredPlan(body.desiredPlan || body.plan || "family");
 
-  if (!body.name || !username || !body.email || !body.phone || !body.address || !body.church || !body.churchCity) {
-    sendJson(res, 400, { error: "Preencha todos os dados do cadastro." });
+  if (!body.name || !username || !body.email || !body.phone) {
+    sendJson(res, 400, { error: "Preencha nome, CPF, email e telefone." });
     return;
   }
   if (!/^\d{6}$/.test(password) || password !== confirmPassword) {
@@ -882,8 +947,8 @@ async function register(req, res) {
     id: crypto.randomUUID(),
     username,
     role: "user",
-    accessLevel: "leader",
-    approved: false,
+    accessLevel: desiredPlan === "family" ? "family" : "leader",
+    approved: desiredPlan === "family",
     active: true,
     name: cleanText(body.name),
     email: cleanText(body.email),
@@ -892,12 +957,32 @@ async function register(req, res) {
     church: cleanText(body.church),
     churchCity: cleanText(body.churchCity),
     requestedPlan: desiredPlan,
+    intendedUse: cleanText(body.intendedUse || (desiredPlan === "family" ? "family" : "leader")),
+    ageInterest: cleanText(body.ageInterest || ""),
+    signupSource: cleanText(body.signupSource || "Direto"),
+    emailOptIn: body.emailOptIn === true,
+    whatsappOptIn: body.consentWhatsapp === true,
+    approvedAt: desiredPlan === "family" ? new Date().toISOString() : "",
     resetRequested: false,
     createdAt: new Date().toISOString(),
     passwordHash: hashPassword(password)
   });
   writeUsers(users);
-  sendJson(res, 201, {
+  upsertAutomationLead({
+    name: body.name,
+    phone: body.phone,
+    email: body.email,
+    channel: "site",
+    source: `Cadastro ${desiredPlan === "premium" ? "Premium" : desiredPlan === "monthly" ? "Mensal" : "Família Grátis"}`,
+    stage: desiredPlan === "family" ? "novo" : "cadastro",
+    consentWhatsapp: body.consentWhatsapp === true
+  });
+  sendJson(res, 201, desiredPlan === "family" ? {
+    ok: true,
+    freeAccess: true,
+    message: "Cadastro gratuito criado. Você já pode entrar e acessar o Culto em Família.",
+    nextUrl: "login.html"
+  } : {
     ok: true,
     message: "Cadastro enviado. Agora finalize o pagamento para o administrador liberar seu acesso.",
     paymentUrl: paymentUrlForPlan(desiredPlan)
@@ -905,11 +990,15 @@ async function register(req, res) {
 }
 
 function normalizeDesiredPlan(value) {
-  return String(value || "").toLowerCase() === "premium" ? "premium" : "monthly";
+  const normalized = String(value || "").toLowerCase();
+  if (["premium", "prime"].includes(normalized)) return "premium";
+  if (["monthly", "leader"].includes(normalized)) return "monthly";
+  return "family";
 }
 
 function paymentUrlForPlan(plan) {
   const info = readSiteInfo();
+  if (normalizeDesiredPlan(plan) === "family") return "";
   if (normalizeDesiredPlan(plan) === "premium") return info.premiumPaymentUrl || info.paymentUrl || defaultSiteInfo.premiumPaymentUrl;
   return info.paymentUrl || defaultSiteInfo.paymentUrl;
 }
@@ -937,9 +1026,12 @@ function updateUserApproval(res, id, approved) {
   user.approved = approved;
   if (approved) {
     user.active = true;
+    user.deactivatedByAdmin = false;
     user.approvalNotice = true;
     user.approvedAt = new Date().toISOString();
     if (normalizeDesiredPlan(user.requestedPlan) === "premium") user.accessLevel = "prime";
+    else if (normalizeDesiredPlan(user.requestedPlan) === "monthly") user.accessLevel = "leader";
+    else user.accessLevel = "family";
     ensureUserLicense(user);
   }
   user.updatedAt = new Date().toISOString();
@@ -955,6 +1047,7 @@ function updateUserActive(res, id, active) {
     return;
   }
   user.active = active;
+  user.deactivatedByAdmin = !active;
   if (active) {
     user.approved = true;
     ensureUserLicense(user);
@@ -984,6 +1077,14 @@ async function renewUserLicense(req, res, id) {
     sendJson(res, 404, { error: "Usuario nao encontrado." });
     return;
   }
+  if (user.accessLevel === "family") {
+    if (!["leader", "prime"].includes(user.previousPaidAccess)) {
+      sendJson(res, 400, { error: "Selecione um plano pago antes de renovar a licença." });
+      return;
+    }
+    user.accessLevel = user.previousPaidAccess;
+    user.requestedPlan = user.accessLevel === "prime" ? "premium" : "monthly";
+  }
   const expiresAt = String(body.licenseExpiresAt || "").trim();
   if (expiresAt) {
     const date = new Date(`${expiresAt}T23:59:59.999-03:00`);
@@ -996,6 +1097,7 @@ async function renewUserLicense(req, res, id) {
     addLicenseDays(user, LICENSE_DAYS);
   }
   user.active = true;
+  user.deactivatedByAdmin = false;
   user.approved = true;
   user.renewalRequested = false;
   user.updatedAt = new Date().toISOString();
@@ -1029,7 +1131,7 @@ async function adminResetPassword(req, res, id) {
 async function updateUserAccess(req, res, id) {
   const body = await readBody(req);
   const accessLevel = String(body.accessLevel || "");
-  if (!["leader", "prime"].includes(accessLevel)) {
+  if (!["family", "leader", "prime"].includes(accessLevel)) {
     sendJson(res, 400, { error: "Categoria de usuario invalida." });
     return;
   }
@@ -1040,6 +1142,18 @@ async function updateUserAccess(req, res, id) {
     return;
   }
   user.accessLevel = accessLevel;
+  if (accessLevel === "family") {
+    user.requestedPlan = "family";
+    user.previousPaidAccess = "";
+    user.licenseExpiresAt = "";
+    user.renewalRequested = false;
+    user.approved = true;
+    user.active = true;
+    user.deactivatedByAdmin = false;
+  } else {
+    user.requestedPlan = accessLevel === "prime" ? "premium" : "monthly";
+    ensureUserLicense(user);
+  }
   user.updatedAt = new Date().toISOString();
   writeUsers(users);
   revokeUserSessions(user.id);
@@ -1083,26 +1197,38 @@ function getSessionState(req) {
     return { user: null, message: "Sua sessao expirou. Entre novamente para continuar." };
   }
   const user = readUsers().find((item) => item.id === session.userId) || null;
+  if (!user) {
+    sessions.delete(sessionId);
+    writeSessions();
+    return { user: null, message: "Seu cadastro não está mais disponível." };
+  }
+  const downgraded = downgradeExpiredUserToFamily(user);
   if (user?.active === false) {
     sessions.delete(sessionId);
     writeSessions();
     return { user: null, message: "Seu acesso foi desativado. Fale com o administrador." };
   }
-  if (user?.role !== "admin" && licenseDaysRemaining(user) <= 0) {
-    const users = readUsers();
-    const savedUser = users.find((item) => item.id === user.id);
-    if (savedUser) {
-      savedUser.active = false;
-      savedUser.renewalRequested = true;
-      savedUser.updatedAt = new Date().toISOString();
-      writeUsers(users);
-    }
-    sessions.delete(sessionId);
-    writeSessions();
-    return { user: null, message: "Sua licenca venceu. Renove o acesso para continuar usando o Raizes Kids." };
-  }
   markUserAccess(user.id, { lastAccessAt: new Date().toISOString() });
-  return { user, message: "" };
+  return { user, message: downgraded ? "Sua licença paga venceu. Você continua com o acesso Família Grátis." : "" };
+}
+
+function downgradeExpiredUserToFamily(user) {
+  if (!user || !user.approved || !user.licenseExpiresAt || user.role === "admin" || user.deactivatedByAdmin || user.accessLevel === "family" || licenseDaysRemaining(user) > 0) return false;
+  const previousAccessLevel = user.accessLevel;
+  const users = readUsers();
+  const savedUser = users.find((item) => item.id === user.id);
+  if (!savedUser) return false;
+  savedUser.previousPaidAccess = previousAccessLevel;
+  savedUser.accessLevel = "family";
+  savedUser.active = true;
+  savedUser.deactivatedByAdmin = false;
+  savedUser.approved = true;
+  savedUser.renewalRequested = true;
+  savedUser.licenseExpiresAt = "";
+  savedUser.updatedAt = new Date().toISOString();
+  Object.assign(user, savedUser);
+  writeUsers(users);
+  return true;
 }
 
 function revokeUserSessions(userId) {
@@ -1190,7 +1316,7 @@ function adminAnalytics() {
   const pendingUsers = users.filter((user) => user.role !== "admin" && !user.approved);
   const expiringUsers = approvedUsers
     .map((user) => ({ ...publicAdminUser(user), days: licenseDaysRemaining(user) }))
-    .filter((user) => user.days <= 15)
+    .filter((user) => user.accessLevel !== "family" && user.days <= 15)
     .sort((a, b) => a.days - b.days);
   const active7Days = new Set(logs
     .filter((log) => now - new Date(log.at || 0).getTime() <= 7 * DAY_MS)
@@ -1202,6 +1328,9 @@ function adminAnalytics() {
     totals: {
       users: users.filter((user) => user.role !== "admin").length,
       approvedUsers: approvedUsers.length,
+      familyUsers: approvedUsers.filter((user) => user.accessLevel === "family").length,
+      monthlyUsers: approvedUsers.filter((user) => user.accessLevel === "leader").length,
+      premiumUsers: approvedUsers.filter((user) => user.accessLevel === "prime").length,
       pendingUsers: pendingUsers.length,
       expiringUsers: expiringUsers.length,
       lessons: readLessons()?.length || 0,
@@ -1309,7 +1438,7 @@ function communicationAudience(params) {
       if (status === "inactive") return user.active === false;
       return true;
     })
-    .filter((user) => accessLevel === "all" || (user.accessLevel || "leader") === accessLevel)
+    .filter((user) => accessLevel === "all" || (user.accessLevel || "family") === accessLevel)
     .filter((user) => {
       if (channel === "email") return Boolean(user.email);
       if (channel === "whatsapp") return Boolean(onlyDigits(user.phone || ""));
@@ -1393,10 +1522,410 @@ function publicCommunicationUser(user) {
     email: user.email || "",
     phone: onlyDigits(user.phone || ""),
     church: user.church || "",
-    accessLevel: user.accessLevel || "leader",
+    accessLevel: user.accessLevel || "family",
     approved: Boolean(user.approved),
     active: user.active !== false
   };
+}
+
+const automationStages = new Set(["novo", "conversando", "cadastro", "pagamento", "cliente", "encerrado"]);
+
+function defaultAutomationSettings() {
+  return {
+    enabled: false,
+    whatsappAutoReply: false,
+    instagramAutoReply: false,
+    humanHandoff: true,
+    keyword: "QUERO",
+    welcomeMessage: "Olá! Que alegria receber você no Raízes Kids. Como podemos ajudar?\n\n1 - Conhecer a plataforma\n2 - Ver o que está incluso\n3 - Liberar meu acesso\n4 - Dúvidas sobre pagamento\n5 - Falar com uma pessoa",
+    updatedAt: ""
+  };
+}
+
+function readAutomationSettings() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(AUTOMATION_SETTINGS_FILE, "utf8"));
+    return { ...defaultAutomationSettings(), ...(parsed && typeof parsed === "object" ? parsed : {}) };
+  } catch {
+    return defaultAutomationSettings();
+  }
+}
+
+function writeAutomationSettings(settings) {
+  fs.writeFileSync(AUTOMATION_SETTINGS_FILE, JSON.stringify({ ...defaultAutomationSettings(), ...settings }, null, 2), "utf8");
+}
+
+function readAutomationLeads() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(AUTOMATION_LEADS_FILE, "utf8"));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeAutomationLeads(leads) {
+  fs.writeFileSync(AUTOMATION_LEADS_FILE, JSON.stringify(leads.slice(-5000), null, 2), "utf8");
+}
+
+function automationIntegrationStatus() {
+  return {
+    webhookUrl: `${publicBaseUrl()}/api/meta/webhook`,
+    verifyToken: Boolean(process.env.META_VERIFY_TOKEN),
+    appSecret: Boolean(process.env.META_APP_SECRET),
+    graphVersion: Boolean(process.env.META_GRAPH_VERSION),
+    whatsapp: Boolean(process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID && process.env.META_GRAPH_VERSION),
+    instagram: Boolean(process.env.INSTAGRAM_ACCESS_TOKEN && process.env.INSTAGRAM_ACCOUNT_ID && process.env.META_GRAPH_VERSION)
+  };
+}
+
+function publicBaseUrl() {
+  const value = String(process.env.PUBLIC_BASE_URL || "https://www.raizeskids.com").trim();
+  return value.replace(/\/$/, "");
+}
+
+function automationDashboard() {
+  const leads = readAutomationLeads().sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+  const counts = Object.fromEntries([...automationStages].map((stage) => [stage, leads.filter((lead) => lead.stage === stage).length]));
+  return {
+    settings: readAutomationSettings(),
+    integration: automationIntegrationStatus(),
+    counts: { total: leads.length, consented: leads.filter((lead) => lead.consentWhatsapp).length, human: leads.filter((lead) => lead.humanRequested).length, ...counts },
+    leads: leads.slice(0, 500)
+  };
+}
+
+function normalizeAutomationLead(input, existing = {}) {
+  const now = new Date().toISOString();
+  const phone = onlyDigits(input.phone ?? existing.phone ?? "").slice(0, 15);
+  const stage = automationStages.has(input.stage) ? input.stage : existing.stage || "novo";
+  const consentWhatsapp = input.consentWhatsapp === true || (input.consentWhatsapp === undefined && Boolean(existing.consentWhatsapp));
+  return {
+    id: existing.id || crypto.randomUUID(),
+    name: cleanText(input.name ?? existing.name ?? "Interessado"),
+    phone,
+    email: normalizeEmail(input.email ?? existing.email ?? "").slice(0, 240),
+    channel: ["whatsapp", "instagram", "site", "manual"].includes(input.channel) ? input.channel : existing.channel || "manual",
+    source: cleanText(input.source ?? existing.source ?? "Contato direto"),
+    externalId: cleanText(input.externalId ?? existing.externalId ?? ""),
+    stage,
+    consentWhatsapp,
+    consentAt: consentWhatsapp ? existing.consentAt || now : "",
+    humanRequested: input.humanRequested === true || (input.humanRequested === undefined && Boolean(existing.humanRequested)),
+    notes: cleanLongText(input.notes ?? existing.notes ?? "", 2000),
+    messages: Array.isArray(existing.messages) ? existing.messages.slice(-100) : [],
+    createdAt: existing.createdAt || now,
+    updatedAt: now,
+    lastContactAt: existing.lastContactAt || ""
+  };
+}
+
+function upsertAutomationLead(input) {
+  const leads = readAutomationLeads();
+  const phone = onlyDigits(input.phone || "");
+  const externalId = cleanText(input.externalId || "");
+  const index = leads.findIndex((lead) => (phone && lead.phone === phone) || (externalId && lead.externalId === externalId));
+  const existing = index >= 0 ? leads[index] : {};
+  const lead = normalizeAutomationLead(input, existing);
+  if (index >= 0) leads[index] = lead;
+  else leads.push(lead);
+  writeAutomationLeads(leads);
+  return lead;
+}
+
+function appendAutomationMessage(leadId, message) {
+  const leads = readAutomationLeads();
+  const index = leads.findIndex((lead) => lead.id === leadId);
+  if (index < 0) return null;
+  const externalId = cleanText(message.externalId || "");
+  if (externalId && (leads[index].messages || []).some((item) => item.externalId === externalId)) return leads[index];
+  const now = new Date().toISOString();
+  leads[index].messages = [...(leads[index].messages || []), {
+    id: crypto.randomUUID(),
+    direction: message.direction === "out" ? "out" : "in",
+    channel: message.channel || leads[index].channel || "whatsapp",
+    text: cleanLongText(message.text || "", 4000),
+    externalId,
+    at: now
+  }].slice(-100);
+  leads[index].lastContactAt = now;
+  leads[index].updatedAt = now;
+  if (message.direction !== "out" && leads[index].stage === "novo") leads[index].stage = "conversando";
+  writeAutomationLeads(leads);
+  return leads[index];
+}
+
+function isLeadCaptureRateLimited(ip) {
+  const now = Date.now();
+  const item = leadCaptureAttempts.get(ip) || { count: 0, until: now + 60 * 60 * 1000 };
+  if (item.until <= now) {
+    leadCaptureAttempts.set(ip, { count: 1, until: now + 60 * 60 * 1000 });
+    return false;
+  }
+  item.count += 1;
+  leadCaptureAttempts.set(ip, item);
+  return item.count > 8;
+}
+
+async function captureAutomationLead(req, res) {
+  if (isLeadCaptureRateLimited(clientIp(req))) {
+    sendJson(res, 429, { error: "Muitas tentativas. Aguarde antes de enviar novamente." });
+    return;
+  }
+  const body = await readBody(req);
+  const phone = onlyDigits(body.phone || "");
+  if (!cleanText(body.name || "") || phone.length < 10 || body.consentWhatsapp !== true) {
+    sendJson(res, 400, { error: "Informe nome, WhatsApp e autorize o contato do Raízes Kids." });
+    return;
+  }
+  const lead = upsertAutomationLead({ ...body, phone, channel: "site", source: body.source || "Site Raízes Kids" });
+  sendJson(res, 201, { ok: true, id: lead.id, message: "Interesse registrado. Em breve entraremos em contato." });
+}
+
+async function createAutomationLead(req, res) {
+  const body = await readBody(req);
+  if (!cleanText(body.name || "") || (!onlyDigits(body.phone || "") && !normalizeEmail(body.email || ""))) {
+    sendJson(res, 400, { error: "Informe o nome e pelo menos um telefone ou email." });
+    return;
+  }
+  const lead = upsertAutomationLead({ ...body, channel: body.channel || "manual" });
+  sendJson(res, 201, { ok: true, lead });
+}
+
+async function updateAutomationLead(req, res, id) {
+  const body = await readBody(req);
+  const leads = readAutomationLeads();
+  const index = leads.findIndex((lead) => lead.id === id);
+  if (index < 0) {
+    sendJson(res, 404, { error: "Interessado não encontrado." });
+    return;
+  }
+  const lead = normalizeAutomationLead(body, leads[index]);
+  leads[index] = lead;
+  writeAutomationLeads(leads);
+  sendJson(res, 200, { ok: true, lead });
+}
+
+async function updateAutomationSettings(req, res) {
+  const body = await readBody(req);
+  const current = readAutomationSettings();
+  const next = {
+    ...current,
+    enabled: body.enabled === true,
+    whatsappAutoReply: body.whatsappAutoReply === true,
+    instagramAutoReply: body.instagramAutoReply === true,
+    humanHandoff: body.humanHandoff !== false,
+    keyword: cleanText(body.keyword || "QUERO").toUpperCase(),
+    welcomeMessage: cleanLongText(body.welcomeMessage || current.welcomeMessage, 3000),
+    updatedAt: new Date().toISOString()
+  };
+  writeAutomationSettings(next);
+  sendJson(res, 200, { ok: true, settings: next });
+}
+
+async function sendAutomationMessage(req, res, id) {
+  const body = await readBody(req);
+  const lead = readAutomationLeads().find((item) => item.id === id);
+  const message = cleanLongText(body.message || "", 4000);
+  if (!lead || !message) {
+    sendJson(res, 400, { error: "Interessado ou mensagem inválida." });
+    return;
+  }
+  if (!lead.consentWhatsapp) {
+    sendJson(res, 400, { error: "O interessado ainda não autorizou mensagens pelo WhatsApp." });
+    return;
+  }
+  if (!automationIntegrationStatus().whatsapp) {
+    sendJson(res, 409, { error: "WhatsApp Cloud API ainda não configurada no Render.", manualUrl: whatsappManualUrl(lead.phone, message) });
+    return;
+  }
+  try {
+    const result = await sendWhatsappCloudText(lead.phone, message);
+    const updated = appendAutomationMessage(id, { direction: "out", channel: "whatsapp", text: message, externalId: result?.messages?.[0]?.id || "" });
+    sendJson(res, 200, { ok: true, lead: updated });
+  } catch (error) {
+    sendJson(res, 502, { error: `Não foi possível enviar pelo WhatsApp: ${cleanText(error.message)}`, manualUrl: whatsappManualUrl(lead.phone, message) });
+  }
+}
+
+function whatsappManualUrl(phone, message) {
+  const digits = onlyDigits(phone || "");
+  const normalized = digits.startsWith("55") ? digits : `55${digits}`;
+  return digits ? `https://wa.me/${normalized}?text=${encodeURIComponent(message)}` : "";
+}
+
+function sendWhatsappCloudText(phone, message) {
+  const version = process.env.META_GRAPH_VERSION;
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const token = process.env.WHATSAPP_ACCESS_TOKEN;
+  const digits = onlyDigits(phone || "");
+  const to = digits.startsWith("55") ? digits : `55${digits}`;
+  return metaJsonRequest(`/${version}/${phoneNumberId}/messages`, token, {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to,
+    type: "text",
+    text: { preview_url: false, body: message }
+  });
+}
+
+function metaJsonRequest(endpoint, token, payload) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(payload);
+    const request = https.request({
+      hostname: "graph.facebook.com",
+      path: endpoint,
+      method: "POST",
+      timeout: 10000,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(data)
+      }
+    }, (response) => {
+      let body = "";
+      response.setEncoding("utf8");
+      response.on("data", (chunk) => { body += chunk; });
+      response.on("end", () => {
+        let parsed = {};
+        try { parsed = body ? JSON.parse(body) : {}; } catch { parsed = {}; }
+        if (response.statusCode >= 200 && response.statusCode < 300) resolve(parsed);
+        else reject(new Error(parsed?.error?.message || `Meta retornou HTTP ${response.statusCode}.`));
+      });
+    });
+    request.on("timeout", () => request.destroy(new Error("Tempo esgotado ao acessar a Meta.")));
+    request.on("error", reject);
+    request.end(data);
+  });
+}
+
+function verifyMetaWebhook(res, params) {
+  const mode = params.get("hub.mode");
+  const token = params.get("hub.verify_token");
+  const challenge = params.get("hub.challenge");
+  if (mode === "subscribe" && process.env.META_VERIFY_TOKEN && token === process.env.META_VERIFY_TOKEN) {
+    sendText(res, 200, challenge || "");
+    return;
+  }
+  sendJson(res, 403, { error: "Falha na verificação do webhook." });
+}
+
+async function receiveMetaWebhook(req, res) {
+  const raw = await readRawBody(req, 2 * 1024 * 1024);
+  if (!verifyMetaSignature(req, raw)) {
+    sendJson(res, 401, { error: "Assinatura da Meta inválida." });
+    return;
+  }
+  let payload;
+  try { payload = JSON.parse(raw.toString("utf8")); } catch { payload = {}; }
+  await processMetaWebhookPayload(payload);
+  sendJson(res, 200, { received: true });
+}
+
+function verifyMetaSignature(req, raw) {
+  const secret = process.env.META_APP_SECRET;
+  if (!secret) return process.env.NODE_ENV !== "production";
+  const received = String(req.headers["x-hub-signature-256"] || "").replace(/^sha256=/, "");
+  const expected = crypto.createHmac("sha256", secret).update(raw).digest("hex");
+  const a = Buffer.from(received, "hex");
+  const b = Buffer.from(expected, "hex");
+  return a.length === b.length && a.length > 0 && crypto.timingSafeEqual(a, b);
+}
+
+async function processMetaWebhookPayload(payload) {
+  const object = String(payload?.object || "");
+  const tasks = [];
+  (payload?.entry || []).forEach((entry) => {
+    (entry.messaging || []).forEach((event) => {
+      const text = event?.message?.text || event?.postback?.title || "Interação recebida";
+      const lead = upsertAutomationLead({ channel: "instagram", source: "Instagram", externalId: event?.sender?.id || "", name: "Contato do Instagram" });
+      appendAutomationMessage(lead.id, { direction: "in", channel: "instagram", text, externalId: event?.message?.mid || "" });
+      tasks.push(maybeAutoReplyInstagram(lead, text));
+    });
+    (entry.changes || []).forEach((change) => {
+      if (object === "whatsapp_business_account" && change?.value?.messages) {
+        (change.value.messages || []).forEach((message) => {
+          const contact = change.value.contacts?.find((item) => item.wa_id === message.from);
+          const text = message?.text?.body || message?.button?.text || message?.interactive?.button_reply?.title || "Interação recebida";
+          const lead = upsertAutomationLead({ phone: message.from, channel: "whatsapp", source: "WhatsApp", externalId: message.from, name: contact?.profile?.name || "Contato do WhatsApp", consentWhatsapp: true });
+          appendAutomationMessage(lead.id, { direction: "in", channel: "whatsapp", text, externalId: message.id || "" });
+          tasks.push(maybeAutoReplyWhatsapp(lead, text));
+        });
+      }
+    });
+  });
+  await Promise.allSettled(tasks);
+}
+
+function automationReplyFor(text, settings, leadId) {
+  const value = cleanPlainText(text).toUpperCase();
+  if (value === "5" || value.includes("FALAR COM") || value.includes("ATENDIMENTO")) {
+    markAutomationHumanRequest(leadId);
+    return "Certo! Seu pedido foi encaminhado para o atendimento do Raízes Kids. Uma pessoa continuará a conversa assim que possível.";
+  }
+  if (value === "1") return "O Raízes Kids reúne lições bíblicas organizadas por idade, Trilhas em Vídeo, Culto em Família e conteúdos novos para facilitar a preparação de quem ensina crianças. Conheça em https://www.raizeskids.com/vendas.html";
+  if (value === "2") return "No Plano Líder você acessa Lições Bíblicas, Trilhas em Vídeo, Culto em Família e novidades da plataforma. Treinamentos, EBF e exportação em PDF fazem parte do Premium.";
+  if (value === "3") return "Que bom ter você conosco! Faça seu cadastro em https://www.raizeskids.com/login.html?tab=register&plan=monthly e siga as orientações para liberar o acesso.";
+  if (value === "4") {
+    markAutomationHumanRequest(leadId);
+    return "Vou encaminhar sua dúvida sobre pagamento para o atendimento. Se preferir, conte aqui o que aconteceu para agilizar a ajuda.";
+  }
+  if (value.includes(settings.keyword || "QUERO") || value === "OI" || value === "OLÁ" || value === "OLA") return settings.welcomeMessage;
+  return "Para continuar, responda com um número:\n1 - Conhecer a plataforma\n2 - Ver o que está incluso\n3 - Liberar meu acesso\n4 - Dúvidas sobre pagamento\n5 - Falar com uma pessoa";
+}
+
+function markAutomationHumanRequest(leadId) {
+  const leads = readAutomationLeads();
+  const lead = leads.find((item) => item.id === leadId);
+  if (!lead) return;
+  lead.humanRequested = true;
+  lead.updatedAt = new Date().toISOString();
+  writeAutomationLeads(leads);
+}
+
+async function maybeAutoReplyWhatsapp(lead, text) {
+  const settings = readAutomationSettings();
+  if (!settings.enabled || !settings.whatsappAutoReply || !automationIntegrationStatus().whatsapp) return;
+  const reply = automationReplyFor(text, settings, lead.id);
+  const result = await sendWhatsappCloudText(lead.phone, reply);
+  appendAutomationMessage(lead.id, { direction: "out", channel: "whatsapp", text: reply, externalId: result?.messages?.[0]?.id || "" });
+}
+
+async function maybeAutoReplyInstagram(lead, text) {
+  const settings = readAutomationSettings();
+  if (!settings.enabled || !settings.instagramAutoReply || !automationIntegrationStatus().instagram || !lead.externalId) return;
+  const reply = automationReplyFor(text, settings, lead.id);
+  const result = await sendInstagramText(lead.externalId, reply);
+  appendAutomationMessage(lead.id, { direction: "out", channel: "instagram", text: reply, externalId: result?.message_id || "" });
+}
+
+function sendInstagramText(recipientId, message) {
+  const version = process.env.META_GRAPH_VERSION;
+  const accountId = process.env.INSTAGRAM_ACCOUNT_ID;
+  const token = process.env.INSTAGRAM_ACCESS_TOKEN;
+  return metaJsonRequest(`/${version}/${accountId}/messages`, token, {
+    recipient: { id: recipientId },
+    messaging_type: "RESPONSE",
+    message: { text: message }
+  });
+}
+
+function readRawBody(req, limit = 2 * 1024 * 1024) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let length = 0;
+    req.on("data", (chunk) => {
+      length += chunk.length;
+      if (length > limit) {
+        reject(new Error("Payload muito grande."));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
 }
 
 function readLessons() {
@@ -1485,6 +2014,10 @@ function normalizeNotification(item) {
     type: cleanText(item.type || "Novidade"),
     target: cleanText(item.target || "home"),
     linkLabel: cleanText(item.linkLabel || "Conhecer"),
+    audience: ["all", "family", "leader", "prime"].includes(item.audience) ? item.audience : "all",
+    paid: Boolean(item.paid),
+    instagramFeatured: Boolean(item.instagramFeatured),
+    image: cleanLongText(item.image || "", 2000000),
     active: item.active !== false,
     featured: Boolean(item.featured),
     publishAt: item.publishAt || item.createdAt || new Date().toISOString(),
@@ -1830,8 +2363,8 @@ async function updateProfile(req, res) {
   }
 
   const body = await readBody(req);
-  if (!body.name || !body.email || !body.phone || !body.address || !body.church || !body.churchCity) {
-    sendJson(res, 400, { error: "Preencha nome, email, telefone, endereco, igreja e cidade da igreja." });
+  if (!body.name || !body.email || !body.phone) {
+    sendJson(res, 400, { error: "Preencha nome, email e telefone." });
     return;
   }
 
@@ -1848,6 +2381,10 @@ async function updateProfile(req, res) {
   user.address = cleanText(body.address);
   user.church = cleanText(body.church);
   user.churchCity = cleanText(body.churchCity);
+  user.intendedUse = cleanText(body.intendedUse || user.intendedUse || "");
+  user.ageInterest = cleanText(body.ageInterest || user.ageInterest || "");
+  user.emailOptIn = body.emailOptIn === true;
+  user.whatsappOptIn = body.whatsappOptIn === true;
   user.updatedAt = new Date().toISOString();
   writeUsers(users);
   sendJson(res, 200, { ok: true, user: publicProfileUser(user), message: "Perfil atualizado." });
@@ -1860,7 +2397,7 @@ async function trackContentView(req, res) {
     return;
   }
   const body = await readBody(req, 2048);
-  const type = cleanText(body.type || "Conteúdo");
+  const type = cleanText(body.type || body.event || "Conteúdo");
   const title = cleanText(body.title || "");
   const id = cleanText(body.id || "");
   if (!title) {
@@ -1949,20 +2486,20 @@ function normalizeUser(user) {
   const accessLevel = ["simple", "test"].includes(user.accessLevel) ? "leader" : user.accessLevel;
   const normalized = {
     ...user,
-    accessLevel: user.role === "admin" ? "prime" : accessLevel || "leader",
-    requestedPlan: normalizeDesiredPlan(user.requestedPlan || (accessLevel === "prime" ? "premium" : "monthly")),
+    accessLevel: user.role === "admin" ? "prime" : ["family", "leader", "prime"].includes(accessLevel) ? accessLevel : "leader",
+    requestedPlan: normalizeDesiredPlan(user.requestedPlan || (accessLevel === "prime" ? "premium" : accessLevel === "family" ? "family" : "monthly")),
     phone: user.phone || "",
     churchCity: user.churchCity || ""
   };
   if (normalized.role === "admin") return normalized;
-  if (normalized.approved && normalized.active !== false && !normalized.licenseExpiresAt) {
+  if (normalized.accessLevel !== "family" && normalized.approved && normalized.active !== false && !normalized.licenseExpiresAt) {
     normalized.licenseExpiresAt = new Date(Date.now() + LICENSE_DAYS * DAY_MS).toISOString();
   }
   return normalized;
 }
 
 function ensureUserLicense(user) {
-  if (user.role === "admin") return;
+  if (user.role === "admin" || user.accessLevel === "family") return;
   if (!user.licenseExpiresAt || licenseDaysRemaining(user) <= 0) {
     user.licenseExpiresAt = new Date(Date.now() + LICENSE_DAYS * DAY_MS).toISOString();
   }
@@ -1976,7 +2513,7 @@ function addLicenseDays(user, days) {
 }
 
 function licenseDaysRemaining(user) {
-  if (!user || user.role === "admin") return 9999;
+  if (!user || user.role === "admin" || user.accessLevel === "family") return 9999;
   const expiresAt = new Date(user.licenseExpiresAt || 0).getTime();
   if (!Number.isFinite(expiresAt) || expiresAt <= 0) return 0;
   return Math.max(0, Math.ceil((expiresAt - Date.now()) / DAY_MS));
@@ -1984,8 +2521,8 @@ function licenseDaysRemaining(user) {
 
 function publicLicenseFields(user) {
   return {
-    licenseExpiresAt: user.role === "admin" ? "" : user.licenseExpiresAt || "",
-    licenseDaysRemaining: user.role === "admin" ? null : licenseDaysRemaining(user),
+    licenseExpiresAt: user.role === "admin" || user.accessLevel === "family" ? "" : user.licenseExpiresAt || "",
+    licenseDaysRemaining: user.role === "admin" || user.accessLevel === "family" ? null : licenseDaysRemaining(user),
     renewalRequested: Boolean(user.renewalRequested)
   };
 }
@@ -2026,20 +2563,25 @@ function readBody(req) {
 
 function publicUser(user) {
   if (!user) return null;
-  return { id: user.id, username: user.username, role: user.role, accessLevel: user.accessLevel || "leader", approved: user.approved, active: user.active !== false, name: user.name, ...publicLicenseFields(user) };
+  return { id: user.id, username: user.username, role: user.role, accessLevel: user.accessLevel || "family", approved: user.approved, active: user.active !== false, name: user.name, intendedUse: user.intendedUse || "", ageInterest: user.ageInterest || "", ...publicLicenseFields(user) };
 }
 
 function publicProfileUser(user) {
   return {
     username: user.username,
     role: user.role,
-    accessLevel: user.accessLevel || "leader",
+    accessLevel: user.accessLevel || "family",
     name: user.name || "",
     email: user.email || "",
     phone: user.phone || "",
     address: user.address || "",
     church: user.church || "",
     churchCity: user.churchCity || "",
+    intendedUse: user.intendedUse || "",
+    ageInterest: user.ageInterest || "",
+    signupSource: user.signupSource || "",
+    emailOptIn: Boolean(user.emailOptIn),
+    whatsappOptIn: Boolean(user.whatsappOptIn),
     ...publicLicenseFields(user)
   };
 }
@@ -2049,7 +2591,7 @@ function publicAdminUser(user) {
     id: user.id,
     username: user.username,
     role: user.role,
-    accessLevel: user.accessLevel || "leader",
+    accessLevel: user.accessLevel || "family",
     requestedPlan: user.requestedPlan || "",
     approved: user.approved,
     active: user.active !== false,
@@ -2059,6 +2601,12 @@ function publicAdminUser(user) {
     address: user.address,
     church: user.church,
     churchCity: user.churchCity || "",
+    intendedUse: user.intendedUse || "",
+    ageInterest: user.ageInterest || "",
+    signupSource: user.signupSource || "",
+    emailOptIn: Boolean(user.emailOptIn),
+    whatsappOptIn: Boolean(user.whatsappOptIn),
+    previousPaidAccess: user.previousPaidAccess || "",
     resetRequested: Boolean(user.resetRequested),
     renewalRequested: Boolean(user.renewalRequested),
     ...publicLicenseFields(user),

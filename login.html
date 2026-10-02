@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes Kids | Acesso</title>
-    <link rel="stylesheet" href="styles.css?v=20260915-plan-links" />
+    <link rel="stylesheet" href="styles.css?v=20261001-family-free" />
   </head>
   <body class="auth-page">
     <main class="auth-shell">
@@ -31,23 +31,30 @@
 
         <form id="registerForm" class="auth-form" data-auth-panel="register">
           <h1>Criar cadastro</h1>
+          <p>Comece gratuitamente com todos os Cultos em Família. Você poderá liberar lições e trilhas quando quiser.</p>
           <label><span>Nome completo</span><input name="name" required /></label>
           <label><span>CPF</span><input name="cpf" inputmode="numeric" required /></label>
           <label><span>Email</span><input name="email" type="email" required /></label>
           <label><span>Telefone</span><input name="phone" inputmode="tel" required /></label>
-          <label><span>Endereço</span><input name="address" required /></label>
-          <label><span>Igreja que pertence</span><input name="church" required /></label>
-          <label><span>Cidade da Igreja</span><input name="churchCity" required /></label>
+          <label><span>Endereço (opcional)</span><input name="address" /></label>
+          <label><span>Igreja que pertence (opcional)</span><input name="church" /></label>
+          <label><span>Cidade da Igreja (opcional)</span><input name="churchCity" /></label>
+          <label><span>Como pretende usar o Raízes Kids?</span><select name="intendedUse"><option value="family">Com minha família</option><option value="leader">Como líder/professor</option><option value="coordinator">Coordenando uma equipe</option><option value="both">Na família e na igreja</option></select></label>
+          <label><span>Faixa etária de maior interesse</span><select name="ageInterest"><option value="">Todas</option><option>0 a 2 anos</option><option>3 a 4 anos</option><option>5 a 6 anos</option><option>7 a 10 anos</option><option>11 a 12 anos</option></select></label>
+          <label><span>Como conheceu o Raízes Kids?</span><select name="signupSource"><option value="instagram">Instagram</option><option value="indication">Indicação</option><option value="church">Igreja</option><option value="search">Pesquisa na internet</option><option value="other">Outro</option></select></label>
           <label>
             <span>Plano desejado</span>
             <select name="desiredPlan" required>
-              <option value="monthly">Plano Mensal - R$ 19,90/mês</option>
+              <option value="family">Família Grátis - Cultos em Família</option>
+              <option value="monthly">Plano Líder - R$ 19,90/mês</option>
               <option value="premium">Plano Premium - R$ 349,90 por 12 meses</option>
             </select>
           </label>
           <label><span>Senha de 6 dígitos</span><input name="password" type="password" inputmode="numeric" minlength="6" maxlength="6" required /></label>
           <label><span>Confirmar senha</span><input name="confirmPassword" type="password" inputmode="numeric" minlength="6" maxlength="6" required /></label>
-          <button class="icon-button primary" type="submit">Enviar para aprovação</button>
+          <label class="inline-check"><input name="consentWhatsapp" type="checkbox" /> Autorizo o Raízes Kids a enviar orientações sobre meu cadastro, pagamento e acesso pelo WhatsApp. Posso cancelar quando quiser.</label>
+          <label class="inline-check"><input name="emailOptIn" type="checkbox" /> Quero receber novidades, novos conteúdos e orientações por email.</label>
+          <button class="icon-button primary" type="submit">Criar meu acesso</button>
         </form>
 
         <form id="resetForm" class="auth-form" data-auth-panel="reset">
@@ -65,7 +72,7 @@
         <a class="auth-back" href="index.html">Voltar para o site</a>
       </section>
     </main>
-    <script src="auth.js?v=20260916-mobile-logout-fix"></script>
+    <script src="auth.js?v=20261001-family-free"></script>
   </body>
 </html>
 

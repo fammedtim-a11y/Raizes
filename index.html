@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Catálogo de Lições Bíblicas</title>
-    <link rel="stylesheet" href="styles.css?v=20260915-plan-links" />
+    <link rel="stylesheet" href="styles.css?v=20261001-family-free" />
     <link rel="stylesheet" href="print.css?v=20260915-plan-links" media="print" />
   </head>
   <body data-active-tab="home">
@@ -23,8 +23,7 @@
             <details class="nav-menu">
               <summary class="tab">Famílias</summary>
               <div class="nav-submenu">
-                <button class="tab" data-tab="devotional" data-min-access="leader" type="button">Culto em Família</button>
-                <button class="tab" data-tab="trails" data-min-access="leader" type="button">Trilhas</button>
+                <button class="tab" data-tab="devotional" data-min-access="family" type="button">Culto em Família</button>
               </div>
             </details>
             <details class="nav-menu">
@@ -134,23 +133,25 @@
               <h2>Ensine a Palavra de Deus às crianças com organização, criatividade e propósito</h2>
               <p>Uma plataforma para igrejas, famílias e líderes acessarem lições bíblicas, trilhas em vídeo, cultos em família, treinamentos e materiais prontos para usar.</p>
               <div class="home-actions visitor-only">
-                <a class="icon-button primary" href="vendas.html">💛 Conhecer planos</a>
+                <a class="icon-button primary" href="login.html?tab=register&plan=family">🏠 Começar grátis em família</a>
+                <a class="icon-button accent" href="vendas.html#planos">📖 Sou líder</a>
                 <a class="icon-button" href="login.html">Entrar</a>
               </div>
               <div class="home-actions member-only">
-                <button class="icon-button primary" type="button" data-jump-tab="study">📖 Preparar uma aula</button>
+                <button class="icon-button primary leader-plan-only" type="button" data-jump-tab="study">📖 Preparar uma aula</button>
                 <button class="icon-button primary" type="button" data-jump-tab="devotional">🏠 Culto em Família</button>
-                <button class="icon-button primary" type="button" data-jump-tab="trails">▶️ Assistir trilhas</button>
-                <button class="icon-button accent" type="button" data-jump-tab="training">🌱 Treinar equipe Premium</button>
+                <button class="icon-button primary leader-plan-only" type="button" data-jump-tab="trails">▶️ Assistir trilhas</button>
+                <a class="icon-button accent family-plan-only" href="vendas.html#planos">📖 Liberar lições e trilhas</a>
+                <button class="icon-button accent prime-plan-only" type="button" data-jump-tab="training">🌱 Treinar equipe Premium</button>
               </div>
             </div>
             <aside class="home-login-panel visitor-only" aria-label="Acesso ao conteúdo completo">
               <img src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
-              <h3>Comece a organizar seu Ministério com Criança</h3>
-              <p>Planos a partir de <strong>R$ 19,90/mês</strong>. Conheça a proposta, faça seu cadastro e finalize o pagamento.</p>
+              <h3>Fortaleça a fé em casa, gratuitamente</h3>
+              <p>Crie seu acesso Família e receba Cultos em Família para viver momentos bíblicos com as crianças.</p>
               <div class="home-login-actions">
                 <a class="icon-button primary" href="login.html">Entrar</a>
-                <a class="icon-button accent" href="vendas.html">Cadastrar</a>
+                <a class="icon-button accent" href="login.html?tab=register&plan=family">Cadastrar grátis</a>
               </div>
             </aside>
             <div class="home-illustration member-only" aria-hidden="true">
@@ -182,8 +183,9 @@
               <h2>Acesse pelo celular, prepare sua aula e consulte tudo de onde estiver</h2>
               <p>O Raízes Kids foi pensado para líderes que precisam de praticidade antes, durante e depois da aula.</p>
             </div>
-            <a class="icon-button primary visitor-only" href="vendas.html">Conhecer planos</a>
-            <button class="icon-button primary member-only" type="button" data-jump-tab="study">Abrir minhas lições</button>
+            <a class="icon-button primary visitor-only" href="login.html?tab=register&plan=family">Começar grátis</a>
+            <button class="icon-button primary member-only leader-plan-only" type="button" data-jump-tab="study">Abrir minhas lições</button>
+            <a class="icon-button primary member-only family-plan-only" href="vendas.html#planos">Conhecer Plano Líder</a>
           </section>
 
           <section id="ageCards" class="age-section" aria-label="Faixas etárias">
@@ -218,6 +220,11 @@
               <h2>Veja o que acabou de chegar no Raízes Kids</h2>
             </div>
             <div id="newsHomeList" class="news-home-list"></div>
+          </section>
+
+          <section class="instagram-journey-section" aria-label="Instagram Raízes Kids">
+            <div><span class="home-kicker">📲 Continue perto</span><h2>Novos conteúdos, ideias e lançamentos no Instagram</h2><p>Siga o @raizeskids_ para acompanhar o que chegou à plataforma e receber ideias práticas para a família e para o Ministério com Crianças.</p></div>
+            <a class="icon-button primary" href="https://www.instagram.com/raizeskids_/" target="_blank" rel="noreferrer">Seguir @raizeskids_</a>
           </section>
         </section>
 
@@ -321,7 +328,7 @@
           <strong>Mais opções</strong>
           <button id="closeMobileMoreBtn" class="rail-arrow" type="button" aria-label="Fechar menu">×</button>
         </div>
-        <button type="button" data-mobile-tab="devotional" data-min-access="leader">🏠 Culto em Família</button>
+        <button type="button" data-mobile-tab="devotional" data-min-access="family">🏠 Culto em Família</button>
         <button type="button" data-mobile-tab="training" data-min-access="prime">🎓 Treinamentos Premium</button>
         <button type="button" data-mobile-tab="ebf" data-min-access="prime">🎪 EBF Premium</button>
         <button type="button" data-mobile-tab="team">🌱 Quem Somos</button>
@@ -385,8 +392,8 @@
     </template>
 
     <script src="lessons-data.js?v=20260915-plan-links"></script>
-    <script src="app.js?v=20260915-plan-links"></script>
-    <script src="auth.js?v=20260916-mobile-logout-fix"></script>
+    <script src="app.js?v=20261001-family-free"></script>
+    <script src="auth.js?v=20261001-family-free"></script>
   </body>
 </html>
 

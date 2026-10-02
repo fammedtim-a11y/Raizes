@@ -230,6 +230,10 @@ const els = {
   newsPublishAt: $("#newsPublishAtInput"),
   newsExpiresAt: $("#newsExpiresAtInput"),
   newsSummary: $("#newsSummaryInput"),
+  newsAudience: $("#newsAudienceInput"),
+  newsImage: $("#newsImageInput"),
+  newsPaid: $("#newsPaidInput"),
+  newsInstagramFeatured: $("#newsInstagramFeaturedInput"),
   newsActive: $("#newsActiveInput"),
   newsFeatured: $("#newsFeaturedInput"),
   clearNews: $("#clearNewsBtn"),
@@ -266,7 +270,7 @@ function init() {
   state.activeId = state.lessons[0]?.id || null;
   render();
   if (isAdminPage) {
-    setManageTab(location.hash === "#trilhas" ? "trails" : location.hash === "#novidades" ? "news" : location.hash === "#comunicacao" ? "communication" : location.hash === "#devocionais" ? "devotionals" : location.hash === "#treinamentos" ? "trainings" : location.hash === "#ebf" ? "ebf" : location.hash === "#usuarios" ? "users" : location.hash === "#acessos" ? "access" : location.hash === "#contato" ? "contact" : "dashboard");
+    setManageTab(location.hash === "#trilhas" ? "trails" : location.hash === "#novidades" ? "news" : location.hash === "#comunicacao" ? "communication" : location.hash === "#automacoes" ? "automation" : location.hash === "#devocionais" ? "devotionals" : location.hash === "#treinamentos" ? "trainings" : location.hash === "#ebf" ? "ebf" : location.hash === "#usuarios" ? "users" : location.hash === "#acessos" ? "access" : location.hash === "#contato" ? "contact" : "dashboard");
     loadIntoForm(getActiveLesson());
   } else {
     const initialTab = location.hash === "#trilhas" ? "trails" : location.hash === "#licoes" ? "study" : location.hash === "#treinamentos" ? "training" : location.hash === "#devocional" ? "devotional" : location.hash === "#ebf" ? "ebf" : location.hash === "#quem-somos" ? "team" : "home";
@@ -599,7 +603,14 @@ function bindEvents() {
   });
 
   document.querySelectorAll("[data-jump-tab]").forEach((button) => {
-    button.addEventListener("click", () => setTab(button.dataset.jumpTab));
+    button.addEventListener("click", () => {
+      const target = button.dataset.jumpTab;
+      if (["training", "ebf"].includes(target) && !canAccessLevel("prime")) {
+        window.location.href = "vendas.html#planos";
+        return;
+      }
+      setTab(target);
+    });
   });
 
   $("#homeNewsShortcut")?.addEventListener("click", openNewsDrawer);
@@ -1084,6 +1095,7 @@ function setManageTab(tabName) {
   $("#userManagePanel")?.classList.toggle("active", tabName === "users");
   $("#analyticsManagePanel")?.classList.toggle("active", tabName === "analytics");
   $("#communicationManagePanel")?.classList.toggle("active", tabName === "communication");
+  $("#automationManagePanel")?.classList.toggle("active", tabName === "automation");
   $("#accessManagePanel")?.classList.toggle("active", false);
   $("#contactManagePanel")?.classList.toggle("active", tabName === "contact");
   els.filterToolbar?.classList.toggle("hidden", !["lessons", "trails"].includes(tabName));
@@ -1091,6 +1103,7 @@ function setManageTab(tabName) {
   if (tabName === "users") window.loadAdminAccessLogs?.();
   if (tabName === "analytics") window.loadAdminAnalytics?.();
   if (tabName === "communication") window.loadCommunicationCenter?.();
+  if (tabName === "automation") window.loadAutomationCenter?.();
   if (tabName === "contact") window.loadAdminSiteInfo?.();
   if (tabName === "news") renderNotifications();
 }
@@ -1173,7 +1186,7 @@ function applyAccessVisibility() {
     el.classList.remove("hidden");
   });
   document.querySelectorAll("[data-min-access]").forEach((el) => {
-    const visible = !state.authUser || canAccessLevel(el.dataset.minAccess);
+    const visible = el.dataset.minAccess !== "prime" || canAccessLevel("prime");
     el.classList.toggle("hidden", !visible);
   });
   document.querySelectorAll(".nav-menu").forEach((menu) => {
@@ -1185,19 +1198,21 @@ function applyAccessVisibility() {
 }
 
 function canAccessTab(tabName) {
-  if (!state.authUser || state.authUser.role === "admin") return true;
+  if (!state.authUser) return ["home", "team", "devotional", "study", "trails"].includes(tabName);
+  if (state.authUser.role === "admin") return true;
   if (tabName === "home") return true;
   if (tabName === "team") return true;
   if (["training", "ebf"].includes(tabName)) return canAccessLevel("prime");
-  if (["devotional", "study", "trails"].includes(tabName)) return canAccessLevel("leader");
-  return canAccessLevel("leader");
+  if (tabName === "devotional") return canAccessLevel("family");
+  if (["study", "trails"].includes(tabName)) return canAccessLevel("family");
+  return canAccessLevel("family");
 }
 
 function canAccessLevel(required) {
   if (!state.authUser || state.authUser.role === "admin") return true;
-  const order = { leader: 1, prime: 2 };
-  const current = order[state.authUser.accessLevel || "leader"] || 1;
-  return current >= (order[required] || 1);
+  const order = { family: 0, leader: 1, prime: 2 };
+  const current = order[state.authUser.accessLevel || "family"] ?? 0;
+  return current >= (order[required] ?? 0);
 }
 
 function scrollToLessonRail() {
@@ -1461,15 +1476,19 @@ function renderContentArea(config) {
   }
   if (!items.some((item) => item.id === state[config.activeKey])) state[config.activeKey] = items[0].id;
   const active = items.find((item) => item.id === state[config.activeKey]) || items[0];
-  list.innerHTML = items.map((item) => renderContentCard(item, item.id === active.id, config.typeLabel)).join("");
+  const isFamilyGuest = config.typeLabel === "Culto em Família" && !state.authUser;
+  const activeIndex = items.findIndex((item) => item.id === active.id);
+  list.innerHTML = items.map((item, index) => renderContentCard(item, item.id === active.id, config.typeLabel, isFamilyGuest && index > 0)).join("");
   list.querySelectorAll("[data-content-id]").forEach((card) => {
     card.addEventListener("click", () => {
       state[config.activeKey] = card.dataset.contentId;
       config.onChange();
     });
   });
-  reader.innerHTML = renderContentReader(active, config);
-  trackContentView(config.typeLabel, active);
+  reader.innerHTML = isFamilyGuest && activeIndex > 0
+    ? renderFamilyGuestLock(active)
+    : renderContentReader(active, config);
+  if (!(isFamilyGuest && activeIndex > 0)) trackContentView(config.typeLabel, active);
   reader.querySelector("[data-export-content-pdf]")?.addEventListener("click", () => {
     printContentPdf(contentTypeFromLabel(config.typeLabel), active);
   });
@@ -1498,18 +1517,19 @@ function filteredContentItems(items) {
   return filtered;
 }
 
-function renderContentCard(item, active, typeLabel) {
+function renderContentCard(item, active, typeLabel, locked = false) {
   const visual = categoryTheme(item.category || typeLabel);
   const cover = item.cardImage
     ? `<div class="lesson-cover custom-cover"><img src="${escapeHtml(item.cardImage)}" alt="" /></div>`
     : `<div class="lesson-cover"><span class="lesson-cover-book">${escapeHtml(typeLabel)}</span><span class="lesson-cover-principle">${escapeHtml(item.principle || item.description || item.title)}</span><span class="lesson-cover-ref">${escapeHtml(item.season || formatMonthYear(item.createdAt))}</span></div>`;
   if (typeLabel === "Culto em Família") {
     return `
-      <button class="lesson-card devotional-card ${active ? "active" : ""}" style="--lesson-primary:${visual.primary};--lesson-soft:${visual.soft};--lesson-accent:${visual.accent}" type="button" data-content-id="${escapeHtml(item.id)}">
+      <button class="lesson-card devotional-card ${active ? "active" : ""} ${locked ? "locked" : ""}" style="--lesson-primary:${visual.primary};--lesson-soft:${visual.soft};--lesson-accent:${visual.accent}" type="button" data-content-id="${escapeHtml(item.id)}">
         ${cover}
         <strong class="devotional-card-title">${escapeHtml(item.title || "Culto em Família")}</strong>
         <span class="devotional-card-category">${escapeHtml(item.category || "Sem categoria")}</span>
         <span class="devotional-card-verse">${escapeHtml(item.bibleText || item.verse || "Texto bíblico não informado")}</span>
+        ${locked ? '<span class="pill lock-pill">Cadastro grátis</span>' : ""}
       </button>
     `;
   }
@@ -1560,8 +1580,45 @@ function renderContentReader(item, config) {
       }).join("")}
       ${item.activityImage ? `<section class="lesson-section activity-art"><div class="section-icon">🎨</div><div class="section-body"><h3>${config.typeLabel === "Treinamento" ? "Imagem do treinamento" : "Atividade"}</h3><img src="${escapeHtml(item.activityImage)}" alt="${config.typeLabel === "Treinamento" ? "Imagem do treinamento" : "Atividade"}" /></div></section>` : ""}
       ${attachments}
+      ${config.typeLabel === "Culto em Família" ? renderFamilyJourneyActions() : ""}
     </div>
   `;
+}
+
+function renderFamilyGuestLock(item) {
+  return `
+    <section class="locked-reader family-free-lock">
+      <span class="locked-icon">🏠</span>
+      <span class="reader-kicker">Família Grátis</span>
+      <h2>${escapeHtml(item.title)}</h2>
+      <p>Crie seu cadastro gratuito para acessar todos os Cultos em Família. Não é necessário pagamento.</p>
+      <div class="home-login-actions">
+        <a class="icon-button primary" href="login.html?tab=register&plan=family">Criar acesso grátis</a>
+        <a class="icon-button" href="login.html">Já tenho cadastro</a>
+      </div>
+    </section>
+  `;
+}
+
+function renderFamilyJourneyActions() {
+  return `
+    <section class="family-journey-actions">
+      <div><span>🌱</span><strong>Leve essa ferramenta para sua igreja</strong><p>Compartilhe o Raízes Kids com quem lidera o Ministério com Crianças.</p></div>
+      <div class="home-login-actions">
+        <button class="icon-button" type="button" onclick="shareWithLeader()">Compartilhar com um líder</button>
+        <a class="icon-button accent" href="https://www.instagram.com/raizeskids_/" target="_blank" rel="noreferrer">Seguir no Instagram</a>
+      </div>
+    </section>
+  `;
+}
+
+async function shareWithLeader() {
+  const text = "Conheça o Raízes Kids: Cultos em Família gratuitos e uma plataforma completa para o Ministério com Crianças.";
+  const url = `${location.origin}/vendas.html`;
+  if (navigator.share) {
+    try { await navigator.share({ title: "Raízes Kids", text, url }); return; } catch {}
+  }
+  window.open(`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`, "_blank", "noopener");
 }
 
 function renderContentLinkedVideoSection(item, typeLabel) {
@@ -1662,15 +1719,14 @@ function renderLockedReader(lesson) {
       <span class="locked-icon">🔒</span>
       <span class="reader-kicker">Conteúdo exclusivo</span>
       <h2>${escapeHtml(lesson.title)}</h2>
-      <p>Esta lição já está disponível no catálogo, mas o plano completo é liberado apenas para usuários com acesso ativo.</p>
+      <p>Esta lição faz parte do Plano Líder. Libere lições completas e trilhas em vídeo para preparar suas aulas.</p>
       <div class="lesson-meta">
         <span class="pill">${escapeHtml(lesson.category || "Lição")}</span>
         <span class="pill">${escapeHtml(ageText(lesson.age, "Todas as idades"))}</span>
         <span class="pill lock-pill">Bloqueado</span>
       </div>
       <div class="home-login-actions">
-        <a class="icon-button primary" href="login.html">Entrar</a>
-        <a class="icon-button accent" href="login.html">Cadastrar</a>
+        ${state.authUser ? '<a class="icon-button primary" href="vendas.html#planos">Conhecer Plano Líder</a>' : '<a class="icon-button primary" href="login.html">Entrar</a><a class="icon-button accent" href="login.html?tab=register&plan=family">Começar grátis</a>'}
       </div>
     </section>
   `;
@@ -1733,7 +1789,7 @@ function lessonMonthKey(value) {
 // Visitantes enxergam o tamanho do acervo, mas nao acessam o conteudo interno.
 // O administrador e usuarios logados continuam com acesso normal.
 function catalogIsLimited() {
-  return !isAdminPage && !state.authUser;
+  return !isAdminPage && (!state.authUser || !canAccessLevel("leader"));
 }
 
 function renderLimitedNotice() {
@@ -1746,9 +1802,9 @@ function renderLimitedNotice() {
   if (!parent || parent.querySelector(".limited-notice")) return;
   parent.insertAdjacentHTML("afterbegin", `
     <div class="limited-notice">
-      <strong>Catálogo visível, acesso protegido</strong>
-      <span>Você está vendo tudo que existe. Entre para abrir lições, trilhas, cultos em família e EBF completa.</span>
-      <a href="login.html">Entrar</a>
+      <strong>${state.authUser ? "Conteúdo do Plano Líder" : "Catálogo visível, acesso protegido"}</strong>
+      <span>${state.authUser ? "Seu acesso Família continua gratuito. Faça o upgrade para abrir lições e trilhas completas." : "Crie seu acesso Família grátis ou conheça os planos para líderes."}</span>
+      <a href="${state.authUser ? "vendas.html#planos" : "login.html?tab=register&plan=family"}">${state.authUser ? "Ver planos" : "Começar grátis"}</a>
     </div>
   `);
 }
@@ -2352,7 +2408,10 @@ function activeNotifications() {
     if (item.active === false) return false;
     if (item.publishAt && new Date(item.publishAt) > now) return false;
     if (item.expiresAt && new Date(item.expiresAt) < now) return false;
-    return true;
+    if (!item.audience || item.audience === "all") return true;
+    if (!state.authUser) return item.audience === "family";
+    if (state.authUser.role === "admin") return true;
+    return item.audience === state.authUser.accessLevel;
   });
 }
 
@@ -2396,7 +2455,7 @@ function renderNotifications() {
   }
 
   document.querySelectorAll("[data-news-target]").forEach((button) => {
-    button.addEventListener("click", () => openNewsTarget(button.dataset.newsTarget, button.dataset.newsId));
+    button.addEventListener("click", () => openNewsTarget(button.dataset.newsTarget, button.dataset.newsId, button.dataset.newsPaid === "true"));
   });
   document.querySelectorAll("[data-admin-news-id]").forEach((card) => {
     card.addEventListener("click", () => {
@@ -2408,16 +2467,18 @@ function renderNotifications() {
 
 function renderNewsCard(item, options = {}) {
   const date = item.publishAt ? new Date(item.publishAt).toLocaleDateString("pt-BR") : "";
+  const paidPreview = Boolean(item.paid) && (!state.authUser || !canAccessLevel("leader"));
   return `
-    <article class="news-card ${item.featured ? "featured" : ""} ${options.seen ? "seen" : ""}">
+    <article class="news-card ${item.featured ? "featured" : ""} ${paidPreview ? "paid-preview" : ""} ${options.seen ? "seen" : ""}">
+      ${item.image ? `<img class="news-card-image" src="${escapeHtml(item.image)}" alt="" loading="lazy" />` : ""}
       <div>
-        <span class="news-type">${escapeHtml(item.type || "Novidade")}</span>
+        <span class="news-type">${paidPreview ? "✨ Novidade do Plano Líder" : escapeHtml(item.type || "Novidade")}</span>
         <h3>${escapeHtml(item.title)}</h3>
         <p>${escapeHtml(item.summary || "Confira esta novidade no Raízes Kids.")}</p>
         ${date ? `<small>${escapeHtml(date)}</small>` : ""}
       </div>
-      <button class="icon-button ${item.featured ? "accent" : ""}" type="button" data-news-target="${escapeHtml(item.target || "home")}" data-news-id="${escapeHtml(item.id)}">
-        ${escapeHtml(item.linkLabel || "Conhecer")}
+      <button class="icon-button ${item.featured ? "accent" : ""}" type="button" data-news-target="${escapeHtml(item.target || "home")}" data-news-id="${escapeHtml(item.id)}" data-news-paid="${paidPreview ? "true" : "false"}">
+        ${paidPreview ? "Conhecer Plano Líder" : escapeHtml(item.linkLabel || "Conhecer")}
       </button>
     </article>
   `;
@@ -2450,12 +2511,16 @@ function closeNewsDrawer() {
   if (els.newsOverlay) els.newsOverlay.hidden = true;
 }
 
-function openNewsTarget(target, id) {
+function openNewsTarget(target, id, paidPreview = false) {
   const seen = seenNewsIds();
   if (id) seen.add(id);
   saveSeenNewsIds(seen);
   renderNotifications();
   closeNewsDrawer();
+  if (paidPreview) {
+    window.location.href = "vendas.html#planos";
+    return;
+  }
   if (isAdminPage) {
     const hashes = { study: "#licoes", trails: "#trilhas", devotional: "#devocional", training: "#treinamentos", ebf: "#ebf", home: "" };
     window.location.href = `index.html${hashes[target] || ""}`;
@@ -2479,6 +2544,10 @@ async function saveNewsFromForm(event) {
     type: els.newsType.value,
     target: els.newsTarget.value,
     linkLabel: els.newsLinkLabel.value.trim() || "Conhecer",
+    audience: els.newsAudience?.value || "all",
+    image: els.newsImage?.value.trim() || "",
+    paid: Boolean(els.newsPaid?.checked),
+    instagramFeatured: Boolean(els.newsInstagramFeatured?.checked),
     active: els.newsActive.checked,
     featured: els.newsFeatured.checked,
     publishAt: dateInputToIso(els.newsPublishAt.value) || existing?.publishAt || new Date().toISOString(),
@@ -2509,6 +2578,10 @@ function loadNewsIntoForm(item) {
   els.newsType.value = item.type || "Novidade";
   els.newsTarget.value = item.target || "home";
   els.newsLinkLabel.value = item.linkLabel || "";
+  if (els.newsAudience) els.newsAudience.value = item.audience || "all";
+  if (els.newsImage) els.newsImage.value = item.image || "";
+  if (els.newsPaid) els.newsPaid.checked = Boolean(item.paid);
+  if (els.newsInstagramFeatured) els.newsInstagramFeatured.checked = Boolean(item.instagramFeatured);
   els.newsActive.checked = item.active !== false;
   els.newsFeatured.checked = Boolean(item.featured);
   els.newsPublishAt.value = isoToDateInput(item.publishAt);
@@ -2522,6 +2595,8 @@ function clearNewsForm(options = {}) {
   els.newsId.value = "";
   els.newsActive.checked = true;
   els.newsFeatured.checked = false;
+  if (els.newsPaid) els.newsPaid.checked = false;
+  if (els.newsInstagramFeatured) els.newsInstagramFeatured.checked = false;
   if (els.newsPublishAt) els.newsPublishAt.value = new Date().toISOString().slice(0, 10);
   if (options.confirm) showNewsMessage("Formulário de novidade limpo.");
 }

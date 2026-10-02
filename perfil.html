@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes Kids | Perfil</title>
-    <link rel="stylesheet" href="styles.css?v=20260915-plan-links" />
+    <link rel="stylesheet" href="styles.css?v=20261001-family-free" />
   </head>
   <body class="auth-page" data-page="profile">
     <main class="auth-shell">
@@ -13,20 +13,26 @@
         <form id="profileForm" class="auth-form active">
           <h1>Meu perfil</h1>
           <p>Atualize seus dados de cadastro para manter seu acesso organizado.</p>
+          <div id="profilePlanSummary" class="profile-plan-summary"></div>
           <label><span>CPF</span><input name="username" inputmode="numeric" disabled /></label>
           <label><span>Nome completo</span><input name="name" required /></label>
           <label><span>Email</span><input name="email" type="email" required /></label>
           <label><span>Telefone</span><input name="phone" inputmode="tel" required /></label>
-          <label><span>Endereço</span><input name="address" required /></label>
-          <label><span>Igreja que pertence</span><input name="church" required /></label>
-          <label><span>Cidade da Igreja</span><input name="churchCity" required /></label>
+          <label><span>Endereço (opcional)</span><input name="address" /></label>
+          <label><span>Igreja que pertence (opcional)</span><input name="church" /></label>
+          <label><span>Cidade da Igreja (opcional)</span><input name="churchCity" /></label>
+          <label><span>Como usa o Raízes Kids?</span><select name="intendedUse"><option value="family">Com minha família</option><option value="leader">Como líder/professor</option><option value="coordinator">Coordenando uma equipe</option><option value="both">Na família e na igreja</option></select></label>
+          <label><span>Faixa etária de maior interesse</span><select name="ageInterest"><option value="">Todas</option><option>0 a 2 anos</option><option>3 a 4 anos</option><option>5 a 6 anos</option><option>7 a 10 anos</option><option>11 a 12 anos</option></select></label>
+          <label class="inline-check"><input name="whatsappOptIn" type="checkbox" /> Receber novidades pelo WhatsApp</label>
+          <label class="inline-check"><input name="emailOptIn" type="checkbox" /> Receber novidades por email</label>
           <button class="icon-button primary" type="submit">Salvar perfil</button>
         </form>
+        <div class="profile-upgrade-actions"><a class="icon-button primary" href="vendas.html#planos">Conhecer planos para líderes</a><a class="icon-button" href="https://www.instagram.com/raizeskids_/" target="_blank" rel="noreferrer">Seguir @raizeskids_</a></div>
         <p id="authMessage" class="auth-message" role="status"></p>
         <a class="auth-back" href="index.html">Voltar para o site</a>
       </section>
     </main>
-    <script src="auth.js?v=20260916-mobile-logout-fix"></script>
+    <script src="auth.js?v=20261001-family-free"></script>
   </body>
 </html>
 

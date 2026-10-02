@@ -1,4 +1,5 @@
 const authState = { user: null, initialized: false, adminUsers: [] };
+const automationState = { leads: [], settings: {}, integration: {}, counts: {} };
 
 document.addEventListener("DOMContentLoaded", () => {
   bindAuthTabs();
@@ -45,6 +46,7 @@ async function refreshSession() {
     if (userChanged) loadAdminUsers();
     if (userChanged) loadAdminAccessLogs();
     if (userChanged) loadCommunicationCenter();
+    if (userChanged && authState.user?.username === "08047232657") loadAutomationCenter();
     if (userChanged) loadAdminAnalytics();
   }
 }
@@ -102,7 +104,7 @@ function bindAuthTabs() {
 function applyRequestedPlanFromUrl() {
   const plan = new URLSearchParams(location.search).get("plan");
   const select = document.querySelector('#registerForm select[name="desiredPlan"]');
-  if (select && ["monthly", "premium"].includes(plan)) select.value = plan;
+  if (select && ["family", "monthly", "premium"].includes(plan)) select.value = plan;
 }
 
 function selectAuthTab(tabName, clearMessage = true) {
@@ -141,12 +143,15 @@ function bindAuthForms() {
 
   registerForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const result = await apiPost("/api/register", formData(registerForm));
+    const payload = formData(registerForm);
+    payload.consentWhatsapp = Boolean(registerForm.elements.consentWhatsapp?.checked);
+    payload.emailOptIn = Boolean(registerForm.elements.emailOptIn?.checked);
+    const result = await apiPost("/api/register", payload);
     setAuthMessage(result.error || result.message || "Cadastro enviado.", Boolean(result.error));
     if (!result.error) {
       registerForm.reset();
-      sessionStorage.setItem("raizes-auth-notice", result.message || "Cadastro enviado para aprovacao.");
-      window.location.href = result.paymentUrl || "vendas.html";
+      sessionStorage.setItem("raizes-auth-notice", result.message || "Cadastro criado com sucesso.");
+      window.location.href = result.freeAccess ? "login.html?tab=login" : (result.paymentUrl || "vendas.html");
     }
   });
 
@@ -163,6 +168,8 @@ function bindAuthForms() {
       event.preventDefault();
       const data = formData(profileForm);
       delete data.username;
+      data.whatsappOptIn = Boolean(profileForm.elements.whatsappOptIn?.checked);
+      data.emailOptIn = Boolean(profileForm.elements.emailOptIn?.checked);
       const result = await apiPost("/api/profile", data);
       setAuthMessage(result.error || result.message || "Perfil atualizado.", Boolean(result.error));
       if (!result.error && result.user) fillProfileForm(profileForm, result.user);
@@ -204,15 +211,19 @@ async function loadProfile(form) {
 }
 
 function fillProfileForm(form, user) {
-  ["username", "name", "email", "phone", "address", "church", "churchCity"].forEach((key) => {
+  ["username", "name", "email", "phone", "address", "church", "churchCity", "intendedUse", "ageInterest"].forEach((key) => {
     if (form.elements[key]) form.elements[key].value = user?.[key] || "";
   });
+  if (form.elements.whatsappOptIn) form.elements.whatsappOptIn.checked = Boolean(user?.whatsappOptIn);
+  if (form.elements.emailOptIn) form.elements.emailOptIn.checked = Boolean(user?.emailOptIn);
+  const summary = document.querySelector("#profilePlanSummary");
+  if (summary) summary.innerHTML = `<strong>${accessLevelLabel(user?.accessLevel)}</strong><span>${user?.accessLevel === "family" ? "Cultos em Família liberados gratuitamente, sem vencimento." : user?.licenseExpiresAt ? `Acesso válido até ${formatDate(user.licenseExpiresAt)}.` : "Acesso ativo."}</span>`;
 }
 
 function renderLicenseNotice() {
   document.querySelectorAll(".license-expiry-notice").forEach((notice) => notice.remove());
   const user = authState.user;
-  if (!user || user.role === "admin") return;
+  if (!user || user.role === "admin" || user.accessLevel === "family") return;
   const days = Number(user.licenseDaysRemaining);
   if (!Number.isFinite(days) || days > 15) return;
   const notice = document.createElement("div");
@@ -236,7 +247,7 @@ async function loadAdminUsers() {
   authState.adminUsers = Array.isArray(data.users) ? data.users : [];
   renderAdminUsers();
   window.raizesAdminPendingUsers = authState.adminUsers.filter((user) => user.role !== "admin" && !user.approved).length;
-  window.raizesAdminExpiringUsers = authState.adminUsers.filter((user) => user.role !== "admin" && user.approved && user.active !== false && Number(user.licenseDaysRemaining || 0) <= 15).length;
+  window.raizesAdminExpiringUsers = authState.adminUsers.filter((user) => user.role !== "admin" && user.accessLevel !== "family" && user.approved && user.active !== false && Number(user.licenseDaysRemaining || 0) <= 15).length;
   const latestAccess = authState.adminUsers
     .map((user) => user.lastAccessAt || user.lastLoginAt)
     .filter(Boolean)
@@ -248,6 +259,11 @@ async function loadAdminUsers() {
   if (filter && !filter.dataset.bound) {
     filter.dataset.bound = "true";
     filter.addEventListener("change", renderAdminUsers);
+  }
+  const accessFilter = document.querySelector("#adminUserAccessFilter");
+  if (accessFilter && !accessFilter.dataset.bound) {
+    accessFilter.dataset.bound = "true";
+    accessFilter.addEventListener("change", renderAdminUsers);
   }
   const exportButton = document.querySelector("#exportUsersCsvBtn");
   if (exportButton) exportButton.onclick = () => exportUsersCsv(filteredAdminUsers());
@@ -327,6 +343,7 @@ function renderAdminUsers() {
 
 function filteredAdminUsers() {
   const status = document.querySelector("#adminUserStatusFilter")?.value || "all";
+  const access = document.querySelector("#adminUserAccessFilter")?.value || "all";
   return authState.adminUsers
     .filter((user) => {
       if (status === "active") return user.role !== "admin" && user.approved && user.active !== false;
@@ -335,6 +352,7 @@ function filteredAdminUsers() {
       if (status === "admin") return user.role === "admin";
       return true;
     })
+    .filter((user) => access === "all" || user.accessLevel === access)
     .sort((a, b) => {
       const nameA = String(a.name || a.username || "").localeCompare(String(b.name || b.username || ""), "pt-BR", { sensitivity: "base" });
       if (nameA !== 0) return nameA;
@@ -388,6 +406,9 @@ function renderAdminAnalytics(analytics) {
   panel.innerHTML = `
     <section class="analytics-metric-grid">
       ${analyticsMetric("👥", totals.users, "Usuários cadastrados")}
+      ${analyticsMetric("🏠", totals.familyUsers, "Família Grátis")}
+      ${analyticsMetric("📖", totals.monthlyUsers, "Plano Líder")}
+      ${analyticsMetric("⭐", totals.premiumUsers, "Premium")}
       ${analyticsMetric("✅", totals.approvedUsers, "Usuários ativos")}
       ${analyticsMetric("⏳", totals.pendingUsers, "Aguardando aprovação")}
       ${analyticsMetric("⚠️", totals.expiringUsers, "Licenças vencendo")}
@@ -544,6 +565,213 @@ function renderCommunicationCampaignCard(campaign) {
   `;
 }
 
+async function loadAutomationCenter() {
+  const panel = document.querySelector("#automationManagePanel");
+  if (!panel || authState.user?.username !== "08047232657") return;
+  bindAutomationCenter();
+  const data = await apiGet("/api/admin/automacao");
+  if (data.error) {
+    document.querySelector("#automationLeadsList").innerHTML = `<p class="muted-line">${authEscapeHtml(data.error)}</p>`;
+    return;
+  }
+  automationState.leads = data.leads || [];
+  automationState.settings = data.settings || {};
+  automationState.integration = data.integration || {};
+  automationState.counts = data.counts || {};
+  fillAutomationSettings();
+  renderAutomationStats();
+  renderAutomationIntegration();
+  renderAutomationLeads();
+}
+
+window.loadAutomationCenter = loadAutomationCenter;
+
+function bindAutomationCenter() {
+  const panel = document.querySelector("#automationManagePanel");
+  if (!panel || panel.dataset.bound) return;
+  panel.dataset.bound = "true";
+  document.querySelector("#refreshAutomationBtn")?.addEventListener("click", loadAutomationCenter);
+  document.querySelector("#automationStageFilter")?.addEventListener("change", renderAutomationLeads);
+  document.querySelector("#newAutomationLeadBtn")?.addEventListener("click", () => toggleAutomationLeadForm(true));
+  document.querySelector("#cancelAutomationLeadBtn")?.addEventListener("click", () => toggleAutomationLeadForm(false));
+  document.querySelector("#automationSettingsForm")?.addEventListener("submit", saveAutomationSettings);
+  document.querySelector("#automationLeadForm")?.addEventListener("submit", createAutomationLeadFromForm);
+  document.querySelector("#automationLeadsList")?.addEventListener("click", handleAutomationLeadClick);
+  document.querySelector("#automationLeadsList")?.addEventListener("change", handleAutomationLeadChange);
+}
+
+function fillAutomationSettings() {
+  const form = document.querySelector("#automationSettingsForm");
+  if (!form) return;
+  ["enabled", "whatsappAutoReply", "instagramAutoReply", "humanHandoff"].forEach((key) => {
+    if (form.elements[key]) form.elements[key].checked = Boolean(automationState.settings[key]);
+  });
+  if (form.elements.keyword) form.elements.keyword.value = automationState.settings.keyword || "QUERO";
+  if (form.elements.welcomeMessage) form.elements.welcomeMessage.value = automationState.settings.welcomeMessage || "";
+}
+
+function renderAutomationStats() {
+  const root = document.querySelector("#automationStats");
+  if (!root) return;
+  const stats = [
+    ["👥", automationState.counts.total || 0, "Interessados"],
+    ["✨", automationState.counts.novo || 0, "Novos"],
+    ["💬", automationState.counts.conversando || 0, "Em conversa"],
+    ["✅", automationState.counts.cliente || 0, "Clientes"],
+    ["🙋", automationState.counts.human || 0, "Pedem atendimento"]
+  ];
+  root.innerHTML = stats.map(([icon, value, label]) => `<article><span>${icon}</span><strong>${value}</strong><small>${label}</small></article>`).join("");
+}
+
+function renderAutomationIntegration() {
+  const root = document.querySelector("#automationIntegrationStatus");
+  if (!root) return;
+  const status = automationState.integration || {};
+  const items = [
+    ["Webhook", status.verifyToken && status.appSecret],
+    ["WhatsApp Cloud API", status.whatsapp],
+    ["Instagram", status.instagram],
+    ["Versão da API da Meta", status.graphVersion]
+  ];
+  root.innerHTML = items.map(([label, connected]) => `
+    <div class="automation-status-row ${connected ? "connected" : "pending"}">
+      <span>${connected ? "✓" : "!"}</span><strong>${authEscapeHtml(label)}</strong><small>${connected ? "Configurado" : "Pendente"}</small>
+    </div>
+  `).join("") + `<label class="automation-webhook"><span>URL do webhook</span><input readonly value="${authEscapeHtml(status.webhookUrl || "")}" /></label>`;
+}
+
+async function saveAutomationSettings(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const payload = {
+    enabled: form.elements.enabled.checked,
+    whatsappAutoReply: form.elements.whatsappAutoReply.checked,
+    instagramAutoReply: form.elements.instagramAutoReply.checked,
+    humanHandoff: form.elements.humanHandoff.checked,
+    keyword: form.elements.keyword.value,
+    welcomeMessage: form.elements.welcomeMessage.value
+  };
+  const result = await apiPost("/api/admin/automacao/configuracao", payload);
+  setActionMessage("#automationSettingsMessage", result.error || "Regras salvas com sucesso.", Boolean(result.error));
+  if (!result.error) automationState.settings = result.settings || payload;
+}
+
+function toggleAutomationLeadForm(show) {
+  const wrap = document.querySelector("#automationLeadFormWrap");
+  if (!wrap) return;
+  wrap.hidden = !show;
+  if (show) document.querySelector("#automationLeadForm input[name='name']")?.focus();
+}
+
+async function createAutomationLeadFromForm(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const payload = {
+    name: form.elements.name.value,
+    phone: form.elements.phone.value,
+    email: form.elements.email.value,
+    source: form.elements.source.value,
+    consentWhatsapp: form.elements.consentWhatsapp.checked,
+    channel: "manual"
+  };
+  const result = await apiPost("/api/admin/automacao/interessados", payload);
+  if (result.error) {
+    window.alert(result.error);
+    return;
+  }
+  form.reset();
+  if (form.elements.source) form.elements.source.value = "Contato manual";
+  toggleAutomationLeadForm(false);
+  await loadAutomationCenter();
+}
+
+function renderAutomationLeads() {
+  const root = document.querySelector("#automationLeadsList");
+  if (!root) return;
+  const filter = document.querySelector("#automationStageFilter")?.value || "all";
+  const leads = automationState.leads.filter((lead) => filter === "all" || lead.stage === filter);
+  root.innerHTML = leads.length ? leads.map(renderAutomationLeadCard).join("") : '<p class="muted-line">Nenhum interessado nesta etapa.</p>';
+}
+
+function renderAutomationLeadCard(lead) {
+  const messages = (lead.messages || []).slice(-5);
+  const manualUrl = lead.phone ? `https://wa.me/${lead.phone.startsWith("55") ? lead.phone : `55${lead.phone}`}` : "";
+  return `
+    <article class="automation-lead-card" data-automation-lead="${authEscapeHtml(lead.id)}">
+      <div class="automation-lead-summary">
+        <div><strong>${authEscapeHtml(lead.name || "Interessado")}</strong><span>${authEscapeHtml(lead.source || lead.channel || "Contato")}</span></div>
+        <span class="automation-stage stage-${authEscapeHtml(lead.stage)}">${authEscapeHtml(automationStageLabel(lead.stage))}</span>
+        <button class="icon-button" type="button" data-automation-details>Ver conversa</button>
+      </div>
+      <div class="automation-lead-details" hidden>
+        <div class="automation-contact-line">
+          <span>${authEscapeHtml(formatPhoneDisplay(lead.phone) || "Sem WhatsApp")}</span>
+          <span>${authEscapeHtml(lead.email || "Sem email")}</span>
+          <span>${lead.consentWhatsapp ? "Contato autorizado" : "Sem autorização para WhatsApp"}</span>
+        </div>
+        <label><span>Etapa</span><select data-automation-stage>${automationStageOptions(lead.stage)}</select></label>
+        <label class="inline-check"><input type="checkbox" data-automation-human ${lead.humanRequested ? "checked" : ""} /> Precisa de atendimento humano</label>
+        <div class="automation-message-history">
+          ${messages.length ? messages.map((message) => `<p class="${message.direction === "out" ? "out" : "in"}"><small>${message.direction === "out" ? "Raízes Kids" : "Interessado"}</small>${authEscapeHtml(message.text)}</p>`).join("") : '<span class="muted-line">Nenhuma mensagem registrada.</span>'}
+        </div>
+        <form class="automation-message-form">
+          <textarea name="message" rows="3" placeholder="Escreva uma mensagem para o WhatsApp"></textarea>
+          <div class="form-actions">
+            <button class="icon-button primary" type="submit" ${lead.consentWhatsapp && lead.phone ? "" : "disabled"}>Enviar mensagem</button>
+            ${manualUrl ? `<a class="icon-button" href="${authEscapeHtml(manualUrl)}" target="_blank" rel="noreferrer">Abrir WhatsApp</a>` : ""}
+          </div>
+        </form>
+      </div>
+    </article>
+  `;
+}
+
+function automationStageLabel(stage) {
+  return { novo: "Novo", conversando: "Conversando", cadastro: "Cadastro", pagamento: "Pagamento", cliente: "Cliente", encerrado: "Encerrado" }[stage] || "Novo";
+}
+
+function automationStageOptions(current) {
+  return ["novo", "conversando", "cadastro", "pagamento", "cliente", "encerrado"]
+    .map((value) => `<option value="${value}" ${value === current ? "selected" : ""}>${automationStageLabel(value)}</option>`).join("");
+}
+
+async function handleAutomationLeadClick(event) {
+  const card = event.target.closest("[data-automation-lead]");
+  if (!card) return;
+  if (event.target.closest("[data-automation-details]")) {
+    const details = card.querySelector(".automation-lead-details");
+    details.hidden = !details.hidden;
+    event.target.textContent = details.hidden ? "Ver conversa" : "Fechar";
+    return;
+  }
+  const form = event.target.closest(".automation-message-form");
+  if (!form || event.type !== "click") return;
+}
+
+document.addEventListener("submit", async (event) => {
+  const form = event.target.closest?.(".automation-message-form");
+  if (!form) return;
+  event.preventDefault();
+  const card = form.closest("[data-automation-lead]");
+  const message = form.elements.message.value.trim();
+  if (!message) return;
+  const result = await apiPost(`/api/admin/automacao/interessados/${encodeURIComponent(card.dataset.automationLead)}/mensagem`, { message });
+  if (result.manualUrl) window.open(result.manualUrl, "_blank", "noopener");
+  if (result.error && !result.manualUrl) window.alert(result.error);
+  if (!result.error) await loadAutomationCenter();
+});
+
+async function handleAutomationLeadChange(event) {
+  const card = event.target.closest("[data-automation-lead]");
+  if (!card) return;
+  if (!event.target.matches("[data-automation-stage], [data-automation-human]")) return;
+  const stage = card.querySelector("[data-automation-stage]")?.value || "novo";
+  const humanRequested = Boolean(card.querySelector("[data-automation-human]")?.checked);
+  const result = await apiPost(`/api/admin/automacao/interessados/${encodeURIComponent(card.dataset.automationLead)}`, { stage, humanRequested });
+  if (result.error) window.alert(result.error);
+  else await loadAutomationCenter();
+}
+
 async function clearAccessLogs() {
   if (!window.confirm("Apagar todos os registros de acesso? Esta acao nao pode ser desfeita.")) return;
   const result = await apiPost("/api/admin/access-logs/clear", {});
@@ -571,10 +799,10 @@ function renderAccessLogCard(log) {
 }
 
 function renderAdminUserCard(user) {
-  const accessLevel = user.accessLevel === "prime" ? "prime" : "leader";
+  const accessLevel = ["family", "leader", "prime"].includes(user.accessLevel) ? user.accessLevel : "family";
   const accessLabel = accessLevelLabel(accessLevel);
   const requestedPlanLabel = planLabel(user.requestedPlan || accessLevel);
-  const licenseText = user.role === "admin" ? "Acesso administrativo" : `${Number(user.licenseDaysRemaining || 0)} dias de acesso disponivel`;
+  const licenseText = user.role === "admin" ? "Acesso administrativo" : accessLevel === "family" ? "Gratuito e sem vencimento" : `${Number(user.licenseDaysRemaining || 0)} dias de acesso disponível`;
   const status = user.role === "admin"
     ? "Administrador"
     : user.active === false
@@ -588,14 +816,15 @@ function renderAdminUserCard(user) {
     <label class="user-access-control">
       <span>Categoria</span>
       <select data-access-level="${authEscapeHtml(user.id)}">
-        <option value="leader" ${accessLevel === "leader" ? "selected" : ""}>Mensal</option>
+        <option value="family" ${accessLevel === "family" ? "selected" : ""}>Família Grátis</option>
+        <option value="leader" ${accessLevel === "leader" ? "selected" : ""}>Plano Líder</option>
         <option value="prime" ${accessLevel === "prime" ? "selected" : ""}>Premium</option>
       </select>
     </label>
   `;
   const actionButtons = user.role === "admin" ? '<span class="pill">Administrador</span>' : `
     ${accessControl}
-    <label class="user-access-control">
+    <label class="user-access-control ${accessLevel === "family" ? "hidden" : ""}">
       <span>Expira em</span>
       <input type="date" data-license-date="${authEscapeHtml(user.id)}" value="${authEscapeHtml(expiresDateValue)}" />
     </label>
@@ -603,7 +832,7 @@ function renderAdminUserCard(user) {
     ${user.active === false
       ? `<button class="icon-button primary" type="button" data-activate="${authEscapeHtml(user.id)}">Reativar</button>`
       : `<button class="icon-button danger" type="button" data-deactivate="${authEscapeHtml(user.id)}">Desativar</button>`}
-    <button class="icon-button accent" type="button" data-renew-license="${authEscapeHtml(user.id)}">Salvar licença</button>
+    ${accessLevel === "family" ? "" : `<button class="icon-button accent" type="button" data-renew-license="${authEscapeHtml(user.id)}">Salvar licença</button>`}
     <button class="icon-button" type="button" data-reset="${authEscapeHtml(user.id)}">Nova senha</button>
     <button class="icon-button danger" type="button" data-delete-user="${authEscapeHtml(user.id)}">Excluir usuário</button>
   `;
@@ -625,6 +854,8 @@ function renderAdminUserCard(user) {
         <small>Igreja: ${authEscapeHtml(user.church || "Igreja nao informada")} - ${authEscapeHtml(user.churchCity || "Cidade nao informada")}</small>
         <small>Endereço: ${authEscapeHtml(user.address || "Endereco nao informado")}</small>
         <small>Plano desejado: ${authEscapeHtml(requestedPlanLabel)}</small>
+        <small>Uso: ${authEscapeHtml(user.intendedUse || "Não informado")} · Interesse: ${authEscapeHtml(user.ageInterest || "Todas as idades")}</small>
+        <small>Origem: ${authEscapeHtml(user.signupSource || "Não informada")} · WhatsApp: ${user.whatsappOptIn ? "sim" : "não"} · Email: ${user.emailOptIn ? "sim" : "não"}</small>
         <small>Licença: ${authEscapeHtml(licenseText)}${user.licenseExpiresAt ? ` - vence em ${formatDate(user.licenseExpiresAt)}` : ""}</small>
         <small>Criado: ${formatDateTime(user.createdAt)} - Aprovado: ${formatDateTime(user.approvedAt)}</small>
         ${user.renewalRequested ? "<em>Solicitou renovacao de licenca</em>" : ""}
@@ -737,12 +968,15 @@ function applySiteInfo(info) {
 }
 
 function accessLevelLabel(value) {
-  return value === "prime" ? "Premium" : "Mensal";
+  if (value === "prime") return "Premium";
+  if (value === "leader") return "Plano Líder";
+  return "Família Grátis";
 }
 
 function planLabel(value) {
   if (value === "premium" || value === "prime") return "Plano Premium";
-  if (value === "monthly" || value === "leader") return "Plano Mensal";
+  if (value === "monthly" || value === "leader") return "Plano Líder";
+  if (value === "family") return "Família Grátis";
   return "Não informado";
 }
 
@@ -970,6 +1204,7 @@ function formatDate(value) {
 
 function userLicenseText(user) {
   if (!user || user.role === "admin") return "Acesso administrativo";
+  if (user.accessLevel === "family") return "Família Grátis";
   const days = Number(user.licenseDaysRemaining || 0);
   return `${days} ${days === 1 ? "dia" : "dias"} de acesso disponivel`;
 }
