@@ -137,8 +137,7 @@ function bindAuthForms() {
       return;
     }
     if (result.message) sessionStorage.setItem("raizes-auth-notice", result.message);
-    const next = new URLSearchParams(location.search).get("next") || "index.html";
-    window.location.href = result.user.role === "admin" && next.includes("gerenciamento") ? "gerenciamento.html" : next;
+    window.location.href = "index.html#devocional";
   });
 
   registerForm?.addEventListener("submit", async (event) => {

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Catálogo de Lições Bíblicas</title>
-    <link rel="stylesheet" href="styles.css?v=20261001-family-moments" />
+    <link rel="stylesheet" href="styles.css?v=20261002-family-nav" />
     <link rel="stylesheet" href="print.css?v=20260915-plan-links" media="print" />
   </head>
   <body data-active-tab="home">
@@ -69,12 +69,15 @@
         </section>
 
         <nav class="mobile-age-chips" aria-label="Filtro rápido por idade">
+          <strong class="mobile-age-label">Faixa etária</strong>
+          <div class="mobile-age-options">
           <button type="button" data-age-select="Todas">Todos</button>
           <button type="button" data-age-select="0 a 2 anos - Berçário">0-2</button>
           <button type="button" data-age-select="3 a 4 anos - Maternal">3-4</button>
           <button type="button" data-age-select="5 a 6 anos - Jardim">5-6</button>
           <button type="button" data-age-select="7 a 10 anos - Primários">7-10</button>
           <button type="button" data-age-select="11 a 12 anos - Juniores">11-12</button>
+          </div>
         </nav>
 
         <section id="filterToolbar" class="toolbar" aria-label="Filtros do catálogo">
@@ -329,7 +332,6 @@
           <strong>Mais opções</strong>
           <button id="closeMobileMoreBtn" class="rail-arrow" type="button" aria-label="Fechar menu">×</button>
         </div>
-        <button type="button" data-mobile-tab="devotional" data-min-access="family">🏠 Culto em Família</button>
         <button type="button" data-mobile-tab="training" data-min-access="prime">🎓 Treinamentos Premium</button>
         <button type="button" data-mobile-tab="ebf" data-min-access="prime">🎪 EBF Premium</button>
         <button type="button" data-mobile-tab="team">🌱 Quem Somos</button>
@@ -341,9 +343,9 @@
       </aside>
       <nav class="mobile-bottom-nav" aria-label="Navegação principal mobile">
         <button type="button" data-mobile-tab="home"><span>🏠</span><strong>Início</strong></button>
+        <button type="button" data-mobile-tab="devotional" data-min-access="family"><span>🌱</span><strong>Culto em Família</strong></button>
         <button type="button" data-mobile-tab="study"><span>📖</span><strong>Lições</strong></button>
         <button type="button" data-mobile-tab="trails" data-min-access="leader"><span>▶️</span><strong>Trilhas</strong></button>
-        <a class="member-only" href="perfil.html"><span>👤</span><strong>Perfil</strong></a>
         <button id="openMobileMoreBtn" type="button"><span>☰</span><strong>Mais</strong></button>
       </nav>
       <footer class="site-footer">
@@ -393,8 +395,8 @@
     </template>
 
     <script src="lessons-data.js?v=20260915-plan-links"></script>
-    <script src="app.js?v=20261001-family-moments"></script>
-    <script src="auth.js?v=20261001-family-free"></script>
+    <script src="app.js?v=20261002-family-nav"></script>
+    <script src="auth.js?v=20261002-family-nav"></script>
   </body>
 </html>
 

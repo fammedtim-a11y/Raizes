@@ -1489,7 +1489,6 @@ function renderContentArea(config) {
   list.querySelectorAll("[data-content-id]").forEach((card) => {
     card.addEventListener("click", () => {
       state[config.activeKey] = card.dataset.contentId;
-      if (config.typeLabel === "Culto em Família") rememberFamilyReading(card.dataset.contentId);
       config.onChange();
     });
   });
@@ -1497,7 +1496,6 @@ function renderContentArea(config) {
     ? renderFamilyGuestLock(active)
     : renderContentReader(active, config);
   if (!isLocked) trackContentView(config.typeLabel, active);
-  if (config.typeLabel === "Culto em Família" && !isLocked) bindFamilyReaderActions(reader, active);
   reader.querySelector("[data-export-content-pdf]")?.addEventListener("click", () => {
     printContentPdf(contentTypeFromLabel(config.typeLabel), active);
   });
@@ -1642,29 +1640,6 @@ function familyDevotionalUrl(id) {
   return url.href;
 }
 
-function familyProgressKey() {
-  return state.authUser?.id ? `raizes-family-progress:${state.authUser.id}` : null;
-}
-
-function readFamilyProgress() {
-  const key = familyProgressKey();
-  if (!key) return { completed: {}, lastId: null };
-  try {
-    const value = JSON.parse(localStorage.getItem(key) || "{}");
-    return { completed: value?.completed && typeof value.completed === "object" ? value.completed : {}, lastId: value?.lastId || null };
-  } catch { return { completed: {}, lastId: null }; }
-}
-
-function saveFamilyProgress(progress) {
-  const key = familyProgressKey();
-  if (!key) return false;
-  try { localStorage.setItem(key, JSON.stringify(progress)); return true; } catch { return false; }
-}
-
-function rememberFamilyReading(id) {
-  saveFamilyProgress({ ...readFamilyProgress(), lastId: id });
-}
-
 function familyEstimatedMinutes(item) {
   const text = stripHtmlToText([item.verse, item.principle, ...Object.values(item.sections || {})].join(" "));
   return Math.max(5, Math.ceil(text.split(/\s+/).filter(Boolean).length / 130) + 4);
@@ -1675,30 +1650,17 @@ function renderFamilyWeeklySpotlight() {
   if (!container) return;
   const item = familyFeaturedItem(state.devotionals);
   if (!item) { container.innerHTML = ""; return; }
-  const progress = readFamilyProgress();
-  const last = state.devotionals.find((entry) => entry.id === progress.lastId);
-  const completedCount = state.devotionals.filter((entry) => progress.completed[entry.id]).length;
   container.innerHTML = `
     <div class="family-weekly-feature">
       ${item.cardImage ? `<img src="${escapeHtml(item.cardImage)}" alt="Capa de ${escapeHtml(item.title)}" loading="lazy" />` : ""}
       <div><span class="family-eyebrow">🌱 Devocional da semana</span><h2>${escapeHtml(item.title)}</h2>
         <p>${escapeHtml(stripHtmlToText(item.principle || item.bibleText || "Um momento de fé para viver juntos."))}</p>
         <span class="family-duration">⏱ Cerca de ${familyEstimatedMinutes(item)} min · leitura e conversa</span>
-        <button class="icon-button primary" type="button" data-family-open="${escapeHtml(item.id)}">📖 Começar em família</button>
       </div>
-    </div>
-    ${state.authUser ? `<div class="family-progress-summary"><span>${completedCount} ${completedCount === 1 ? "momento realizado" : "momentos realizados"}</span>${last ? `<button class="icon-button" type="button" data-family-open="${escapeHtml(last.id)}">↪ ${progress.completed[last.id] ? "Revisitar último momento" : "Continuar leitura"}</button>` : ""}</div>` : ""}`;
-  container.querySelectorAll("[data-family-open]").forEach((button) => button.addEventListener("click", () => {
-    resetFilters();
-    state.activeDevotionalId = button.dataset.familyOpen;
-    rememberFamilyReading(state.activeDevotionalId);
-    renderDevotionals();
-    $("#devotionalReader")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }));
+    </div>`;
 }
 
 function renderFamilyReader(item) {
-  const completed = Boolean(readFamilyProgress().completed[item.id]);
   const conversation = item.sections?.conversation || "O que você aprendeu sobre Deus nesse momento? Como podemos viver isso juntos?";
   const practice = item.sections?.weeklyPractice || "Durante a semana, relembrem o que aprenderam e escolham juntos uma atitude para colocar em prática.";
   const sections = [
@@ -1712,42 +1674,17 @@ function renderFamilyReader(item) {
     <div class="reader-meta"><span class="reader-chip">⏱ Cerca de ${familyEstimatedMinutes(item)} min</span>${item.bibleText ? `<span class="reader-chip">${escapeHtml(item.bibleText)}</span>` : ""}</div>
     ${item.verse ? `<p class="reader-verse"><span>Versículo</span><strong>${escapeHtml(item.verse)}</strong></p>` : ""}
     </div></header>
-    <nav class="family-step-nav" aria-label="Momentos do devocional">${sections.map(([key, label, emoji]) => `<a href="#family-step-${key}">${emoji} ${label}</a>`).join("")}</nav>
     <div class="section-timeline family-timeline">
       ${item.sections?.parentNotes ? `<details class="family-parent-notes"><summary>💡 Orientações aos pais</summary>${renderLessonTextWithPlayers(item.sections.parentNotes)}</details>` : ""}
       ${renderContentLinkedVideoSection(item, "Culto em Família")}
       ${item.principle ? `<p class="family-principle"><strong>Hoje vamos aprender:</strong> ${escapeHtml(stripHtmlToText(item.principle))}</p>` : ""}
-      ${sections.map(([key, label, emoji, text], index) => `<section class="lesson-section family-reading-step" id="family-step-${key}"><div class="section-icon">${emoji}</div><div class="section-body"><span class="family-eyebrow">Momento ${index + 1}</span><h3>${label}</h3>${renderLessonTextWithPlayers(text)}</div></section>`).join("")}
+      ${sections.map(([, label, emoji, text]) => `<section class="lesson-section"><div class="section-icon">${emoji}</div><div class="section-body"><h3>${label}</h3>${renderLessonTextWithPlayers(text)}</div></section>`).join("")}
       ${item.sections?.activity ? `<section class="lesson-section"><div class="section-icon">🎨</div><div class="section-body"><h3>Vamos brincar?</h3>${renderLessonTextWithPlayers(item.sections.activity)}</div></section>` : ""}
       ${item.activityImage ? `<section class="lesson-section activity-art"><div class="section-body"><h3>Atividade em família</h3><img src="${escapeHtml(item.activityImage)}" alt="Atividade em família" loading="lazy" /></div></section>` : ""}
       ${item.attachments?.length ? `<div class="attachment-list">${item.attachments.map((file) => `<a class="icon-button" href="${escapeHtml(file.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(file.name || "Anexo")}</a>`).join("")}</div>` : ""}
-      <div class="family-completion">${state.authUser ? `<button class="icon-button ${completed ? "" : "primary"}" type="button" data-family-complete aria-pressed="${completed}">${completed ? "✓ Momento realizado · desfazer" : "✓ Fizemos em família"}</button><small>Registro salvo neste navegador.</small>` : '<a class="icon-button primary" href="login.html?tab=register&plan=family">Criar acesso grátis para todos os devocionais</a>'}<p data-family-status role="status" aria-live="polite"></p></div>
+      ${!state.authUser ? '<div class="family-signup"><a class="icon-button primary" href="login.html?tab=register&plan=family">Criar acesso grátis para todos os devocionais</a></div>' : ""}
       ${renderFamilyJourneyActions(item)}
     </div>`;
-}
-
-function bindFamilyReaderActions(reader, item) {
-  reader.querySelector("[data-family-complete]")?.addEventListener("click", () => {
-    const progress = readFamilyProgress();
-    if (progress.completed[item.id]) delete progress.completed[item.id];
-    else progress.completed[item.id] = new Date().toISOString();
-    progress.lastId = item.id;
-    if (!saveFamilyProgress(progress)) {
-      reader.querySelector("[data-family-status]").textContent = "Não foi possível salvar neste navegador. Verifique se o armazenamento está disponível.";
-      return;
-    }
-    const completed = Boolean(progress.completed[item.id]);
-    const button = reader.querySelector("[data-family-complete]");
-    button.setAttribute("aria-pressed", String(completed));
-    button.classList.toggle("primary", !completed);
-    button.textContent = completed ? "✓ Momento realizado · desfazer" : "✓ Fizemos em família";
-    reader.querySelector("[data-family-status]").textContent = completed ? "Momento em família registrado!" : "Registro desfeito.";
-    renderFamilyWeeklySpotlight();
-  });
-  reader.querySelectorAll(".family-step-nav a").forEach((link) => link.addEventListener("click", (event) => {
-    event.preventDefault();
-    reader.querySelector(link.getAttribute("href"))?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }));
 }
 
 async function shareWithLeader() {
