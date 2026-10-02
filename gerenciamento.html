@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20261001-family-free" />
+    <link rel="stylesheet" href="styles.css?v=20261001-family-moments" />
     <link rel="stylesheet" href="print.css?v=20260915-plan-links" media="print" />
   </head>
   <body data-page="admin">
@@ -312,6 +312,7 @@
                   <label><span>Título</span><input name="title" required placeholder="Ex.: Culto em Família - Semana 16" /></label>
                   <label><span>Categoria</span><input name="category" placeholder="Ex.: Família" /></label>
                   <label><span>Temporada/Semana</span><input name="season" placeholder="Ex.: Semana 16" /></label>
+                  <label class="inline-check"><input name="familyFeatured" type="checkbox" /> Destacar como devocional da semana</label>
                   <label><span>Mês de inclusão</span><input name="createdMonth" type="month" /></label>
                   <label><span>Princípio</span><input name="principle" placeholder="Ex.: Vou valorizar tudo o que Deus me der." /></label>
                   <label><span>Texto bíblico</span><input name="bibleText" placeholder="Ex.: Gn 25.29-34" /></label>
@@ -336,6 +337,9 @@
                 <label><span>Culto em Família</span><textarea name="devotional" rows="8"></textarea></label>
                 <label><span>Oração</span><textarea name="prayer" rows="4"></textarea></label>
                 <label><span>Vamos brincar?</span><textarea name="activity" rows="5"></textarea></label>
+                <label><span>Conversem (opcional)</span><textarea name="conversation" rows="3"></textarea></label>
+                <label><span>Vivam durante a semana (opcional)</span><textarea name="weeklyPractice" rows="3"></textarea></label>
+                <label><span>Orientações aos pais (opcional)</span><textarea name="parentNotes" rows="3"></textarea></label>
               </details>
               <div class="form-actions editor-actions-bar">
                 <button class="icon-button primary" type="submit">Salvar culto</button>
@@ -811,7 +815,7 @@
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
     <script src="lessons-data.js?v=20260915-plan-links"></script>
-    <script src="app.js?v=20261001-family-free"></script>
+    <script src="app.js?v=20261001-family-moments"></script>
     <script src="auth.js?v=20261001-family-free"></script>
   </body>
 </html>

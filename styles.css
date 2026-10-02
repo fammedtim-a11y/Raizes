@@ -8508,6 +8508,55 @@ summary {
 .profile-plan-summary span { color: #587050; }
 .profile-upgrade-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 
+.family-weekly-feature {
+  display: grid;
+  grid-template-columns: minmax(180px, 280px) minmax(0, 1fr);
+  gap: 24px;
+  padding: 12px 0 24px;
+  border-bottom: 1px solid #d7e9dd;
+  margin-bottom: 20px;
+}
+.family-weekly-feature:not(:has(img)) { grid-template-columns: minmax(0, 1fr); }
+.family-weekly-feature img { width: 100%; aspect-ratio: 16 / 10; object-fit: contain; border-radius: 8px; background: #f1f9ff; }
+.family-weekly-feature > div { display: grid; justify-items: start; align-content: center; gap: 12px; min-width: 0; }
+.family-weekly-feature h2 { margin: 0; font-size: 24px; line-height: 1.25; overflow-wrap: anywhere; color: #174a72; }
+.family-weekly-feature p { margin: 0; line-height: 1.5; }
+.family-eyebrow { font-size: 13px; font-weight: 800; color: #287345; }
+.family-duration { font-size: 14px; color: #506479; }
+.family-progress-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 20px; }
+.family-progress-summary > span { color: #287345; font-weight: 700; }
+.family-step-nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 16px; background: #f3fbff; border-bottom: 1px solid #d8eaf6; }
+.family-step-nav a { display: flex; align-items: center; justify-content: center; min-height: 48px; padding: 10px; color: #174a72; background: white; border: 1px solid #d8eaf6; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 14px; text-align: center; overflow-wrap: anywhere; }
+.family-step-nav a:hover, .family-step-nav a:focus-visible { border-color: #2d9cff; background: #eaf6ff; }
+.family-reader-hero { padding: 28px; }
+.family-reader-hero h2 { font-size: 32px; line-height: 1.2; max-width: 900px; }
+.family-reader-hero .reader-verse { margin-bottom: 0; }
+.family-reading-step { scroll-margin-top: 100px; }
+.family-reading-step .section-body { min-width: 0; }
+.family-reading-step h3 { margin-top: 6px; }
+.family-principle { color: #174a72; margin: 0 0 16px; line-height: 1.5; }
+.family-parent-notes { padding: 16px; border-left: 4px solid #ffd93d; background: #fffce9; margin-bottom: 18px; }
+.family-parent-notes summary { cursor: pointer; font-weight: 700; min-height: 32px; }
+.family-parent-notes[open] summary { margin-bottom: 12px; }
+.family-completion { display: grid; justify-items: start; gap: 8px; padding: 20px 0; border-top: 1px solid #d7e9dd; }
+.family-completion small { color: #506479; }
+.family-completion p { margin: 0; color: #287345; }
+.family-follow-up { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 24px 0 0; }
+.family-follow-up strong, .family-follow-up p { flex-basis: 100%; margin: 0; line-height: 1.5; }
+.family-follow-up p { margin-top: 8px; }
+.devotional-view .icon-button { min-height: 48px; white-space: normal; }
+
+@media (max-width: 720px) {
+  .family-weekly-feature { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .family-weekly-feature img { max-height: 220px; }
+  .family-weekly-feature h2 { font-size: 22px; }
+  .family-reader-hero { padding: 20px; }
+  .family-reader-hero h2 { font-size: 26px; }
+  .family-step-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 12px; }
+  .family-reading-step { scroll-margin-top: 80px; }
+  .family-completion .icon-button, .family-follow-up .icon-button, .family-weekly-feature .icon-button { width: 100%; }
+}
+
 @media (max-width: 720px) {
   .family-journey-actions,
   .instagram-journey-section,

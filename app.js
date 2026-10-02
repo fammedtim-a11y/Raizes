@@ -81,7 +81,10 @@ const SECTIONS = [
 
 const DEVOTIONAL_FIELDS = [
   ["devotional", "Culto em Família", "📖"],
+  ["conversation", "Conversem", "💬"],
   ["prayer", "Oração", "🙏"],
+  ["weeklyPractice", "Vivam durante a semana", "🌱"],
+  ["parentNotes", "Orientações aos pais", "💡"],
   ["activity", "Vamos brincar?", "🎨"]
 ];
 
@@ -122,7 +125,7 @@ const state = {
   youtubeTitles: loadYouTubeTitles(),
   loadingYouTubeTitleIds: new Set(),
   activeId: null,
-  activeDevotionalId: null,
+  activeDevotionalId: new URLSearchParams(location.search).get("devocional"),
   activeTrainingId: null,
   activeEbfId: null,
   activeVideoId: null,
@@ -258,6 +261,7 @@ window.onRaizesAuthChange = (user) => {
   renderLimitedNotice();
   renderList();
   renderReader();
+  renderDevotionals();
   if (state.trailsRendered) renderTrails();
 };
 
@@ -393,7 +397,7 @@ async function syncContentFromServer() {
   ]);
   state.activeDevotionalId = state.devotionals.some((item) => item.id === state.activeDevotionalId)
     ? state.activeDevotionalId
-    : state.devotionals[0]?.id || null;
+    : familyFeaturedItem(state.devotionals)?.id || null;
   state.activeTrainingId = state.trainings.some((item) => item.id === state.activeTrainingId)
     ? state.activeTrainingId
     : state.trainings[0]?.id || null;
@@ -1418,6 +1422,8 @@ function renderReader() {
 }
 
 function renderDevotionals() {
+  if (!state.activeDevotionalId) state.activeDevotionalId = familyFeaturedItem(state.devotionals)?.id || null;
+  renderFamilyWeeklySpotlight();
   renderContentArea({
     items: state.devotionals,
     activeKey: "activeDevotionalId",
@@ -1477,18 +1483,21 @@ function renderContentArea(config) {
   if (!items.some((item) => item.id === state[config.activeKey])) state[config.activeKey] = items[0].id;
   const active = items.find((item) => item.id === state[config.activeKey]) || items[0];
   const isFamilyGuest = config.typeLabel === "Culto em Família" && !state.authUser;
-  const activeIndex = items.findIndex((item) => item.id === active.id);
-  list.innerHTML = items.map((item, index) => renderContentCard(item, item.id === active.id, config.typeLabel, isFamilyGuest && index > 0)).join("");
+  const familySampleId = familyFeaturedItem(config.items)?.id;
+  const isLocked = isFamilyGuest && active.id !== familySampleId;
+  list.innerHTML = items.map((item) => renderContentCard(item, item.id === active.id, config.typeLabel, isFamilyGuest && item.id !== familySampleId)).join("");
   list.querySelectorAll("[data-content-id]").forEach((card) => {
     card.addEventListener("click", () => {
       state[config.activeKey] = card.dataset.contentId;
+      if (config.typeLabel === "Culto em Família") rememberFamilyReading(card.dataset.contentId);
       config.onChange();
     });
   });
-  reader.innerHTML = isFamilyGuest && activeIndex > 0
+  reader.innerHTML = isLocked
     ? renderFamilyGuestLock(active)
     : renderContentReader(active, config);
-  if (!(isFamilyGuest && activeIndex > 0)) trackContentView(config.typeLabel, active);
+  if (!isLocked) trackContentView(config.typeLabel, active);
+  if (config.typeLabel === "Culto em Família" && !isLocked) bindFamilyReaderActions(reader, active);
   reader.querySelector("[data-export-content-pdf]")?.addEventListener("click", () => {
     printContentPdf(contentTypeFromLabel(config.typeLabel), active);
   });
@@ -1545,6 +1554,7 @@ function renderContentCard(item, active, typeLabel, locked = false) {
 }
 
 function renderContentReader(item, config) {
+  if (config.typeLabel === "Culto em Família") return renderFamilyReader(item);
   const theme = categoryTheme(item.category || config.typeLabel);
   const linkedVideo = renderContentLinkedVideoSection(item, config.typeLabel);
   const attachments = item.attachments?.length ? `
@@ -1580,7 +1590,6 @@ function renderContentReader(item, config) {
       }).join("")}
       ${item.activityImage ? `<section class="lesson-section activity-art"><div class="section-icon">🎨</div><div class="section-body"><h3>${config.typeLabel === "Treinamento" ? "Imagem do treinamento" : "Atividade"}</h3><img src="${escapeHtml(item.activityImage)}" alt="${config.typeLabel === "Treinamento" ? "Imagem do treinamento" : "Atividade"}" /></div></section>` : ""}
       ${attachments}
-      ${config.typeLabel === "Culto em Família" ? renderFamilyJourneyActions() : ""}
     </div>
   `;
 }
@@ -1600,16 +1609,145 @@ function renderFamilyGuestLock(item) {
   `;
 }
 
-function renderFamilyJourneyActions() {
+function renderFamilyJourneyActions(item) {
+  const url = familyDevotionalUrl(item.id);
+  const shareText = `${item.title} — um momento para viver a Palavra de Deus em família. ${url}`;
   return `
     <section class="family-journey-actions">
-      <div><span>🌱</span><strong>Leve essa ferramenta para sua igreja</strong><p>Compartilhe o Raízes Kids com quem lidera o Ministério com Crianças.</p></div>
+      <div><span>💬</span><strong>Convide outra família para esse momento</strong></div>
       <div class="home-login-actions">
-        <button class="icon-button" type="button" onclick="shareWithLeader()">Compartilhar com um líder</button>
-        <a class="icon-button accent" href="https://www.instagram.com/raizeskids_/" target="_blank" rel="noreferrer">Seguir no Instagram</a>
+        <a class="icon-button primary" href="https://wa.me/?text=${encodeURIComponent(shareText)}" target="_blank" rel="noopener noreferrer">💬 Compartilhar devocional</a>
       </div>
     </section>
+    <section class="family-follow-up">
+      <strong>Continue esse momento com ideias para sua família</strong>
+      <a class="icon-button" href="https://www.instagram.com/raizeskids_/" target="_blank" rel="noopener noreferrer">Seguir @raizeskids_</a>
+      ${!state.authUser || !canAccessLevel("leader") ? '<p>Vai ensinar na igreja? Prepare sua aula com as lições completas do Plano Líder.</p><a class="icon-button accent" href="vendas.html#planos">Conhecer Plano Líder</a>' : ""}
+    </section>
   `;
+}
+
+function familyFeaturedItem(items) {
+  return [...items].filter((item) => item.active !== false).sort((a, b) =>
+    Number(Boolean(b.familyFeatured)) - Number(Boolean(a.familyFeatured))
+    || (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0)
+    || String(b.season || b.title).localeCompare(String(a.season || a.title), "pt-BR", { numeric: true })
+  )[0];
+}
+
+function familyDevotionalUrl(id) {
+  const url = new URL("index.html", location.href);
+  url.searchParams.set("devocional", id);
+  url.hash = "devocional";
+  return url.href;
+}
+
+function familyProgressKey() {
+  return state.authUser?.id ? `raizes-family-progress:${state.authUser.id}` : null;
+}
+
+function readFamilyProgress() {
+  const key = familyProgressKey();
+  if (!key) return { completed: {}, lastId: null };
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || "{}");
+    return { completed: value?.completed && typeof value.completed === "object" ? value.completed : {}, lastId: value?.lastId || null };
+  } catch { return { completed: {}, lastId: null }; }
+}
+
+function saveFamilyProgress(progress) {
+  const key = familyProgressKey();
+  if (!key) return false;
+  try { localStorage.setItem(key, JSON.stringify(progress)); return true; } catch { return false; }
+}
+
+function rememberFamilyReading(id) {
+  saveFamilyProgress({ ...readFamilyProgress(), lastId: id });
+}
+
+function familyEstimatedMinutes(item) {
+  const text = stripHtmlToText([item.verse, item.principle, ...Object.values(item.sections || {})].join(" "));
+  return Math.max(5, Math.ceil(text.split(/\s+/).filter(Boolean).length / 130) + 4);
+}
+
+function renderFamilyWeeklySpotlight() {
+  const container = $("#familyWeeklySpotlight");
+  if (!container) return;
+  const item = familyFeaturedItem(state.devotionals);
+  if (!item) { container.innerHTML = ""; return; }
+  const progress = readFamilyProgress();
+  const last = state.devotionals.find((entry) => entry.id === progress.lastId);
+  const completedCount = state.devotionals.filter((entry) => progress.completed[entry.id]).length;
+  container.innerHTML = `
+    <div class="family-weekly-feature">
+      ${item.cardImage ? `<img src="${escapeHtml(item.cardImage)}" alt="Capa de ${escapeHtml(item.title)}" loading="lazy" />` : ""}
+      <div><span class="family-eyebrow">🌱 Devocional da semana</span><h2>${escapeHtml(item.title)}</h2>
+        <p>${escapeHtml(stripHtmlToText(item.principle || item.bibleText || "Um momento de fé para viver juntos."))}</p>
+        <span class="family-duration">⏱ Cerca de ${familyEstimatedMinutes(item)} min · leitura e conversa</span>
+        <button class="icon-button primary" type="button" data-family-open="${escapeHtml(item.id)}">📖 Começar em família</button>
+      </div>
+    </div>
+    ${state.authUser ? `<div class="family-progress-summary"><span>${completedCount} ${completedCount === 1 ? "momento realizado" : "momentos realizados"}</span>${last ? `<button class="icon-button" type="button" data-family-open="${escapeHtml(last.id)}">↪ ${progress.completed[last.id] ? "Revisitar último momento" : "Continuar leitura"}</button>` : ""}</div>` : ""}`;
+  container.querySelectorAll("[data-family-open]").forEach((button) => button.addEventListener("click", () => {
+    resetFilters();
+    state.activeDevotionalId = button.dataset.familyOpen;
+    rememberFamilyReading(state.activeDevotionalId);
+    renderDevotionals();
+    $("#devotionalReader")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
+}
+
+function renderFamilyReader(item) {
+  const completed = Boolean(readFamilyProgress().completed[item.id]);
+  const conversation = item.sections?.conversation || "O que você aprendeu sobre Deus nesse momento? Como podemos viver isso juntos?";
+  const practice = item.sections?.weeklyPractice || "Durante a semana, relembrem o que aprenderam e escolham juntos uma atitude para colocar em prática.";
+  const sections = [
+    ["read", "Leia juntos", "📖", item.sections?.devotional],
+    ["talk", "Conversem", "💬", conversation],
+    ["pray", "Orem", "🙏", item.sections?.prayer || "Senhor, obrigado por este momento em família. Ajuda-nos a viver a tua Palavra durante a semana. Amém."],
+    ["live", "Vivam durante a semana", "🌱", practice]
+  ].filter((entry) => entry[3]);
+  return `<header class="reader-hero family-reader-hero"><div class="reader-title-block">
+    <span class="reader-kicker">Culto em Família · acesso gratuito</span><h2>${escapeHtml(item.title)}</h2>
+    <div class="reader-meta"><span class="reader-chip">⏱ Cerca de ${familyEstimatedMinutes(item)} min</span>${item.bibleText ? `<span class="reader-chip">${escapeHtml(item.bibleText)}</span>` : ""}</div>
+    ${item.verse ? `<p class="reader-verse"><span>Versículo</span><strong>${escapeHtml(item.verse)}</strong></p>` : ""}
+    </div></header>
+    <nav class="family-step-nav" aria-label="Momentos do devocional">${sections.map(([key, label, emoji]) => `<a href="#family-step-${key}">${emoji} ${label}</a>`).join("")}</nav>
+    <div class="section-timeline family-timeline">
+      ${item.sections?.parentNotes ? `<details class="family-parent-notes"><summary>💡 Orientações aos pais</summary>${renderLessonTextWithPlayers(item.sections.parentNotes)}</details>` : ""}
+      ${renderContentLinkedVideoSection(item, "Culto em Família")}
+      ${item.principle ? `<p class="family-principle"><strong>Hoje vamos aprender:</strong> ${escapeHtml(stripHtmlToText(item.principle))}</p>` : ""}
+      ${sections.map(([key, label, emoji, text], index) => `<section class="lesson-section family-reading-step" id="family-step-${key}"><div class="section-icon">${emoji}</div><div class="section-body"><span class="family-eyebrow">Momento ${index + 1}</span><h3>${label}</h3>${renderLessonTextWithPlayers(text)}</div></section>`).join("")}
+      ${item.sections?.activity ? `<section class="lesson-section"><div class="section-icon">🎨</div><div class="section-body"><h3>Vamos brincar?</h3>${renderLessonTextWithPlayers(item.sections.activity)}</div></section>` : ""}
+      ${item.activityImage ? `<section class="lesson-section activity-art"><div class="section-body"><h3>Atividade em família</h3><img src="${escapeHtml(item.activityImage)}" alt="Atividade em família" loading="lazy" /></div></section>` : ""}
+      ${item.attachments?.length ? `<div class="attachment-list">${item.attachments.map((file) => `<a class="icon-button" href="${escapeHtml(file.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(file.name || "Anexo")}</a>`).join("")}</div>` : ""}
+      <div class="family-completion">${state.authUser ? `<button class="icon-button ${completed ? "" : "primary"}" type="button" data-family-complete aria-pressed="${completed}">${completed ? "✓ Momento realizado · desfazer" : "✓ Fizemos em família"}</button><small>Registro salvo neste navegador.</small>` : '<a class="icon-button primary" href="login.html?tab=register&plan=family">Criar acesso grátis para todos os devocionais</a>'}<p data-family-status role="status" aria-live="polite"></p></div>
+      ${renderFamilyJourneyActions(item)}
+    </div>`;
+}
+
+function bindFamilyReaderActions(reader, item) {
+  reader.querySelector("[data-family-complete]")?.addEventListener("click", () => {
+    const progress = readFamilyProgress();
+    if (progress.completed[item.id]) delete progress.completed[item.id];
+    else progress.completed[item.id] = new Date().toISOString();
+    progress.lastId = item.id;
+    if (!saveFamilyProgress(progress)) {
+      reader.querySelector("[data-family-status]").textContent = "Não foi possível salvar neste navegador. Verifique se o armazenamento está disponível.";
+      return;
+    }
+    const completed = Boolean(progress.completed[item.id]);
+    const button = reader.querySelector("[data-family-complete]");
+    button.setAttribute("aria-pressed", String(completed));
+    button.classList.toggle("primary", !completed);
+    button.textContent = completed ? "✓ Momento realizado · desfazer" : "✓ Fizemos em família";
+    reader.querySelector("[data-family-status]").textContent = completed ? "Momento em família registrado!" : "Registro desfeito.";
+    renderFamilyWeeklySpotlight();
+  });
+  reader.querySelectorAll(".family-step-nav a").forEach((link) => link.addEventListener("click", (event) => {
+    event.preventDefault();
+    reader.querySelector(link.getAttribute("href"))?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
 }
 
 async function shareWithLeader() {
@@ -2872,8 +3010,12 @@ async function contentFromForm(type, form, options = {}) {
     item.sections = {
       devotional: String(data.devotional || "").trim(),
       prayer: String(data.prayer || "").trim(),
-      activity: String(data.activity || "").trim()
+      activity: String(data.activity || "").trim(),
+      conversation: String(data.conversation || "").trim(),
+      weeklyPractice: String(data.weeklyPractice || "").trim(),
+      parentNotes: String(data.parentNotes || "").trim()
     };
+    item.familyFeatured = Boolean(data.familyFeatured);
     item.activityImage = await readOptionalImage(form.elements.activityImageFile, item.activityImage);
   } else if (type === "ebf") {
     item.description = String(data.description || "").trim();
@@ -2904,6 +3046,9 @@ async function contentFromForm(type, form, options = {}) {
 
 async function saveContentCollection(type, item) {
   const key = contentTypeConfig(type).key;
+  if (type === "devotional" && item.familyFeatured) {
+    state[key] = state[key].map((entry) => ({ ...entry, familyFeatured: false }));
+  }
   const index = state[key].findIndex((entry) => entry.id === item.id);
   if (index >= 0) state[key][index] = item;
   else state[key].unshift(item);
@@ -2949,6 +3094,10 @@ function loadContentIntoForm(type, item) {
     form.elements.devotional.value = item.sections?.devotional || "";
     form.elements.prayer.value = item.sections?.prayer || "";
     form.elements.activity.value = item.sections?.activity || "";
+    form.elements.conversation.value = item.sections?.conversation || "";
+    form.elements.weeklyPractice.value = item.sections?.weeklyPractice || "";
+    form.elements.parentNotes.value = item.sections?.parentNotes || "";
+    form.elements.familyFeatured.checked = Boolean(item.familyFeatured);
   } else if (type === "ebf") {
     form.elements.description.value = item.description || "";
     form.elements.content.value = item.sections?.content || "";
