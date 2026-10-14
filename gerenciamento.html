@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20261002-family-nav" />
+    <link rel="stylesheet" href="styles.css?v=20261014-admin-pdf" />
     <link rel="stylesheet" href="print.css?v=20260915-plan-links" media="print" />
   </head>
   <body data-page="admin">
@@ -182,6 +182,7 @@
               <details class="admin-advanced-actions">
                 <summary class="icon-button" title="Ações avançadas">⚙️ Ações avançadas</summary>
                 <div>
+                  <button id="exportLessonPdfBtn" class="icon-button accent" type="button">📄 Exportar PDF da lição aberta</button>
                   <button id="exportJsonBtn" class="icon-button" type="button">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /></svg>
                     Exportar JSON
@@ -343,6 +344,7 @@
               </details>
               <div class="form-actions editor-actions-bar">
                 <button class="icon-button primary" type="submit">Salvar culto</button>
+                <button class="icon-button accent" type="button" data-content-export-pdf>📄 Exportar PDF</button>
                 <button class="icon-button" type="button" data-content-clear>Limpar</button>
                 <button class="icon-button danger" type="button" data-content-delete>Excluir</button>
               </div>
@@ -815,7 +817,7 @@
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
     <script src="lessons-data.js?v=20260915-plan-links"></script>
-    <script src="app.js?v=20261002-family-nav"></script>
+    <script src="app.js?v=20261014-admin-pdf"></script>
     <script src="auth.js?v=20261002-family-nav"></script>
   </body>
 </html>

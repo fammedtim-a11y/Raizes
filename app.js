@@ -698,6 +698,14 @@ function bindEvents() {
   });
 
   els.ebookPrint?.addEventListener("click", printEbook);
+  $("#exportLessonPdfBtn")?.addEventListener("click", async () => {
+    try {
+      const lesson = await lessonFromEditor();
+      if (lesson) await printCurrentLesson(lesson);
+    } catch (error) {
+      showActionMessage("lesson", error.message || "Não foi possível exportar a lição.", true);
+    }
+  });
   els.clearForm?.addEventListener("click", () => clearForm({ confirm: true }));
   els.duplicateLesson?.addEventListener("click", duplicateCurrentLesson);
   els.deleteLesson?.addEventListener("click", deleteCurrentLesson);
@@ -1807,12 +1815,12 @@ function renderLockedReader(lesson) {
   `;
 }
 
-async function printCurrentLesson() {
+async function printCurrentLesson(editedLesson) {
   if (!canExportPdf()) {
     window.alert("Exportação em PDF disponível apenas para administradores e usuários Premium.");
     return;
   }
-  const lesson = getActiveLesson();
+  const lesson = editedLesson?.sections ? editedLesson : getActiveLesson();
   if (!lesson || !els.ebookPrintArea) return;
   els.ebookPrintArea.innerHTML = buildPrintEbookHtml([lesson], { title: lesson.title, hideToc: true });
   document.body.classList.add("ebook-printing", "print-v2");
@@ -1920,7 +1928,7 @@ async function saveFromForm(event) {
   }
 }
 
-async function persistLessonFromForm() {
+async function lessonFromEditor() {
   syncAllRichTextEditors();
   if (!els.form?.reportValidity()) return null;
   await waitForLessonImages();
@@ -1941,7 +1949,13 @@ async function persistLessonFromForm() {
   SECTIONS.forEach(([key]) => {
     lesson.sections[key] = $(`#section-${key}`).value.trim();
   });
+  return lesson;
+}
 
+async function persistLessonFromForm() {
+  const lesson = await lessonFromEditor();
+  if (!lesson) return null;
+  const id = lesson.id;
   const index = state.lessons.findIndex((item) => item.id === id);
   if (index >= 0) {
     state.lessons[index] = lesson;
