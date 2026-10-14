@@ -1543,7 +1543,7 @@ function renderContentCard(item, active, typeLabel, locked = false) {
         ${cover}
         <strong class="devotional-card-title">${escapeHtml(item.title || "Culto em Família")}</strong>
         <span class="devotional-card-category">${escapeHtml(item.category || "Sem categoria")}</span>
-        <span class="devotional-card-verse">${escapeHtml(item.bibleText || item.verse || "Texto bíblico não informado")}</span>
+        <span class="devotional-card-verse">${escapeHtml(contentVerseText(item.bibleText || item.verse || "Texto bíblico não informado"))}</span>
         ${locked ? '<span class="pill lock-pill">Cadastro grátis</span>' : ""}
       </button>
     `;
@@ -1582,7 +1582,7 @@ function renderContentReader(item, config) {
           <span class="reader-chip">${theme.emoji} ${escapeHtml(item.category || config.typeLabel)}</span>
           ${item.bibleText ? `<span class="reader-chip">${escapeHtml(item.bibleText)}</span>` : ""}
         </div>
-        ${item.verse ? `<p class="reader-verse"><span>Versículo</span><strong>${escapeHtml(item.verse)}</strong></p>` : ""}
+        ${item.verse ? `<p class="reader-verse"><span>Versículo</span><strong>${escapeHtml(contentVerseText(item.verse))}</strong></p>` : ""}
       </div>
       ${config.typeLabel === "EBF Completa" && canExportPdf() ? '<div class="reader-hero-actions"><button class="icon-button accent" type="button" data-export-content-pdf>Exportar PDF</button></div>' : ""}
     </header>
@@ -1668,6 +1668,16 @@ function renderFamilyWeeklySpotlight() {
     </div>`;
 }
 
+function contentVerseText(value) {
+  let text = String(value || "");
+  for (let depth = 0; depth < 3 && /&(?:lt|gt|amp|nbsp|quot|apos|#\d+|#x[0-9a-f]+);/i.test(text); depth += 1) {
+    const decoder = document.createElement("textarea");
+    decoder.innerHTML = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    text = decoder.value;
+  }
+  return stripHtmlToText(text).replace(/\u00a0/g, " ").trim();
+}
+
 function renderFamilyReader(item) {
   const conversation = item.sections?.conversation || "O que você aprendeu sobre Deus nesse momento? Como podemos viver isso juntos?";
   const practice = item.sections?.weeklyPractice || "Durante a semana, relembrem o que aprenderam e escolham juntos uma atitude para colocar em prática.";
@@ -1680,7 +1690,7 @@ function renderFamilyReader(item) {
   return `<header class="reader-hero family-reader-hero"><div class="reader-title-block">
     <span class="reader-kicker">Culto em Família · acesso gratuito</span><h2>${escapeHtml(item.title)}</h2>
     <div class="reader-meta"><span class="reader-chip">⏱ Cerca de ${familyEstimatedMinutes(item)} min</span>${item.bibleText ? `<span class="reader-chip">${escapeHtml(item.bibleText)}</span>` : ""}</div>
-    ${item.verse ? `<p class="reader-verse"><span>Versículo</span><strong>${escapeHtml(item.verse)}</strong></p>` : ""}
+    ${item.verse ? `<p class="reader-verse"><span>Versículo</span><strong>${escapeHtml(contentVerseText(item.verse))}</strong></p>` : ""}
     </div></header>
     <div class="section-timeline family-timeline">
       ${item.sections?.parentNotes ? `<details class="family-parent-notes"><summary>💡 Orientações aos pais</summary>${renderLessonTextWithPlayers(item.sections.parentNotes)}</details>` : ""}
@@ -3123,6 +3133,7 @@ async function printContentPdf(type, item) {
 }
 
 function buildContentPdfHtml(type, item) {
+  item = { ...item, verse: contentVerseText(item.verse) };
   const isTraining = type === "training";
   const isEbf = type === "ebf";
   const fields = isEbf ? EBF_FIELDS : isTraining ? TRAINING_FIELDS : DEVOTIONAL_FIELDS;
@@ -3717,6 +3728,7 @@ function buildPrintLessonHtml(lesson, number) {
 }
 
 function buildPrintContentHtml(type, item) {
+  item = { ...item, verse: contentVerseText(item.verse) };
   const isTraining = type === "training";
   const isEbf = type === "ebf";
   const fields = isEbf ? EBF_FIELDS : isTraining ? TRAINING_FIELDS : DEVOTIONAL_FIELDS;
