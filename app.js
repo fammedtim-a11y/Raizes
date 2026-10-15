@@ -132,6 +132,8 @@ const state = {
   trailAutoplay: false,
   tab: "home",
   manageTab: "lessons",
+  lessonWorkspace: "library",
+  lessonEditorStep: "info",
   trailsRendered: false,
   authUser: null,
   cardImageReadToken: "",
@@ -592,6 +594,20 @@ function loadLastTrailVideoId() {
 }
 
 function bindEvents() {
+  bindLessonTabs("[data-lesson-workspace]", "lessonWorkspace", setLessonWorkspace);
+  bindLessonTabs("[data-lesson-step]", "lessonStep", setLessonEditorStep);
+  $("#downloadLessonSelection")?.addEventListener("click", () => downloadSelectedContent("lesson", $("#lessonExportFormat").value, $("#lessonExportScope").value, $("#downloadLessonSelection")));
+  $("#lessonExportScope")?.addEventListener("change", updateLessonExportSummary);
+  $("#lessonExportFormat")?.addEventListener("change", updateLessonExportSummary);
+  $("[data-open-lesson-export]")?.addEventListener("click", () => {
+    $("#lessonExportScope").value = "current";
+    setLessonWorkspace("export");
+  });
+  els.form?.addEventListener("input", updateLessonEditorMeta);
+  els.form?.addEventListener("invalid", (event) => {
+    setLessonWorkspace("editor");
+    setLessonEditorStep(event.target.closest("[data-lesson-editor-step]")?.dataset.lessonEditorStep || "info");
+  }, true);
   document.addEventListener("click", (event) => {
     const button = event.target.closest("[data-share-family]");
     if (button) shareFamilyCard(button);
@@ -704,6 +720,8 @@ function bindEvents() {
     clearForm();
     if (els.manageView) setTab("manage");
     setManageTab("lessons");
+    setLessonWorkspace("editor");
+    setLessonEditorStep("info");
     els.title.focus();
   });
 
@@ -1120,7 +1138,9 @@ function setManageTab(tabName) {
   $("#automationManagePanel")?.classList.toggle("active", tabName === "automation");
   $("#accessManagePanel")?.classList.toggle("active", false);
   $("#contactManagePanel")?.classList.toggle("active", tabName === "contact");
+  document.querySelectorAll("#manageView > .manage-panel").forEach((panel) => { panel.hidden = !panel.classList.contains("active"); });
   els.filterToolbar?.classList.toggle("hidden", !["lessons", "trails"].includes(tabName));
+  if (tabName === "lessons") setLessonWorkspace(state.lessonWorkspace);
   if (tabName === "dashboard") renderAdminDashboard();
   if (tabName === "users") window.loadAdminAccessLogs?.();
   if (tabName === "analytics") window.loadAdminAnalytics?.();
@@ -1130,12 +1150,70 @@ function setManageTab(tabName) {
   if (tabName === "news") renderNotifications();
 }
 
+function bindLessonTabs(selector, key, select) {
+  const tabs = [...document.querySelectorAll(selector)];
+  tabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => select(tab.dataset[key]));
+    tab.addEventListener("keydown", (event) => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+      select(tabs[next].dataset[key]);
+      tabs[next].focus();
+    });
+  });
+}
+
+function setLessonWorkspace(value) {
+  state.lessonWorkspace = ["library", "editor", "export"].includes(value) ? value : "library";
+  document.querySelectorAll("[data-lesson-workspace]").forEach((tab) => {
+    const active = tab.dataset.lessonWorkspace === state.lessonWorkspace;
+    tab.setAttribute("aria-selected", String(active));
+    tab.tabIndex = active ? 0 : -1;
+    const panel = document.getElementById(tab.getAttribute("aria-controls"));
+    if (panel) panel.hidden = !active;
+  });
+  if (isAdminPage && state.manageTab === "lessons") els.filterToolbar?.classList.toggle("hidden", state.lessonWorkspace === "editor");
+  updateLessonEditorMeta();
+}
+
+function setLessonEditorStep(value) {
+  state.lessonEditorStep = ["info", "images", "content"].includes(value) ? value : "info";
+  document.querySelectorAll("[data-lesson-step]").forEach((tab) => {
+    const active = tab.dataset.lessonStep === state.lessonEditorStep;
+    tab.setAttribute("aria-selected", String(active));
+    tab.tabIndex = active ? 0 : -1;
+  });
+  document.querySelectorAll("[data-lesson-editor-step]").forEach((panel) => { panel.hidden = panel.dataset.lessonEditorStep !== state.lessonEditorStep; });
+}
+
+function updateLessonEditorMeta() {
+  const heading = $("#lessonEditorHeading");
+  if (heading) heading.textContent = els.lessonId?.value ? els.title.value || "Editar lição" : "Nova lição";
+  SECTIONS.forEach(([key]) => {
+    const field = $(`#section-${key}`);
+    const status = field?.closest("details")?.querySelector("[data-section-status]");
+    if (status) status.textContent = stripHtmlToText(field.value).trim() ? "Preenchido" : "Vazio";
+  });
+  updateLessonExportSummary();
+}
+
+function updateLessonExportSummary() {
+  const summary = $("#lessonExportSummary");
+  if (!summary) return;
+  const all = $("#lessonExportScope").value === "all";
+  const count = all ? filteredLessons().length : Number(Boolean(els.title?.value.trim()));
+  summary.textContent = all ? `${count} lições selecionadas pelos filtros` : count ? els.title.value : "Nenhuma lição aberta no editor";
+  const button = $("#downloadLessonSelection");
+  if (button) button.disabled = !count;
+}
+
 async function renderAdminDashboard() {
   const stats = $("#adminDashboardStats");
   if (!stats) return;
   const lessons = state.lessons.length;
-  const videos = getTrailVideos().length;
-  const activeNews = getVisibleNotifications().length;
+  const videos = allVideos().length;
+  const activeNews = activeNotifications().length;
   const devotionals = state.devotionals.length;
   const trainings = state.trainings.length;
   const ebfs = state.ebfs.length;
@@ -1305,11 +1383,10 @@ function renderSectionFields() {
     <details class="editor-section lesson-editor-section">
       <summary>
         <span>${label}</span>
-        <small>Editar conteúdo</small>
+        <small data-section-status>Vazio</small>
       </summary>
       <label>
-        <span>${label}</span>
-        <textarea id="section-${key}" placeholder="Digite o conteúdo de ${label.toLowerCase()}"></textarea>
+        <textarea id="section-${key}" aria-label="${label}" placeholder="Digite o conteúdo de ${label.toLowerCase()}"></textarea>
       </label>
     </details>
   `).join("");
@@ -2112,6 +2189,7 @@ function loadIntoForm(lesson) {
     $(`#section-${key}`).value = lesson.sections?.[key] || "";
   });
   refreshRichTextEditors(els.form);
+  updateLessonEditorMeta();
 }
 
 function clearForm(options = {}) {
@@ -2129,6 +2207,7 @@ function clearForm(options = {}) {
     $(`#section-${key}`).value = "";
   });
   refreshRichTextEditors(els.form);
+  updateLessonEditorMeta();
   if (options.confirm) showActionMessage("lesson", "Formulário de lição limpo.");
 }
 
@@ -2478,6 +2557,9 @@ async function deleteCurrentVideo() {
 function renderLessonAdminList() {
   if (!els.lessonAdminList) return;
   const lessons = filteredLessons();
+  const count = $("#lessonLibraryCount");
+  if (count) count.textContent = `${lessons.length} lições`;
+  updateLessonExportSummary();
   if (!lessons.length) {
     els.lessonAdminList.innerHTML = '<p class="muted-line">Nenhuma lição encontrada com os filtros atuais.</p>';
     return;
@@ -2491,6 +2573,7 @@ function renderLessonAdminList() {
       if (!lesson) return;
       state.activeId = lesson.id;
       loadIntoForm(lesson);
+      setLessonWorkspace("editor");
       renderList();
       renderReader();
       renderLessonAdminList();
@@ -2556,6 +2639,7 @@ function renderTrailAdminList() {
         state.activeId = lesson.id;
         loadIntoForm(lesson);
         setManageTab("lessons");
+        setLessonWorkspace("editor");
         renderList();
         renderReader();
         renderLessonAdminList();

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20261015-downloads2" />
+    <link rel="stylesheet" href="styles.css?v=20261015-lesson-workspace2" />
     <link rel="stylesheet" href="print.css?v=20260915-plan-links" media="print" />
   </head>
   <body data-page="admin">
@@ -114,9 +114,14 @@
               <div class="manage-tab-submenu">
                 <button class="manage-tab" data-manage-tab="users" type="button">👥 Pessoas</button>
                 <button class="manage-tab" data-manage-tab="analytics" type="button">📊 Analytics</button>
-                <button class="manage-tab master-only" data-manage-tab="communication" type="button">💬 Comunicação</button>
-                <button class="manage-tab master-only" data-manage-tab="automation" type="button">⚙️ Automações</button>
                 <button class="manage-tab" data-manage-tab="contact" type="button">🌱 Institucional</button>
+              </div>
+            </details>
+            <details class="manage-tab-group master-only">
+              <summary class="manage-tab">💬 Relacionamento</summary>
+              <div class="manage-tab-submenu">
+                <button class="manage-tab" data-manage-tab="communication" type="button">Comunicação</button>
+                <button class="manage-tab" data-manage-tab="automation" type="button">Automações e interessados</button>
               </div>
             </details>
           </nav>
@@ -148,43 +153,46 @@
                 <div class="admin-dashboard-grid compact">
                   <button class="admin-menu-card blue" data-manage-tab="users" type="button"><span>👥</span><strong>Pessoas</strong><small>Usuários, aprovações, acessos e licenças.</small></button>
                   <button class="admin-menu-card purple" data-manage-tab="analytics" type="button"><span>📊</span><strong>Analytics</strong><small>Acessos, conteúdos vistos e licenças vencendo.</small></button>
-                  <button class="admin-menu-card green master-only" data-manage-tab="communication" type="button"><span>💬</span><strong>Comunicação</strong><small>Email e WhatsApp para públicos filtrados.</small></button>
-                  <button class="admin-menu-card teal master-only" data-manage-tab="automation" type="button"><span>⚙️</span><strong>Automações</strong><small>Funil comercial, interessados e conexões da Meta.</small></button>
                   <button class="admin-menu-card yellow" data-manage-tab="contact" type="button"><span>🌱</span><strong>Institucional</strong><small>Contato, Sobre e Quem Somos.</small></button>
+                </div>
+              </section>
+              <section class="master-only">
+                <h3>Relacionamento</h3>
+                <div class="admin-dashboard-grid compact">
+                  <button class="admin-menu-card green" data-manage-tab="communication" type="button"><span>💬</span><strong>Comunicação</strong><small>Email e WhatsApp.</small></button>
+                  <button class="admin-menu-card teal" data-manage-tab="automation" type="button"><span>⚙️</span><strong>Automações e interessados</strong><small>Funil comercial e integrações.</small></button>
                 </div>
               </section>
             </div>
           </section>
 
           <div id="lessonManagePanel" class="manage-panel">
-            <div class="manager-heading">
+            <div class="manager-heading lesson-workspace-heading">
               <div>
-                <h2>Gerenciar lições</h2>
-                <p>Cadastre, edite, duplique e exporte materiais em um fluxo mais organizado.</p>
+                <span class="workspace-eyebrow">Conteúdos</span>
+                <h2>Lições bíblicas</h2>
               </div>
-            </div>
-            <div class="admin-work-actions">
               <button id="newLessonBtn" class="icon-button primary" type="button" title="Nova lição">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
                 Nova lição
               </button>
             </div>
-            <details class="export-center">
-              <summary>
-                <span>📤 Central de Exportação</span>
-                <small>Gere materiais filtrados ou faça backup do acervo.</small>
-              </summary>
-              <div class="export-center-actions">
-              <button id="ebookPrintBtn" class="icon-button accent" type="button" title="Exportar ebook filtrado">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5V5.8A2.8 2.8 0 0 1 6.8 3H20v15H7a3 3 0 0 0-3 3Z" /><path d="M8 7h8M8 11h6" /></svg>
-                Baixar PDF de todas as lições filtradas
-              </button>
-              <button class="icon-button" type="button" data-download-content="lesson" data-format="docx" data-scope="all">Baixar DOCX de todas as lições filtradas</button>
-              <details class="admin-advanced-actions">
-                <summary class="icon-button" title="Ações avançadas">⚙️ Ações avançadas</summary>
-                <div>
-                  <button id="exportLessonPdfBtn" class="icon-button accent" type="button">📄 Baixar PDF da lição aberta</button>
-                  <button class="icon-button" type="button" data-download-content="lesson" data-format="docx" data-scope="current">Baixar DOCX da lição aberta</button>
+            <nav class="lesson-workspace-tabs" role="tablist" aria-label="Área de lições">
+              <button id="lessonLibraryTab" type="button" role="tab" data-lesson-workspace="library" aria-controls="lessonLibraryWorkspace" aria-selected="true">Acervo</button>
+              <button id="lessonEditorTab" type="button" role="tab" data-lesson-workspace="editor" aria-controls="lessonEditorWorkspace" aria-selected="false" tabindex="-1">Editar lição</button>
+              <button id="lessonExportTab" type="button" role="tab" data-lesson-workspace="export" aria-controls="lessonExportWorkspace" aria-selected="false" tabindex="-1">Exportação</button>
+            </nav>
+            <section id="lessonExportWorkspace" class="lesson-workspace-pane" role="tabpanel" aria-labelledby="lessonExportTab" hidden>
+              <h3>Exportar materiais</h3>
+              <div class="lesson-export-controls">
+                <label><span>Conteúdo</span><select id="lessonExportScope"><option value="current">Lição aberta no editor</option><option value="all">Todas as lições dos filtros</option></select></label>
+                <label><span>Formato</span><select id="lessonExportFormat"><option value="pdf">PDF · pronto para imprimir</option><option value="docx">DOCX · documento editável</option></select></label>
+                <button id="downloadLessonSelection" class="icon-button primary" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /></svg>Baixar arquivo</button>
+              </div>
+              <p id="lessonExportSummary" class="lesson-export-summary" role="status"></p>
+              <section class="lesson-data-tools">
+                <h3>Dados e segurança</h3>
+                <div class="lesson-data-actions">
                   <button id="exportJsonBtn" class="icon-button" type="button">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /></svg>
                     Exportar JSON
@@ -199,18 +207,22 @@
                     <input id="importJsonInput" type="file" accept="application/json" />
                   </label>
                 </div>
-              </details>
-              </div>
-            </details>
-            <div id="lessonAdminList" class="admin-item-list admin-card-rail lesson-admin-rail"></div>
-
+              </section>
+            </section>
+            <section id="lessonLibraryWorkspace" class="lesson-workspace-pane" role="tabpanel" aria-labelledby="lessonLibraryTab">
+              <div class="lesson-library-heading"><h3>Acervo de lições</h3><span id="lessonLibraryCount"></span></div>
+              <div id="lessonAdminList" class="admin-item-list admin-card-rail lesson-admin-rail"></div>
+            </section>
+            <section id="lessonEditorWorkspace" class="lesson-workspace-pane" role="tabpanel" aria-labelledby="lessonEditorTab" hidden>
+            <div class="lesson-editor-heading"><h3 id="lessonEditorHeading">Nova lição</h3><button class="icon-button" type="button" data-open-lesson-export title="Exportar esta lição">📥 Exportar</button></div>
             <form id="lessonForm" class="editor">
               <input type="hidden" id="lessonId" />
-              <details class="editor-section" open>
-                <summary>
-                  <span>1. Informações principais</span>
-                  <small>Título, categoria, idade e versículo.</small>
-                </summary>
+              <nav class="lesson-step-tabs" role="tablist" aria-label="Campos da lição">
+                <button id="lessonInfoTab" type="button" role="tab" data-lesson-step="info" aria-controls="lessonInfoStep" aria-selected="true">Informações</button>
+                <button id="lessonImagesTab" type="button" role="tab" data-lesson-step="images" aria-controls="lessonImagesStep" aria-selected="false" tabindex="-1">Imagens</button>
+                <button id="lessonContentTab" type="button" role="tab" data-lesson-step="content" aria-controls="lessonContentStep" aria-selected="false" tabindex="-1">Conteúdo</button>
+              </nav>
+              <section id="lessonInfoStep" class="lesson-editor-step" role="tabpanel" data-lesson-editor-step="info" aria-labelledby="lessonInfoTab">
                 <div class="form-grid">
                   <label>
                     <span>Título</span>
@@ -236,49 +248,40 @@
                     <input id="verseInput" placeholder="Ex.: Genesis 1:31" />
                   </label>
                 </div>
-              </details>
+              </section>
 
-              <details class="editor-section">
-                <summary>
-                  <span>2. Imagens e atividades</span>
-                  <small>Capa do card e atividade de colorir.</small>
-                </summary>
+              <section id="lessonImagesStep" class="lesson-editor-step" role="tabpanel" data-lesson-editor-step="images" aria-labelledby="lessonImagesTab" hidden>
+                <div class="lesson-image-grid"><div>
                 <label class="image-field">
                   <span>Imagem do card da lição</span>
                   <input id="cardImageInput" type="file" accept="image/png,image/jpeg,image/webp" />
-                  <small>Opcional. Esta imagem será usada como capa do card na lista de lições e no gerenciamento.</small>
                 </label>
                 <div id="cardImagePreview" class="activity-image-preview card-image-preview"></div>
-
+                </div><div>
                 <label class="image-field">
                   <span>Imagem da atividade de colorir</span>
                   <input id="activityImageInput" type="file" accept="image/png,image/jpeg,image/webp" />
-                  <small>Opcional. A imagem será salva no navegador e usada na visualização/PDF da lição.</small>
                 </label>
                 <div id="activityImagePreview" class="activity-image-preview"></div>
-              </details>
+                </div></div>
+              </section>
 
-              <details class="editor-section">
-                <summary>
-                  <span>3. Conteúdo da lição</span>
-                  <small>Abra somente a etapa que deseja editar.</small>
-                </summary>
+              <section id="lessonContentStep" class="lesson-editor-step" role="tabpanel" data-lesson-editor-step="content" aria-labelledby="lessonContentTab" hidden>
                 <div id="sectionFields" class="section-fields"></div>
-              </details>
+              </section>
 
               <div class="form-actions editor-actions-bar">
                 <button class="icon-button primary" type="submit">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" /><path d="M17 21v-8H7v8M7 3v5h8" /></svg>
-                  Salvar
+                  Salvar lição
                 </button>
-                <button id="savePrevLessonBtn" class="icon-button" type="button">
+                <button id="savePrevLessonBtn" class="icon-button" type="button" title="Lição anterior" aria-label="Lição anterior">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
-                  Anterior
                 </button>
-                <button id="saveNextLessonBtn" class="icon-button" type="button">
+                <button id="saveNextLessonBtn" class="icon-button" type="button" title="Próxima lição" aria-label="Próxima lição">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
-                  Próxima
                 </button>
+                <details class="lesson-action-menu"><summary class="icon-button" aria-label="Mais ações da lição" title="Mais ações">⋯</summary><div>
                 <button id="clearFormBtn" class="icon-button" type="button">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15" /></svg>
                   Limpar
@@ -291,9 +294,11 @@
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M10 11v6M14 11v6M6 6l1 15h10l1-15" /></svg>
                   Excluir
                 </button>
+                </div></details>
               </div>
               <p id="lessonActionMessage" class="action-message" role="status"></p>
             </form>
+            </section>
           </div>
 
           <section id="devotionalManagePanel" class="video-manager manage-panel">
@@ -824,7 +829,7 @@
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
     <script src="lessons-data.js?v=20260915-plan-links"></script>
-    <script src="app.js?v=20261015-downloads"></script>
+    <script src="app.js?v=20261015-lesson-workspace2"></script>
     <script src="auth.js?v=20261015-welcome-pix"></script>
   </body>
 </html>
