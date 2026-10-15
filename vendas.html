@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes Kids | Plataforma para Ministério com Criança</title>
-    <link rel="stylesheet" href="styles.css?v=20261001-family-free" />
+    <link rel="stylesheet" href="styles.css?v=20261014-upgrade" />
   </head>
   <body class="sales-page">
     <main class="sales-shell">
@@ -431,7 +431,18 @@
       <strong id="salesPreviewTitle"></strong>
       <img src="" alt="" />
     </dialog>
-    <script src="auth.js?v=20261002-family-nav"></script>
+    <dialog id="upgradePaymentDialog" class="upgrade-payment-dialog" aria-labelledby="upgradePaymentTitle">
+      <button class="icon-button" type="button" data-close-upgrade aria-label="Fechar pagamento">×</button>
+      <h2 id="upgradePaymentTitle"></h2>
+      <p>Seu cadastro já está pronto. Escolha o pagamento e libere o plano na sua conta atual.</p>
+      <p data-upgrade-status role="status" aria-live="polite"></p>
+      <div data-upgrade-actions hidden>
+        <a class="icon-button primary" data-upgrade-pay target="_blank" rel="noopener noreferrer">Ir para o pagamento</a>
+        <a class="icon-button accent" data-upgrade-receipt target="_blank" rel="noopener noreferrer">Enviar comprovante pelo WhatsApp</a>
+        <p>WhatsApp do Raízes Kids: (31) 97546-6907. Anexe o comprovante na conversa para que o administrador confira e libere seu plano.</p>
+      </div>
+    </dialog>
+    <script src="auth.js?v=20261014-upgrade"></script>
     <script src="vendas.js?v=20260918-preview"></script>
   </body>
 </html>

@@ -1886,6 +1886,7 @@ function catalogIsLimited() {
 }
 
 function renderLimitedNotice() {
+  document.querySelectorAll(".limited-notice").forEach((notice) => notice.remove());
   const target = state.tab === "trails" ? els.trailGrid : els.lessonList;
   if (!target || !catalogIsLimited()) {
     document.querySelectorAll(".limited-notice").forEach((notice) => notice.remove());
@@ -1897,7 +1898,7 @@ function renderLimitedNotice() {
     <div class="limited-notice">
       <strong>${state.authUser ? "Conteúdo do Plano Líder" : "Catálogo visível, acesso protegido"}</strong>
       <span>${state.authUser ? "Seu acesso Família continua gratuito. Faça o upgrade para abrir lições e trilhas completas." : "Crie seu acesso Família grátis ou conheça os planos para líderes."}</span>
-      <a href="${state.authUser ? "vendas.html#planos" : "login.html?tab=register&plan=family"}">${state.authUser ? "Ver planos" : "Começar grátis"}</a>
+      <a href="${state.authUser ? "vendas.html#planos" : "login.html?tab=register&plan=family"}">${state.authUser ? "Faça um Upgrade" : "Começar grátis"}</a>
     </div>
   `);
 }

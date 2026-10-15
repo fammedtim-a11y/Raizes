@@ -4,6 +4,7 @@ const automationState = { leads: [], settings: {}, integration: {}, counts: {} }
 document.addEventListener("DOMContentLoaded", () => {
   bindAuthTabs();
   bindAuthForms();
+  bindSalesUpgrade();
   loadPublicSiteInfo();
   refreshSession();
   window.setInterval(refreshSession, 60000);
@@ -31,6 +32,7 @@ async function refreshSession() {
   document.body.dataset.accessLevel = authState.user?.accessLevel || "";
   document.body.dataset.master = authState.user?.username === "08047232657" ? "true" : "false";
   if (userChanged) renderAuthSlots();
+  if (userChanged) updateSalesUpgradeLinks();
   renderLicenseNotice();
   showStoredNotice();
   if (userChanged) window.onRaizesAuthChange?.(authState.user);
@@ -49,6 +51,65 @@ async function refreshSession() {
     if (userChanged && authState.user?.username === "08047232657") loadAutomationCenter();
     if (userChanged) loadAdminAnalytics();
   }
+}
+
+function updateSalesUpgradeLinks() {
+  if (!document.body.classList.contains("sales-page")) return;
+  document.querySelectorAll('a[href*="login.html?tab=register&plan="], a[data-sales-plan]').forEach((link) => {
+    if (!link.dataset.salesPlan) {
+      link.dataset.salesPlan = new URL(link.href).searchParams.get("plan");
+      link.dataset.signupHref = link.getAttribute("href");
+      link.dataset.signupLabel = link.textContent;
+    }
+    if (!authState.user) {
+      link.setAttribute("href", link.dataset.signupHref);
+      link.textContent = link.dataset.signupLabel;
+    } else if (link.dataset.salesPlan === "family") {
+      link.href = "index.html#devocional";
+      link.textContent = "Abrir Culto em Família";
+    } else {
+      link.href = "#upgrade-payment";
+    }
+  });
+}
+
+function bindSalesUpgrade() {
+  if (!document.body.classList.contains("sales-page")) return;
+  document.addEventListener("click", async (event) => {
+    const link = event.target.closest('a[data-sales-plan], a[href*="login.html?tab=register&plan="]');
+    if (!link) return;
+    event.preventDefault();
+    if (!authState.initialized) await refreshSession();
+    const plan = link.dataset.salesPlan || new URL(link.href).searchParams.get("plan");
+    if (!authState.user) {
+      window.location.href = link.dataset.signupHref || link.href;
+      return;
+    }
+    if (plan === "family") {
+      window.location.href = "index.html#devocional";
+      return;
+    }
+    const dialog = document.querySelector("#upgradePaymentDialog");
+    if (!dialog || dialog.open) return;
+    const title = dialog.querySelector("h2");
+    const status = dialog.querySelector("[data-upgrade-status]");
+    const actions = dialog.querySelector("[data-upgrade-actions]");
+    title.textContent = plan === "premium" ? "Plano Premium · R$ 349,90 por 12 meses" : "Plano Líder · R$ 19,90 mensal";
+    status.textContent = "Preparando o pagamento para sua conta...";
+    actions.hidden = true;
+    dialog.showModal();
+    try {
+      const result = await apiPost("/api/upgrade", { plan });
+      if (result.error) throw new Error(result.error);
+      dialog.querySelector("[data-upgrade-pay]").href = normalizePublicUrl(result.paymentUrl);
+      dialog.querySelector("[data-upgrade-receipt]").href = result.whatsappUrl;
+      status.textContent = result.message;
+      actions.hidden = false;
+    } catch (error) {
+      status.textContent = error.message || "Não foi possível preparar o pagamento. Tente novamente.";
+    }
+  });
+  document.querySelector("[data-close-upgrade]")?.addEventListener("click", () => document.querySelector("#upgradePaymentDialog").close());
 }
 
 function authShouldHoldAdminSession() {

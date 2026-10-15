@@ -554,6 +554,11 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (req.method === "POST" && url.pathname === "/api/upgrade") {
+    await requestPlanUpgrade(req, res);
+    return;
+  }
+
   if (req.method === "POST" && url.pathname === "/api/track-content") {
     await trackContentView(req, res);
     return;
@@ -986,6 +991,36 @@ async function register(req, res) {
     ok: true,
     message: "Cadastro enviado. Agora finalize o pagamento para o administrador liberar seu acesso.",
     paymentUrl: paymentUrlForPlan(desiredPlan)
+  });
+}
+
+async function requestPlanUpgrade(req, res) {
+  const sessionUser = getSessionUser(req);
+  if (!sessionUser) {
+    sendJson(res, 401, { error: "Entre na sua conta para continuar com o pagamento." });
+    return;
+  }
+  const body = await readBody(req);
+  if (!["monthly", "premium"].includes(body.plan)) {
+    sendJson(res, 400, { error: "Escolha o Plano Líder ou Premium." });
+    return;
+  }
+  const users = readUsers();
+  const user = users.find((item) => item.id === sessionUser.id);
+  if (!user) {
+    sendJson(res, 404, { error: "Cadastro não encontrado." });
+    return;
+  }
+  user.requestedPlan = body.plan;
+  user.upgradeRequestedAt = new Date().toISOString();
+  user.updatedAt = user.upgradeRequestedAt;
+  writeUsers(users);
+  const planName = body.plan === "premium" ? "Premium — R$ 349,90 por 12 meses" : "Líder — R$ 19,90 mensal";
+  const message = `Olá! Sou ${user.name || "usuário do Raízes Kids"}. Solicitei o Plano ${planName} para minha conta já cadastrada. Vou enviar o comprovante de pagamento nesta conversa para liberar meu acesso.`;
+  sendJson(res, 200, {
+    paymentUrl: paymentUrlForPlan(body.plan),
+    whatsappUrl: `https://wa.me/5531975466907?text=${encodeURIComponent(message)}`,
+    message: "Após pagar, envie o comprovante pelo WhatsApp do Raízes Kids. Seu plano será liberado após a conferência do administrador."
   });
 }
 
