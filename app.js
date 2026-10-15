@@ -590,6 +590,10 @@ function loadLastTrailVideoId() {
 }
 
 function bindEvents() {
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-share-family]");
+    if (button) shareFamilyCard(button);
+  });
   document.querySelectorAll(".nav-menu").forEach((menu) => {
     menu.addEventListener("toggle", () => {
       if (!menu.open) return;
@@ -1622,7 +1626,9 @@ function renderFamilyJourneyActions(item) {
     <section class="family-journey-actions">
       <div><span>💬</span><strong>Convide outra família para esse momento</strong></div>
       <div class="home-login-actions">
-        <a class="icon-button primary" href="https://wa.me/?text=${encodeURIComponent(shareText)}" target="_blank" rel="noopener noreferrer">💬 Compartilhar devocional</a>
+        ${item.cardImage ? `<button class="icon-button primary" type="button" data-share-family="${escapeHtml(item.id)}">🖼️ Compartilhar com imagem</button><a class="icon-button" href="${escapeHtml(item.cardImage)}" download>Baixar card</a>` : ""}
+        <a class="icon-button" href="https://wa.me/?text=${encodeURIComponent(shareText)}" target="_blank" rel="noopener noreferrer">💬 Enviar link pelo WhatsApp</a>
+        <p data-share-family-status role="status" aria-live="polite"></p>
       </div>
     </section>
     <section class="family-follow-up">
@@ -1631,6 +1637,30 @@ function renderFamilyJourneyActions(item) {
       ${!state.authUser || !canAccessLevel("leader") ? '<p>Vai ensinar na igreja? Prepare sua aula com as lições completas do Plano Líder.</p><a class="icon-button accent" href="vendas.html#planos">Conhecer Plano Líder</a>' : ""}
     </section>
   `;
+}
+
+async function shareFamilyCard(button) {
+  const item = state.devotionals.find((entry) => String(entry.id) === button.dataset.shareFamily);
+  if (!item?.cardImage || button.disabled) return;
+  const status = button.parentElement.querySelector("[data-share-family-status]");
+  if (!navigator.share || !navigator.canShare) {
+    status.textContent = "Baixe o card e anexe a imagem na conversa do WhatsApp. Use também o botão de enviar link.";
+    return;
+  }
+  button.disabled = true;
+  try {
+    const response = await fetch(item.cardImage);
+    if (!response.ok) throw new Error("image");
+    const blob = await response.blob();
+    if (!blob.type.startsWith("image/")) throw new Error("image");
+    const extension = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
+    const file = new File([blob], `raizes-kids-culto-em-familia.${extension}`, { type: blob.type });
+    if (!navigator.canShare({ files: [file] })) throw new Error("unsupported");
+    await navigator.share({ title: item.title, text: `${item.title} 🌱 Um momento para viver a Palavra de Deus em família! Acesse gratuitamente: ${familyDevotionalUrl(item.id)}`, files: [file] });
+    status.textContent = "";
+  } catch (error) {
+    status.textContent = error.name === "AbortError" ? "" : "Não foi possível enviar a imagem diretamente. Baixe o card e anexe no WhatsApp junto com o link.";
+  } finally { button.disabled = false; }
 }
 
 function familyFeaturedItem(items) {

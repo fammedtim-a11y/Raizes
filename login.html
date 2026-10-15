@@ -4,23 +4,23 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes Kids | Acesso</title>
-    <link rel="stylesheet" href="styles.css?v=20261015-clean-entry" />
+    <link rel="stylesheet" href="styles.css?v=20261015-welcome-pix2" />
   </head>
   <body class="auth-page">
     <main class="auth-shell">
       <section class="auth-card">
         <img class="auth-logo" src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
         <form id="loginForm" class="auth-form active" data-auth-panel="login">
-          <h1>Entrar no sistema</h1>
+          <h1>Entrar na sua conta</h1>
           <label>
-            <span>Usuário/CPF</span>
-            <input name="username" inputmode="numeric" autocomplete="username" required />
+            <span>CPF</span>
+            <input name="username" inputmode="numeric" autocomplete="username" placeholder="Seu CPF" required />
           </label>
           <label>
             <span>Senha</span>
-            <input name="password" type="password" autocomplete="current-password" required />
+            <input name="password" type="password" autocomplete="current-password" placeholder="Sua senha" required />
           </label>
-          <button class="icon-button primary" type="submit">Entrar</button>
+          <button class="icon-button primary" type="submit">Entrar ↗</button>
         </form>
 
         <form id="registerForm" class="auth-form" data-auth-panel="register">
@@ -66,12 +66,12 @@
         <nav class="auth-secondary-actions" aria-label="Opções de acesso">
           <button type="button" data-auth-tab="login" hidden>Voltar para entrar</button>
           <button type="button" data-auth-tab="register">Cadastrar</button>
-          <button type="button" data-auth-tab="reset">Redefinir senha</button>
+          <button type="button" data-auth-tab="reset">Esqueci minha senha</button>
         </nav>
         <a class="auth-back" href="index.html">Voltar para o site</a>
       </section>
     </main>
-    <script src="auth.js?v=20261015-clean-entry"></script>
+    <script src="auth.js?v=20261015-welcome-pix"></script>
   </body>
 </html>
 

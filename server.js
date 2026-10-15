@@ -100,12 +100,15 @@ const mimeTypes = {
 const defaultSiteInfo = {
   about: "Raízes Kids é uma plataforma criada para facilitar a vida de líderes e discipuladores de crianças, reunindo lições, trilhas, cultos em família e materiais de apoio em um só lugar.",
   contactEmail: "administrador@raizeskids.com",
-  whatsapp: "3175466907",
+  whatsapp: "31975466907",
   instagram: "@raizeskids_",
   siteUrl: "www.raizeskids.com",
   paymentUrl: "https://pag.ae/81WaCzV4m",
   premiumPaymentUrl: "https://pag.ae/81WaCzV4m",
   paymentQrImage: "",
+  pixKey: "",
+  monthlyPrice: 19.90,
+  premiumPrice: 349.90,
   teamMembers: []
 };
 
@@ -441,7 +444,7 @@ function applySiteInfoContactUpdates() {
   const oldAbout = "Raizes Kids e uma plataforma criada para facilitar a vida de lideres e discipuladores de criancas, reunindo licoes, trilhas, cultos em familia e materiais de apoio em um so lugar.";
   if (!next.about || next.about === oldAbout || /Raizes Kids e uma plataforma/.test(next.about)) next.about = defaultSiteInfo.about;
   if (!next.contactEmail || next.contactEmail === "raizes@gmail.com" || next.contactEmail === "raizes.r12@gmail.com") next.contactEmail = defaultSiteInfo.contactEmail;
-  if (!next.whatsapp || onlyDigits(next.whatsapp) === "31971773756") next.whatsapp = defaultSiteInfo.whatsapp;
+  if (!next.whatsapp || ["31971773756", "3175466907"].includes(onlyDigits(next.whatsapp))) next.whatsapp = defaultSiteInfo.whatsapp;
   if (!next.instagram || next.instagram === "@raizeskids" || next.instagram === "@raizes_r12") next.instagram = defaultSiteInfo.instagram;
   if (!next.siteUrl || next.siteUrl === "https://raizes-fic9.onrender.com/") next.siteUrl = defaultSiteInfo.siteUrl;
   if (!next.paymentUrl) next.paymentUrl = defaultSiteInfo.paymentUrl;
@@ -1009,11 +1012,13 @@ async function requestPlanUpgrade(req, res) {
   user.upgradeRequestedAt = new Date().toISOString();
   user.updatedAt = user.upgradeRequestedAt;
   writeUsers(users);
-  const planName = body.plan === "premium" ? "Premium — R$ 349,90 por 12 meses" : "Líder — R$ 19,90 mensal";
+  const info = readSiteInfo();
+  const price = Number(body.plan === "premium" ? info.premiumPrice : info.monthlyPrice).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const planName = body.plan === "premium" ? `Premium — ${price} por 12 meses` : `Líder — ${price} mensal`;
   const message = `Olá! Sou ${user.name || "usuário do Raízes Kids"}. Solicitei o Plano ${planName} para minha conta já cadastrada. Vou enviar o comprovante de pagamento nesta conversa para liberar meu acesso.`;
   sendJson(res, 200, {
     paymentUrl: paymentUrlForPlan(body.plan),
-    whatsappUrl: `https://wa.me/5531975466907?text=${encodeURIComponent(message)}`,
+    whatsappUrl: `https://wa.me/55${onlyDigits(info.whatsapp)}?text=${encodeURIComponent(message)}`,
     message: "Após pagar, envie o comprovante pelo WhatsApp do Raízes Kids. Seu plano será liberado após a conferência do administrador."
   });
 }
@@ -1028,6 +1033,7 @@ function normalizeDesiredPlan(value) {
 function paymentUrlForPlan(plan) {
   const info = readSiteInfo();
   if (normalizeDesiredPlan(plan) === "family") return "";
+  if (info.pixKey) return `/pagamento.html?plan=${normalizeDesiredPlan(plan)}`;
   if (normalizeDesiredPlan(plan) === "premium") return info.premiumPaymentUrl || info.paymentUrl || defaultSiteInfo.premiumPaymentUrl;
   return info.paymentUrl || defaultSiteInfo.paymentUrl;
 }
@@ -2452,8 +2458,35 @@ async function trackContentView(req, res) {
 }
 
 async function updateSiteInfo(req, res) {
-  const body = await readBody(req);
+  const previous = readSiteInfo();
+  const body = { ...previous, ...await readBody(req) };
+  const prices = {};
+  for (const key of ["monthlyPrice", "premiumPrice"]) {
+    const value = Number(body[key] ?? previous[key]);
+    if (!Number.isFinite(value) || value < 0.01 || value > 100000 || Math.abs(value * 100 - Math.round(value * 100)) > 0.00001) {
+      sendJson(res, 400, { error: "Informe valores válidos em reais, com até duas casas decimais." });
+      return;
+    }
+    prices[key] = value;
+  }
+  const pixKey = String(body.pixKey ?? previous.pixKey).trim();
+  if (pixKey.length > 140 || /[\s<>]/.test(pixKey)) {
+    sendJson(res, 400, { error: "Informe uma chave Pix válida, sem espaços (CPF, CNPJ, telefone, email ou chave aleatória)." });
+    return;
+  }
+  for (const key of ["paymentUrl", "premiumPaymentUrl"]) {
+    try {
+      const url = new URL(body[key] ?? previous[key]);
+      if (url.protocol !== "https:") throw new Error();
+    } catch {
+      sendJson(res, 400, { error: "Os links de pagamento devem começar com https://." });
+      return;
+    }
+  }
   const info = {
+    ...previous,
+    ...prices,
+    pixKey,
     about: cleanText(body.about || defaultSiteInfo.about),
     contactEmail: normalizeEmail(body.contactEmail || defaultSiteInfo.contactEmail),
     whatsapp: onlyDigits(body.whatsapp || defaultSiteInfo.whatsapp),
@@ -2461,12 +2494,12 @@ async function updateSiteInfo(req, res) {
     siteUrl: cleanText(body.siteUrl || defaultSiteInfo.siteUrl),
     paymentUrl: cleanText(body.paymentUrl || defaultSiteInfo.paymentUrl),
     premiumPaymentUrl: cleanText(body.premiumPaymentUrl || body.paymentUrl || defaultSiteInfo.premiumPaymentUrl),
-    paymentQrImage: normalizePaymentQrImage(body.paymentQrImage || ""),
-    teamMembers: normalizeTeamMembers(body.teamMembers),
+    paymentQrImage: normalizePaymentQrImage(body.paymentQrImage ?? previous.paymentQrImage),
+    teamMembers: normalizeTeamMembers(body.teamMembers ?? previous.teamMembers),
     updatedAt: new Date().toISOString()
   };
   writeSiteInfo(info);
-  sendJson(res, 200, { ok: true, info, message: "Informacoes de contato atualizadas." });
+  sendJson(res, 200, { ok: true, info, message: "Informações, Pix e valores atualizados com sucesso." });
 }
 
 function normalizeTeamMembers(items) {

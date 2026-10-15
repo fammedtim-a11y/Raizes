@@ -1,5 +1,10 @@
 const authState = { user: null, initialized: false, adminUsers: [] };
 const automationState = { leads: [], settings: {}, integration: {}, counts: {} };
+let publicSiteInfo = null;
+
+function planPrice(plan) {
+  return Number(plan === "premium" ? publicSiteInfo?.premiumPrice ?? 349.90 : publicSiteInfo?.monthlyPrice ?? 19.90).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   bindAuthTabs();
@@ -63,7 +68,7 @@ function updateSalesUpgradeLinks() {
     }
     if (!authState.user) {
       link.setAttribute("href", link.dataset.signupHref);
-      link.textContent = link.dataset.signupLabel;
+      if (link.dataset.salesPlan === "family") link.textContent = link.dataset.signupLabel;
     } else if (link.dataset.salesPlan === "family") {
       link.href = "index.html#devocional";
       link.textContent = "Abrir Culto em Família";
@@ -94,14 +99,15 @@ function bindSalesUpgrade() {
     const title = dialog.querySelector("h2");
     const status = dialog.querySelector("[data-upgrade-status]");
     const actions = dialog.querySelector("[data-upgrade-actions]");
-    title.textContent = plan === "premium" ? "Plano Premium · R$ 349,90 por 12 meses" : "Plano Líder · R$ 19,90 mensal";
+    await loadPublicSiteInfo();
+    title.textContent = `${planLabel(plan)} · ${planPrice(plan)} ${plan === "premium" ? "por 12 meses" : "mensal"}`;
     status.textContent = "Preparando o pagamento para sua conta...";
     actions.hidden = true;
     dialog.showModal();
     try {
       const result = await apiPost("/api/upgrade", { plan });
       if (result.error) throw new Error(result.error);
-      dialog.querySelector("[data-upgrade-pay]").href = normalizePublicUrl(result.paymentUrl);
+      dialog.querySelector("[data-upgrade-pay]").href = new URL(result.paymentUrl, location.href).href;
       dialog.querySelector("[data-upgrade-receipt]").href = result.whatsappUrl;
       status.textContent = result.message;
       actions.hidden = false;
@@ -976,6 +982,8 @@ async function loadPublicSiteInfo() {
     if (data.info) applySiteInfo(data.info);
   } catch {
     // As informacoes fixas do HTML continuam visiveis se o servidor oscilar.
+    const status = document.querySelector("[data-payment-status]");
+    if (status) status.textContent = "Não foi possível carregar o pagamento. Atualize a página antes de pagar.";
   }
 }
 
@@ -993,7 +1001,7 @@ async function loadAdminSiteInfo() {
 window.loadAdminSiteInfo = loadAdminSiteInfo;
 
 function fillSiteInfoForm(form, info) {
-  ["about", "contactEmail", "whatsapp", "instagram", "siteUrl", "paymentUrl", "premiumPaymentUrl", "paymentQrImage"].forEach((key) => {
+  ["about", "contactEmail", "whatsapp", "instagram", "siteUrl", "paymentUrl", "premiumPaymentUrl", "paymentQrImage", "pixKey", "monthlyPrice", "premiumPrice"].forEach((key) => {
     if (form.elements[key]) form.elements[key].value = info?.[key] || "";
   });
   renderPaymentQrPreview(info?.paymentQrImage || "");
@@ -1001,6 +1009,14 @@ function fillSiteInfoForm(form, info) {
 }
 
 function applySiteInfo(info) {
+  publicSiteInfo = info;
+  document.querySelectorAll("[data-plan-price]").forEach((el) => {
+    el.textContent = planPrice(el.dataset.planPrice).replace(/^R\$\s*/, "");
+  });
+  document.querySelectorAll("#registerForm option[value='monthly'], #registerForm option[value='premium']").forEach((option) => {
+    option.textContent = `${planLabel(option.value)} - ${planPrice(option.value)} ${option.value === "premium" ? "por 12 meses" : "/mês"}`;
+  });
+  renderPaymentPage(info);
   document.querySelectorAll("[data-site-info]").forEach((el) => {
     const key = el.dataset.siteInfo;
     el.textContent = key === "whatsapp" ? formatPhoneDisplay(info?.[key]) : info?.[key] || "";
@@ -1026,6 +1042,30 @@ function applySiteInfo(info) {
   });
   renderSalesPaymentQr(info?.paymentQrImage || "");
   renderPublicTeamMembers(info?.teamMembers || []);
+}
+
+function renderPaymentPage(info) {
+  if (document.body.dataset.page !== "payment") return;
+  const plan = new URLSearchParams(location.search).get("plan");
+  const status = document.querySelector("[data-payment-status]");
+  if (!["monthly", "premium"].includes(plan)) { status.textContent = "Escolha um plano na página de vendas para continuar."; return; }
+  document.querySelector("[data-payment-plan]").textContent = `${planLabel(plan)} · ${plan === "premium" ? "acesso por 12 meses" : "mensal"}`;
+  document.querySelector("[data-payment-amount]").textContent = planPrice(plan);
+  document.querySelector("[data-payment-pix]").hidden = !info.pixKey;
+  const input = document.querySelector("#paymentPixKey");
+  input.value = info.pixKey || "";
+  document.querySelector("[data-copy-pix]").onclick = async () => {
+    try { await navigator.clipboard.writeText(input.value); status.textContent = "Chave Pix copiada."; }
+    catch { input.focus(); input.select(); status.textContent = "Selecione e copie a chave Pix acima."; }
+  };
+  const payLink = document.querySelector("[data-payment-link]");
+  const url = plan === "premium" ? info.premiumPaymentUrl : info.paymentUrl;
+  payLink.hidden = !url;
+  payLink.href = normalizePublicUrl(url);
+  const receipt = document.querySelector("[data-payment-receipt]");
+  receipt.href = `https://wa.me/55${String(info.whatsapp).replace(/\D/g, "")}?text=${encodeURIComponent(`Olá! Quero enviar meu comprovante do ${planLabel(plan)} (${planPrice(plan)}) para liberar meu acesso no Raízes Kids.`)}`;
+  receipt.hidden = false;
+  status.textContent = "";
 }
 
 function accessLevelLabel(value) {

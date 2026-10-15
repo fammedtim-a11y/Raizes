@@ -120,6 +120,35 @@
 }
 
 .auth-page .auth-card { width: min(560px, 100%); border-width: 1px; border-radius: 8px; }
+.auth-page #loginForm input { border-radius: 8px; background: #f2f6fc; padding: 14px 16px; border: 1px solid #d6e2ed; }
+.auth-page #loginForm > button { background: #168bea; color: white; min-height: 54px; box-shadow: 0 8px 20px #168bea30; }
+.welcome-entry { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 32px 20px; background: #fff; border-bottom: 1px solid var(--line); }
+.welcome-logo { width: 240px; max-width: 65%; height: auto; }
+.welcome-entry h2 { font-size: 28px; line-height: 1.25; margin: 8px 0 22px; color: #183b56; }
+.welcome-actions { display: flex; justify-content: center; gap: 14px; width: min(440px, 100%); }
+.welcome-actions a { flex: 1; min-height: 54px; }
+.welcome-entry .welcome-register, .payment-summary .welcome-register { background: #119b76; color: #fff; border-color: #119b76; }
+.welcome-entry .welcome-actions .primary { background: #168bea; color: #fff; border-color: #168bea; }
+.welcome-visitor { background: transparent; border: 0; text-decoration: underline; padding: 12px; min-height: 44px; font: inherit; color: #34536d; cursor: pointer; }
+.welcome-family { display: flex; align-items: center; gap: 18px; width: min(740px, 100%); background: #fff3b8; border-radius: 8px; padding: 22px; margin: 20px 0 14px; text-align: left; }
+.welcome-family > span { font-size: 34px; }
+.welcome-family h3 { font-size: 22px; line-height: 1.25; margin: 0 0 6px; }
+.welcome-family p { margin: 0; font-size: 15px; color: #405469; }
+.welcome-family button { flex-shrink: 0; min-height: 44px; }
+.welcome-share { min-height: 44px; color: #137355; }
+.payment-summary { display: grid; gap: 16px; text-align: center; }
+.payment-summary h1 { font-size: 26px; margin: 0; }
+.payment-summary [data-payment-amount] { font-size: 30px; color: #195d8c; }
+.payment-summary input { width: 100%; min-height: 48px; font-size: 16px; }
+.payment-summary [hidden] { display: none; }
+@media (max-width: 600px) {
+  .welcome-entry { padding: 24px 14px; }
+  .welcome-entry h2 { font-size: 24px; }
+  .welcome-entry .welcome-logo { width: 180px; max-width: 60%; }
+  .welcome-family { flex-wrap: wrap; padding: 18px; gap: 12px; }
+  .welcome-family > div { flex: 1; min-width: 0; }
+  .welcome-entry .welcome-family button { width: 100%; flex-basis: 100%; }
+}
 .auth-page .auth-logo { width: 190px; max-width: 65%; margin-bottom: 16px; }
 .auth-page .auth-form h1 { font-size: 26px; line-height: 1.25; margin-bottom: 8px; }
 .auth-page .auth-form input:not([type="checkbox"]),

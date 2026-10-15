@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Catálogo de Lições Bíblicas</title>
-    <link rel="stylesheet" href="styles.css?v=20261002-family-nav" />
+    <link rel="stylesheet" href="styles.css?v=20261015-welcome-pix2" />
     <link rel="stylesheet" href="print.css?v=20260915-plan-links" media="print" />
   </head>
   <body data-active-tab="home">
@@ -130,6 +130,21 @@
         </section>
 
         <section id="homeView" class="view active home-view" aria-label="Home Raízes Kids">
+          <section class="welcome-entry" aria-labelledby="welcomeTitle">
+            <img class="welcome-logo" src="assets/logo-raizes-kids.png" alt="Raízes Kids" fetchpriority="high" />
+            <h2 id="welcomeTitle">Bem-vindo ao Raízes Kids</h2>
+            <div class="welcome-actions visitor-only">
+              <a class="icon-button primary" href="login.html">Entrar ↗</a>
+              <a class="icon-button welcome-register" href="login.html?tab=register&plan=family">Cadastrar ✚</a>
+            </div>
+            <button class="welcome-visitor visitor-only" type="button" data-jump-tab="devotional">Entrar como visitante</button>
+            <div class="welcome-family">
+              <span aria-hidden="true">🏠</span>
+              <div><h3>Culto em Família Grátis!</h3><p>Um momento de fé para aprender e crescer juntos em casa.</p></div>
+              <button class="icon-button welcome-register" type="button" data-jump-tab="devotional">Acessar agora</button>
+            </div>
+            <a class="welcome-share icon-button" href="https://wa.me/?text=Conhe%C3%A7a%20o%20Ra%C3%ADzes%20Kids!%20%F0%9F%8C%B1%20Um%20convite%20para%20viver%20a%20Palavra%20de%20Deus%20em%20fam%C3%ADlia%2C%20com%20Cultos%20em%20Fam%C3%ADlia%20gratuitos.%20Vamos%20compartilhar%20esse%20cuidado%20com%20outras%20fam%C3%ADlias%3F%20https%3A%2F%2Fwww.raizeskids.com" target="_blank" rel="noopener noreferrer">💬 Convidar pelo WhatsApp</a>
+          </section>
           <section class="home-toolkit-section" aria-label="O que voce encontra no Raizes Kids">
             <div class="section-heading">
               <span class="home-kicker">O que você encontra aqui</span>
@@ -352,8 +367,8 @@
     </template>
 
     <script src="lessons-data.js?v=20260915-plan-links"></script>
-    <script src="app.js?v=20261014-upgrade"></script>
-    <script src="auth.js?v=20261002-family-nav"></script>
+    <script src="app.js?v=20261015-welcome-pix"></script>
+    <script src="auth.js?v=20261015-welcome-pix"></script>
   </body>
 </html>
 

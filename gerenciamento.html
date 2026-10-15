@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20261014-admin-pdf" />
+    <link rel="stylesheet" href="styles.css?v=20261015-welcome-pix2" />
     <link rel="stylesheet" href="print.css?v=20260915-plan-links" media="print" />
   </head>
   <body data-page="admin">
@@ -781,11 +781,14 @@
                 <div class="manager-heading compact-heading">
                   <div>
                     <h3>Página de vendas e pagamento</h3>
-                    <p>Cadastre o link de pagamento e a imagem do QR Code que aparecerão na página comercial.</p>
+                    <p>Pix e valores são usados no cadastro, nos planos e no pagamento. Com uma chave Pix preenchida, o cliente verá as instruções de transferência. Os links externos continuam como alternativa e precisam ter seus valores ajustados também no provedor.</p>
                   </div>
                   <a class="icon-button" href="vendas.html" target="_blank" rel="noreferrer">Ver página</a>
                 </div>
                 <div class="form-grid">
+                  <label><span>Chave Pix (deixe vazio para usar somente os links)</span><input name="pixKey" maxlength="140" placeholder="CPF, CNPJ, email, telefone ou chave aleatória" /></label>
+                  <label><span>Plano Líder mensal (R$)</span><input name="monthlyPrice" type="number" min="0.01" max="100000" step="0.01" required /></label>
+                  <label><span>Plano Premium por 12 meses (R$)</span><input name="premiumPrice" type="number" min="0.01" max="100000" step="0.01" required /></label>
                   <label>
                     <span>Link de pagamento do Plano Líder</span>
                     <input name="paymentUrl" placeholder="https://..." />
@@ -817,8 +820,8 @@
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
     <script src="lessons-data.js?v=20260915-plan-links"></script>
-    <script src="app.js?v=20261014-verse-text"></script>
-    <script src="auth.js?v=20261002-family-nav"></script>
+    <script src="app.js?v=20261015-welcome-pix"></script>
+    <script src="auth.js?v=20261015-welcome-pix"></script>
   </body>
 </html>
 

@@ -13,6 +13,8 @@ function setup(loggedIn = true) {
   let response;
   const context = vm.createContext({
     Date, encodeURIComponent,
+    readSiteInfo: () => ({ monthlyPrice: 19.90, premiumPrice: 349.90, whatsapp: "31975466907" }),
+    onlyDigits: (value) => String(value).replace(/\D/g, ""),
     getSessionUser: () => loggedIn ? user : null,
     readBody: async (req) => req.body,
     readUsers: () => [{ ...user }], writeUsers: (users) => { saved = users[0]; },
