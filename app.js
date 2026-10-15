@@ -1344,9 +1344,7 @@ function renderLessonCard(lesson, locked) {
       <strong>${escapeHtml(lesson.title)}</strong>
       <span class="lesson-card-verse">${escapeHtml(lesson.category || "Sem categoria")}</span>
       <span class="lesson-card-age">${escapeHtml(ageText(lesson.age))}</span>
-      <span class="lesson-meta">
-        ${locked ? '<span class="pill lock-pill">🔒 Bloqueado</span>' : ""}
-      </span>
+      ${locked ? '<span class="lesson-meta"><span class="pill lock-pill">🔒 Bloqueado</span></span>' : ""}
     </button>
   `;
 }
@@ -1437,7 +1435,7 @@ function renderDevotionals() {
   if (!state.activeDevotionalId) state.activeDevotionalId = familyFeaturedItem(state.devotionals)?.id || null;
   renderFamilyWeeklySpotlight();
   renderContentArea({
-    items: state.devotionals,
+    items: newestFamilyFirst(state.devotionals),
     activeKey: "activeDevotionalId",
     listSelector: "#devotionalList",
     countSelector: "#devotionalCount",
@@ -1448,6 +1446,10 @@ function renderDevotionals() {
     fields: DEVOTIONAL_FIELDS,
     onChange: renderDevotionals
   });
+}
+
+function newestFamilyFirst(items) {
+  return [...items].sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0));
 }
 
 function renderTrainings() {

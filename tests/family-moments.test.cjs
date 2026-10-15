@@ -5,7 +5,7 @@ const test = require("node:test");
 const vm = require("node:vm");
 
 const source = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
-const names = ["familyFeaturedItem", "familyDevotionalUrl", "familyEstimatedMinutes"];
+const names = ["familyFeaturedItem", "familyDevotionalUrl", "familyEstimatedMinutes", "newestFamilyFirst"];
 const isolatedSource = names.map((name) => {
   const start = source.search(new RegExp(`^function ${name}\\(`, "m"));
   assert.ok(start >= 0, `Missing function: ${name}`);
@@ -46,6 +46,21 @@ test("sharing points to the chosen devotional", () => {
   assert.equal(url.origin, "https://raizeskids.com");
   assert.equal(url.searchParams.get("devocional"), "family & faith");
   assert.equal(url.hash, "#devocional");
+});
+
+test("family catalogue is newest first without changing stored content or order", () => {
+  const { context } = setup();
+  const items = [
+    { id: "old", createdAt: "2026-05-01", cardImage: "/uploads/old.png" },
+    { id: "new", createdAt: "2026-10-01", cardImage: "/uploads/new.png" },
+    { id: "same-date", createdAt: "2026-10-01" },
+    { id: "invalid", createdAt: "invalid" }
+  ];
+  const before = JSON.stringify(items);
+  const sorted = context.newestFamilyFirst(items);
+  assert.deepEqual(Array.from(sorted, (item) => item.id), ["new", "same-date", "old", "invalid"]);
+  assert.equal(JSON.stringify(items), before);
+  assert.equal(sorted[0], items[1]);
 });
 
 test("reading estimate has a minimum for short devotionals", () => {
