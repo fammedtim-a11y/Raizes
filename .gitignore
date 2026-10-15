@@ -1,4 +1,5 @@
 data/
+backups-online/
 node_modules/
 .electron-builder-cache/
 dist-facilitador*/

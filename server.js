@@ -348,33 +348,27 @@ function mergeSeedFile(filePath, seedItems, writeFn) {
   if (!seedItems.length || !fs.existsSync(filePath)) return;
   try {
     const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
-    const current = Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) throw new Error("O arquivo de conteudo existente nao contem uma lista.");
+    const current = parsed;
     const seedsById = new Map(seedItems.map((item) => [item.id, item]));
     let changed = false;
     const merged = current.map((item) => {
       const seed = seedsById.get(item.id);
       if (!seed) return item;
       seedsById.delete(item.id);
-      if (!shouldRefreshSeedItem(item)) return item;
-      changed = true;
-      return {
-        ...seed,
-        cardImage: item.cardImage || seed.cardImage || "",
-        activityImage: item.activityImage || seed.activityImage || "",
-        updatedAt: item.updatedAt || seed.updatedAt
-      };
+      // Seeds fill missing records; saved content always takes precedence.
+      return item;
     });
     const missing = [...seedsById.values()].filter((item) => item.id);
     if (missing.length) changed = true;
     if (changed) writeFn([...merged, ...missing]);
-  } catch {
-    writeFn(seedItems);
+  } catch (error) {
+    console.error(`Conteudo existente preservado sem importar seeds: ${path.basename(filePath)}: ${error.message}`);
   }
 }
 
 function sanitizeStoredLessonContent() {
   sanitizeJsonFile(LESSONS_FILE);
-  sanitizeJsonFile(DEVOTIONALS_FILE);
 }
 
 function sanitizeJsonFile(filePath) {
@@ -1998,7 +1992,20 @@ function readDevotionals() {
 }
 
 function writeDevotionals(devotionals) {
-  fs.writeFileSync(DEVOTIONALS_FILE, JSON.stringify(sortDevotionals(devotionals), null, 2), "utf8");
+  const json = JSON.stringify(sortDevotionals(devotionals), null, 2);
+  const temporaryFile = `${DEVOTIONALS_FILE}.${crypto.randomUUID()}.tmp`;
+  if (fs.existsSync(DEVOTIONALS_FILE)) {
+    const backupDir = path.join(DATA_DIR, "backups", "devotionals");
+    fs.mkdirSync(backupDir, { recursive: true });
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    fs.copyFileSync(DEVOTIONALS_FILE, path.join(backupDir, `${stamp}-${crypto.randomUUID()}.json`));
+  }
+  try {
+    fs.writeFileSync(temporaryFile, json, { encoding: "utf8", flag: "wx" });
+    fs.renameSync(temporaryFile, DEVOTIONALS_FILE);
+  } finally {
+    if (fs.existsSync(temporaryFile)) fs.unlinkSync(temporaryFile);
+  }
 }
 
 function readTrainings() {
@@ -2093,7 +2100,7 @@ async function updateDevotionals(req, res) {
     return;
   }
   try {
-    const stored = persistContentFiles(devotionals, "devotional");
+    const stored = persistContentFiles(devotionals, "devotional").map((item) => ({ ...item, seedManaged: false }));
     writeDevotionals(stored);
     sendJson(res, 200, { ok: true, devotionals: stored, savedAt: new Date().toISOString() });
   } catch (error) {
