@@ -1251,6 +1251,13 @@ button.master-only.visible,
   scroll-snap-align: start;
 }
 
+@media (max-width: 720px) {
+  #devotionalList { grid-auto-columns: calc(100% - 36px); gap: 14px; scroll-snap-type: x mandatory; }
+  #devotionalList .devotional-card { min-width: 0; padding: 14px; align-content: start; }
+  #devotionalList .devotional-card-title { font-size: 1.15rem; line-height: 1.25; }
+  #devotionalList .devotional-card-category, #devotionalList .devotional-card-verse { font-size: 1rem; }
+}
+
 .content-layout .lesson-list {
   position: static;
   max-height: none;

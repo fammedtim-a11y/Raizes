@@ -271,7 +271,7 @@ function init() {
   bindEvents();
   enhanceRichTextEditors();
   applyAccessVisibility();
-  state.activeId = state.lessons[0]?.id || null;
+  state.activeId = new URLSearchParams(location.search).get("licao") || state.lessons[0]?.id || null;
   render();
   if (isAdminPage) {
     setManageTab(location.hash === "#trilhas" ? "trails" : location.hash === "#novidades" ? "news" : location.hash === "#comunicacao" ? "communication" : location.hash === "#automacoes" ? "automation" : location.hash === "#devocionais" ? "devotionals" : location.hash === "#treinamentos" ? "trainings" : location.hash === "#ebf" ? "ebf" : location.hash === "#usuarios" ? "users" : location.hash === "#acessos" ? "access" : location.hash === "#contato" ? "contact" : "dashboard");
@@ -375,6 +375,8 @@ async function syncLessonsFromServer() {
     if (!Array.isArray(data.lessons)) return;
     state.lessons = normalizeLessonDates(data.lessons);
     saveLessons();
+    const sharedLessonId = new URLSearchParams(location.search).get("licao");
+    if (state.lessons.some((lesson) => lesson.id === sharedLessonId)) state.activeId = sharedLessonId;
     state.activeId = state.lessons.some((lesson) => lesson.id === state.activeId)
       ? state.activeId
       : state.lessons[0]?.id || null;
@@ -593,6 +595,10 @@ function bindEvents() {
   document.addEventListener("click", (event) => {
     const button = event.target.closest("[data-share-family]");
     if (button) shareFamilyCard(button);
+    const lessonButton = event.target.closest("[data-share-lesson]");
+    if (lessonButton) shareContentCard("lesson", state.lessons.find((item) => String(item.id) === lessonButton.dataset.shareLesson), lessonButton);
+    const download = event.target.closest("[data-download-content]");
+    if (download) downloadSelectedContent(download.dataset.downloadContent, download.dataset.format, download.dataset.scope, download);
   });
   document.querySelectorAll(".nav-menu").forEach((menu) => {
     menu.addEventListener("toggle", () => {
@@ -701,11 +707,11 @@ function bindEvents() {
     els.title.focus();
   });
 
-  els.ebookPrint?.addEventListener("click", printEbook);
+  els.ebookPrint?.addEventListener("click", () => downloadSelectedContent("lesson", "pdf", "all", els.ebookPrint));
   $("#exportLessonPdfBtn")?.addEventListener("click", async () => {
     try {
       const lesson = await lessonFromEditor();
-      if (lesson) await printCurrentLesson(lesson);
+      if (lesson) await downloadContentFile("lesson", "pdf", { items: [lesson] }, $("#exportLessonPdfBtn"));
     } catch (error) {
       showActionMessage("lesson", error.message || "Não foi possível exportar a lição.", true);
     }
@@ -1426,8 +1432,10 @@ function renderReader() {
   }
 
   els.reader.innerHTML = "";
+  timeline.insertAdjacentHTML("beforeend", renderLessonShareActions(lesson));
+  if (canExportPdf()) printButton?.insertAdjacentHTML("afterend", '<button class="icon-button" type="button" data-download-content="lesson" data-format="docx" data-scope="current">Baixar DOCX</button>');
   els.reader.append(template);
-  $("#printPdfBtn")?.addEventListener("click", printCurrentLesson);
+  $("#printPdfBtn")?.addEventListener("click", () => downloadSelectedContent("lesson", "pdf", "current", $("#printPdfBtn")));
   trackContentView("Lição", lesson);
 }
 
@@ -1622,14 +1630,11 @@ function renderFamilyGuestLock(item) {
 }
 
 function renderFamilyJourneyActions(item) {
-  const url = familyDevotionalUrl(item.id);
-  const shareText = `${item.title} — um momento para viver a Palavra de Deus em família. ${url}`;
   return `
     <section class="family-journey-actions">
       <div><span>💬</span><strong>Convide outra família para esse momento</strong></div>
       <div class="home-login-actions">
-        ${item.cardImage ? `<button class="icon-button primary" type="button" data-share-family="${escapeHtml(item.id)}">🖼️ Compartilhar com imagem</button><a class="icon-button" href="${escapeHtml(item.cardImage)}" download>Baixar card</a>` : ""}
-        <a class="icon-button" href="https://wa.me/?text=${encodeURIComponent(shareText)}" target="_blank" rel="noopener noreferrer">💬 Enviar link pelo WhatsApp</a>
+        <button class="icon-button primary" type="button" data-share-family="${escapeHtml(item.id)}">🖼️ Compartilhar este Culto em Família</button>
         <p data-share-family-status role="status" aria-live="polite"></p>
       </div>
     </section>
@@ -1643,25 +1648,37 @@ function renderFamilyJourneyActions(item) {
 
 async function shareFamilyCard(button) {
   const item = state.devotionals.find((entry) => String(entry.id) === button.dataset.shareFamily);
-  if (!item?.cardImage || button.disabled) return;
+  return shareContentCard("devotional", item, button);
+}
+
+function renderLessonShareActions(lesson) {
+  return `<section class="family-journey-actions"><div><span>💬</span><strong>Compartilhe com quem ensina crianças</strong></div><div class="home-login-actions"><button class="icon-button primary" type="button" data-share-lesson="${escapeHtml(lesson.id)}">🖼️ Compartilhar Lição</button><p data-share-family-status role="status" aria-live="polite"></p></div></section>`;
+}
+
+async function shareContentCard(type, item, button) {
+  if (!item || button.disabled) return;
   const status = button.parentElement.querySelector("[data-share-family-status]");
-  if (!navigator.share || !navigator.canShare) {
-    status.textContent = "Baixe o card e anexe a imagem na conversa do WhatsApp. Use também o botão de enviar link.";
-    return;
-  }
+  const url = type === "devotional" ? familyDevotionalUrl(item.id) : new URL(`index.html?licao=${encodeURIComponent(item.id)}#licoes`, location.href).href;
+  const text = `${item.title} 🌱 ${type === "devotional" ? "Um momento para viver a Palavra de Deus em família! Acesse gratuitamente:" : "Uma lição para ensinar a Palavra de Deus às crianças. Conheça no Raízes Kids:"} ${url}`;
   button.disabled = true;
   try {
-    const response = await fetch(item.cardImage);
-    if (!response.ok) throw new Error("image");
-    const blob = await response.blob();
-    if (!blob.type.startsWith("image/")) throw new Error("image");
-    const extension = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
-    const file = new File([blob], `raizes-kids-culto-em-familia.${extension}`, { type: blob.type });
-    if (!navigator.canShare({ files: [file] })) throw new Error("unsupported");
-    await navigator.share({ title: item.title, text: `${item.title} 🌱 Um momento para viver a Palavra de Deus em família! Acesse gratuitamente: ${familyDevotionalUrl(item.id)}`, files: [file] });
+    let file;
+    if (item.cardImage && navigator.share && navigator.canShare) {
+      try {
+        const response = await fetch(item.cardImage);
+        if (!response.ok) throw new Error("image");
+        const blob = await response.blob();
+        if (!blob.type.startsWith("image/")) throw new Error("image");
+        const extension = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
+        const candidate = new File([blob], `raizes-kids-${type}.${extension}`, { type: blob.type });
+        if (navigator.canShare({ files: [candidate] })) file = candidate;
+      } catch { /* Sharing the invitation remains available if its image fails. */ }
+    }
+    if (navigator.share) await navigator.share({ title: item.title, text, ...(file ? { files: [file] } : {}) });
+    else window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
     status.textContent = "";
   } catch (error) {
-    status.textContent = error.name === "AbortError" ? "" : "Não foi possível enviar a imagem diretamente. Baixe o card e anexe no WhatsApp junto com o link.";
+    status.textContent = error.name === "AbortError" ? "" : "Não foi possível compartilhar agora. Tente novamente.";
   } finally { button.disabled = false; }
 }
 
@@ -1734,6 +1751,7 @@ function renderFamilyReader(item) {
       ${item.attachments?.length ? `<div class="attachment-list">${item.attachments.map((file) => `<a class="icon-button" href="${escapeHtml(file.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(file.name || "Anexo")}</a>`).join("")}</div>` : ""}
       ${!state.authUser ? '<div class="family-signup"><a class="icon-button primary" href="login.html?tab=register&plan=family">Criar acesso grátis para todos os devocionais</a></div>' : ""}
       ${renderFamilyJourneyActions(item)}
+      ${canExportPdf() ? '<div class="home-login-actions"><button class="icon-button" type="button" data-download-content="devotional" data-format="pdf" data-scope="current">Baixar PDF</button><button class="icon-button" type="button" data-download-content="devotional" data-format="docx" data-scope="current">Baixar DOCX</button></div>' : ""}
     </div>`;
 }
 
@@ -1855,6 +1873,46 @@ function renderLockedReader(lesson) {
       </div>
     </section>
   `;
+}
+
+async function downloadSelectedContent(type, format, scope, button) {
+  try {
+    if (!canExportPdf()) throw new Error("Downloads disponíveis apenas para administradores e usuários Premium.");
+    if (scope === "all") {
+      const items = type === "lesson" ? filteredLessons() : newestFamilyFirst(state.devotionals);
+      if (!items.length) throw new Error("Nenhum conteúdo nos filtros para baixar.");
+      await downloadContentFile(type, format, { ids: items.map((item) => item.id) }, button);
+    } else if (isAdminPage) {
+      const item = type === "lesson" ? await lessonFromEditor() : await contentFromForm(type, document.querySelector("#devotionalForm"), { includeNewAttachments: false });
+      if (item) await downloadContentFile(type, format, { items: [item] }, button);
+    } else {
+      const id = type === "lesson" ? state.activeId : state.activeDevotionalId;
+      await downloadContentFile(type, format, { ids: [id] }, button);
+    }
+  } catch (error) { window.alert(error.message || "Não foi possível baixar o arquivo."); }
+}
+
+async function downloadContentFile(type, format, selection, button) {
+  if (button?.disabled) return;
+  const oldLabel = button?.textContent;
+  if (button) { button.disabled = true; button.textContent = "Preparando download..."; }
+  try {
+    const response = await fetch("/api/export-content", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type, format, ...selection }) });
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result.error || "Não foi possível gerar o arquivo.");
+    }
+    const blob = await response.blob();
+    const name = response.headers.get("Content-Disposition")?.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+    const href = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = href;
+    link.download = name ? decodeURIComponent(name) : `raizes-kids.${format}`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(href), 60000);
+  } finally { if (button) { button.disabled = false; button.textContent = oldLabel; } }
 }
 
 async function printCurrentLesson(editedLesson) {
@@ -2956,7 +3014,8 @@ function bindContentEditor(form) {
   form.querySelector("[data-content-export-pdf]")?.addEventListener("click", async () => {
     try {
       const item = await contentFromForm(type, form, { includeNewAttachments: false });
-      await printContentPdf(type, item);
+      if (type === "devotional") await downloadContentFile(type, "pdf", { items: [item] }, form.querySelector("[data-content-export-pdf]"));
+      else await printContentPdf(type, item);
     } catch (error) {
       showContentMessage(form, error.message || "Nao foi possivel exportar o PDF.", true);
     }

@@ -11,6 +11,7 @@ function setup(navigator, fetchOk = true) {
   const status = { textContent: "" };
   const button = { dataset: { shareFamily: "family-1" }, disabled: false, parentElement: { querySelector: () => status } };
   const context = vm.createContext({
+    window: { open() {} },
     navigator, File, state: { devotionals: [{ id: "family-1", title: "Fé em família", cardImage: "/uploads/card.png" }] },
     familyDevotionalUrl: () => "https://raizeskids.com/index.html?devocional=family-1#devocional",
     fetch: async () => ({ ok: fetchOk, blob: async () => new Blob(["test-image"], { type: "image/png" }) })
@@ -28,16 +29,18 @@ test("native sharing includes the card file and the chosen devotional link", asy
   assert.equal(s.button.disabled, false);
 });
 
-test("unsupported browsers explain how to attach the card without promising automatic WhatsApp upload", async () => {
+test("unsupported browsers keep the invitation available without separate download buttons", async () => {
   const s = setup({});
   await s.context.shareFamilyCard(s.button);
-  assert.ok(s.status.textContent.includes("Baixe o card"));
+  assert.equal(s.status.textContent, "");
 });
 
-test("image failures show a fallback and restore the button", async () => {
-  const s = setup({ canShare: () => true, share: async () => {} }, false);
+test("image failures share the invitation text and restore the button", async () => {
+  let shared;
+  const s = setup({ canShare: () => true, share: async (value) => { shared = value; } }, false);
   await s.context.shareFamilyCard(s.button);
-  assert.ok(s.status.textContent.includes("Baixe o card"));
+  assert.ok(shared.text.includes("family-1"));
+  assert.equal(shared.files, undefined);
   assert.equal(s.button.disabled, false);
 });
 

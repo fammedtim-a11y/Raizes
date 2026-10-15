@@ -5,7 +5,7 @@
   "main": "facilitador/main.js",
   "scripts": {
     "start": "node server.js",
-    "check": "node --check app.js && node --check auth.js && node --check server.js && node --check facilitador/main.js && node --check facilitador/preload.js && node --check facilitador/renderer.js",
+    "check": "node --check app.js && node --check auth.js && node --check server.js && node --check content-export.js && node --check facilitador/main.js && node --check facilitador/preload.js && node --check facilitador/renderer.js",
     "facilitador:dev": "electron facilitador/main.js",
     "facilitador:dist": "electron-builder --config facilitador/electron-builder.json"
   },
@@ -15,5 +15,11 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "docx": "^9.5.1",
+    "htmlparser2": "^10.0.0",
+    "pdfmake": "^0.2.20",
+    "sharp": "^0.34.5"
   }
 }

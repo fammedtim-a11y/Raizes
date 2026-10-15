@@ -31,6 +31,7 @@ const revokedSessions = new Map();
 const loginAttempts = new Map();
 const leadCaptureAttempts = new Map();
 const youtubeTitleCache = new Map();
+let runningExports = 0;
 
 const initialUsers = [
   {
@@ -464,6 +465,10 @@ function shouldRefreshSeedItem(item) {
 }
 
 async function handleApi(req, res, url) {
+  if (req.method === "POST" && url.pathname === "/api/export-content") {
+    await downloadContent(req, res);
+    return;
+  }
   if (req.method === "GET" && url.pathname === "/api/session") {
     const session = getSessionState(req);
     sendJson(res, 200, { user: publicUser(session.user), message: session.message || "" });
@@ -1020,6 +1025,48 @@ async function requestPlanUpgrade(req, res) {
     whatsappUrl: `https://wa.me/55${onlyDigits(info.whatsapp)}?text=${encodeURIComponent(message)}`,
     message: "Após pagar, envie o comprovante pelo WhatsApp do Raízes Kids. Seu plano será liberado após a conferência do administrador."
   });
+}
+
+async function downloadContent(req, res) {
+  const user = getSessionUser(req);
+  if (!user || (user.role !== "admin" && user.accessLevel !== "prime")) {
+    sendJson(res, 403, { error: "Downloads disponíveis apenas para administradores e usuários Premium." });
+    return;
+  }
+  if (runningExports >= 2) {
+    sendJson(res, 429, { error: "Há outras exportações em andamento. Aguarde e tente novamente." });
+    return;
+  }
+  runningExports++;
+  try {
+    const body = await readBody(req);
+    if (!["lesson", "devotional"].includes(body.type) || !["pdf", "docx"].includes(body.format)) throw new Error("Formato de exportação inválido.");
+    let items;
+    if (body.items) {
+      if (user.role !== "admin") { sendJson(res, 403, { error: "Somente administradores podem exportar rascunhos." }); return; }
+      items = body.items;
+    } else {
+      if (!Array.isArray(body.ids) || !body.ids.length || body.ids.length > 150) throw new Error("Selecione os conteúdos para exportar.");
+      const collection = body.type === "lesson" ? readLessons() || [] : readDevotionals();
+      items = [...new Set(body.ids)].map((id) => collection.find((item) => item.id === id && (user.role === "admin" || item.active !== false)));
+      if (items.some((item) => !item)) throw new Error("Um conteúdo não está disponível. Atualize o catálogo e tente novamente.");
+    }
+    if (!Array.isArray(items) || !items.length || items.length > 150 || items.some((item) => !item || typeof item.title !== "string" || !item.title.trim())) throw new Error("Selecione entre 1 e 150 conteúdos com título.");
+    if (JSON.stringify(items).length > 12 * 1024 * 1024) throw new Error("A seleção está muito grande. Exporte em lotes menores.");
+    const { exportContent } = require("./content-export");
+    const buffer = await exportContent(body.type, items, body.format, { root: ROOT, uploadDir: UPLOAD_DIR, info: readSiteInfo() });
+    const name = items.length === 1 ? items[0].title : body.type === "lesson" ? "Raizes Kids - Licoes Biblicas" : "Raizes Kids - Cultos em Familia";
+    const filename = name.replace(/[<>:"/\\|?*\r\n]/g, " ").trim().slice(0, 120) + "." + body.format;
+    res.setHeader("Content-Type", body.format === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.setHeader("Content-Disposition", `attachment; filename="raizes-kids.${body.format}"; filename*=UTF-8''${encodeURIComponent(filename)}`);
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("Content-Length", buffer.length);
+    res.writeHead(200);
+    res.end(buffer);
+  } catch (error) {
+    console.error("Falha na exportação:", error.message);
+    sendJson(res, 400, { error: "Não foi possível gerar o arquivo. Confira as imagens e tente exportar uma seleção menor." });
+  } finally { runningExports--; }
 }
 
 function normalizeDesiredPlan(value) {
