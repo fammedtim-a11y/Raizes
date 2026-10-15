@@ -171,6 +171,7 @@ function applyRequestedPlanFromUrl() {
 function selectAuthTab(tabName, clearMessage = true) {
   document.querySelectorAll("[data-auth-tab]").forEach((button) => {
     button.classList.toggle("active", button.dataset.authTab === tabName);
+    if (button.closest(".auth-secondary-actions")) button.hidden = button.dataset.authTab === tabName;
   });
   document.querySelectorAll("[data-auth-panel]").forEach((panel) => {
     panel.classList.toggle("active", panel.dataset.authPanel === tabName);

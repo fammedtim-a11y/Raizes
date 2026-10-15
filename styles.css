@@ -119,6 +119,20 @@
   font-weight: 800;
 }
 
+.auth-page .auth-card { width: min(560px, 100%); border-width: 1px; border-radius: 8px; }
+.auth-page .auth-logo { width: 190px; max-width: 65%; margin-bottom: 16px; }
+.auth-page .auth-form h1 { font-size: 26px; line-height: 1.25; margin-bottom: 8px; }
+.auth-page .auth-form input:not([type="checkbox"]),
+.auth-page .auth-form select { min-height: 48px; font-size: 16px; }
+.auth-page .auth-form > button { min-height: 48px; margin-top: 4px; }
+.auth-page .auth-message:empty { display: none; }
+.auth-secondary-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 20px; padding-top: 14px; margin-top: 20px; border-top: 1px solid var(--line); }
+.auth-secondary-actions button { min-height: 44px; padding: 8px 4px; border: 0; background: transparent; color: #245778; font: inherit; font-size: 14px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.auth-secondary-actions button[hidden] { display: none; }
+.auth-secondary-actions button:hover { color: #167ad1; }
+.auth-secondary-actions button:focus-visible { outline: 2px solid #2d9cff; outline-offset: 3px; }
+.auth-page .auth-back { margin-top: 14px; font-size: 14px; }
+
 .user-admin-list {
   display: grid;
   gap: 12px;

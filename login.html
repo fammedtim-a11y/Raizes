@@ -4,18 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes Kids | Acesso</title>
-    <link rel="stylesheet" href="styles.css?v=20261001-family-free" />
+    <link rel="stylesheet" href="styles.css?v=20261015-clean-entry" />
   </head>
   <body class="auth-page">
     <main class="auth-shell">
       <section class="auth-card">
         <img class="auth-logo" src="assets/logo-raizes-kids.png" alt="Raízes Kids" />
-        <div class="auth-tabs">
-          <button class="manage-tab active" type="button" data-auth-tab="login">Entrar</button>
-          <button class="manage-tab" type="button" data-auth-tab="register">Cadastrar</button>
-          <button class="manage-tab" type="button" data-auth-tab="reset">Redefinir senha</button>
-        </div>
-
         <form id="loginForm" class="auth-form active" data-auth-panel="login">
           <h1>Entrar no sistema</h1>
           <label>
@@ -69,10 +63,15 @@
         </form>
 
         <p id="authMessage" class="auth-message" role="status"></p>
+        <nav class="auth-secondary-actions" aria-label="Opções de acesso">
+          <button type="button" data-auth-tab="login" hidden>Voltar para entrar</button>
+          <button type="button" data-auth-tab="register">Cadastrar</button>
+          <button type="button" data-auth-tab="reset">Redefinir senha</button>
+        </nav>
         <a class="auth-back" href="index.html">Voltar para o site</a>
       </section>
     </main>
-    <script src="auth.js?v=20261002-family-nav"></script>
+    <script src="auth.js?v=20261015-clean-entry"></script>
   </body>
 </html>
 
