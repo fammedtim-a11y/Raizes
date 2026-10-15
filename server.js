@@ -322,7 +322,6 @@ function ensureData() {
   syncImportantNotifications();
   applyUserAdministrationUpdates();
   applySiteInfoContactUpdates();
-  sanitizeStoredLessonContent();
   loadSessions();
 }
 

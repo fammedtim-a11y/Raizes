@@ -6,6 +6,12 @@ const test = require("node:test");
 const vm = require("node:vm");
 
 const source = fs.readFileSync(path.join(__dirname, "..", "server.js"), "utf8");
+test("startup does not rewrite saved lesson text for character cleanup", () => {
+  const startup = source.slice(source.indexOf("function ensureData("), source.indexOf("function syncImportantNotifications("));
+  assert.ok(!startup.includes("sanitizeStoredLessonContent()"));
+  assert.ok(!startup.includes("sanitizeJsonFile("));
+});
+
 function loadFunction(name, context) {
   const start = source.search(new RegExp(`^function ${name}\\(`, "m"));
   assert.ok(start >= 0);
