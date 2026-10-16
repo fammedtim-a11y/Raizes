@@ -3132,7 +3132,7 @@ button.master-only.visible,
 /* A role can grant access to a panel, but only navigation can reveal it. */
 #manageView > .manage-panel:not(.active),
 #manageView > .manage-panel[hidden] { display: none !important; }
-#lessonManagePanel [hidden] { display: none !important; }
+:is(#lessonManagePanel, #devotionalManagePanel) [hidden] { display: none !important; }
 
 .admin-dashboard.manage-panel.active {
   display: grid;
@@ -8652,82 +8652,89 @@ summary {
 .family-follow-up { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 24px 0 0; }
 .welcome-actions .welcome-register { white-space: normal; text-align: center; }
 
-#lessonManagePanel { background: #fff; padding: 24px; min-width: 0; }
-#lessonManagePanel .workspace-eyebrow { font-size: 12px; font-weight: 700; color: #66788a; }
-#lessonManagePanel .lesson-workspace-heading { align-items: center; margin: 0 0 16px; padding: 0; border: 0; }
-#lessonManagePanel .lesson-workspace-heading h2 { margin: 4px 0 0; font-size: 26px; line-height: 1.25; }
-#lessonManagePanel .lesson-workspace-tabs { display: flex; gap: 22px; margin-bottom: 24px; border-bottom: 1px solid #dde5ed; }
-#lessonManagePanel .lesson-workspace-tabs button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: transparent; padding: 14px 2px; font: inherit; font-size: 15px; color: #5c6c7e; font-weight: 700; cursor: pointer; }
-#lessonManagePanel .lesson-workspace-tabs button[aria-selected="true"] { border-bottom-color: #168bea; color: #17689d; }
-#lessonManagePanel button:focus-visible, #lessonManagePanel summary:focus-visible { outline: 2px solid #168bea; outline-offset: 3px; }
-#lessonManagePanel .lesson-workspace-pane { min-width: 0; }
-#lessonManagePanel .lesson-workspace-pane h3 { margin: 0; font-size: 20px; line-height: 1.35; overflow-wrap: anywhere; }
-#lessonManagePanel .lesson-library-heading, #lessonManagePanel .lesson-editor-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; }
-#lessonManagePanel .lesson-editor-heading h3 { flex: 1; min-width: 0; }
-#lessonManagePanel .lesson-editor-heading > button { flex-shrink: 0; white-space: nowrap; }
-#lessonLibraryCount { color: #65738a; font-size: 14px; white-space: nowrap; }
-#lessonManagePanel #lessonAdminList { display: grid !important; grid-auto-flow: row !important; grid-auto-columns: auto !important; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)) !important; max-height: 620px; overflow-y: auto; overflow-x: hidden; gap: 14px; padding: 2px 3px 16px; }
-#lessonManagePanel #lessonAdminList .admin-lesson-card { width: 100%; margin: 0; min-width: 0; max-width: none; padding: 12px; border: 1px solid #dce4ec; border-radius: 8px; background: #fff; box-shadow: none; align-content: start; }
-#lessonManagePanel #lessonAdminList .admin-lesson-card::before { display: none; }
-#lessonManagePanel #lessonAdminList .admin-lesson-card.active { border-color: #168bea; }
-#lessonManagePanel #lessonAdminList .lesson-cover { aspect-ratio: 16 / 9; height: auto; border-radius: 6px; }
-#lessonManagePanel #lessonAdminList .custom-cover .lesson-cover-ref { display: none; }
-#lessonManagePanel #lessonAdminList strong { font-size: 15px; line-height: 1.35; white-space: normal; }
-#lessonManagePanel #lessonAdminList .lesson-card-age, #lessonManagePanel #lessonAdminList .lesson-card-verse { background: transparent; border-radius: 0; padding: 0; font-size: 12px; color: #586c80; }
-#lessonManagePanel #lessonAdminList .pill { background: #f2f6fa; color: #586c80; font-size: 11px; }
-#lessonManagePanel #lessonForm { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 0; min-width: 0; }
-#lessonManagePanel .lesson-step-tabs { display: flex; gap: 4px; margin-bottom: 22px; padding: 4px; background: #f1f5f9; border-radius: 6px; width: fit-content; max-width: 100%; }
-#lessonManagePanel .lesson-step-tabs button { flex: 1; padding: 10px 18px; min-height: 44px; border: 0; border-radius: 4px; background: transparent; color: #52667b; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
-#lessonManagePanel .lesson-step-tabs button[aria-selected="true"] { background: #fff; color: #17689d; box-shadow: 0 1px 4px #21304716; }
-#lessonManagePanel .lesson-editor-step { min-width: 0; }
+:is(#lessonManagePanel, #devotionalManagePanel) { background: #fff; padding: 24px; min-width: 0; }
+:is(#lessonManagePanel, #devotionalManagePanel) .workspace-eyebrow { font-size: 12px; font-weight: 700; color: #66788a; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-workspace-heading { align-items: center; margin: 0 0 16px; padding: 0; border: 0; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-workspace-heading h2 { margin: 4px 0 0; font-size: 26px; line-height: 1.25; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-workspace-tabs { display: flex; gap: 22px; margin-bottom: 24px; border-bottom: 1px solid #dde5ed; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-workspace-tabs button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: transparent; padding: 14px 2px; font: inherit; font-size: 15px; color: #5c6c7e; font-weight: 700; cursor: pointer; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-workspace-tabs button[aria-selected="true"] { border-bottom-color: #168bea; color: #17689d; }
+:is(#lessonManagePanel, #devotionalManagePanel) button:focus-visible, :is(#lessonManagePanel, #devotionalManagePanel) summary:focus-visible { outline: 2px solid #168bea; outline-offset: 3px; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-workspace-pane { min-width: 0; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-workspace-pane h3 { margin: 0; font-size: 20px; line-height: 1.35; overflow-wrap: anywhere; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-library-heading, :is(#lessonManagePanel, #devotionalManagePanel) .lesson-editor-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-editor-heading h3 { flex: 1; min-width: 0; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-editor-heading > button { flex-shrink: 0; white-space: nowrap; }
+:is(#lessonLibraryCount, #devotionalLibraryCount) { color: #65738a; font-size: 14px; white-space: nowrap; }
+:is(#lessonManagePanel, #devotionalManagePanel) :is(#lessonAdminList, #devotionalAdminList) { display: grid !important; grid-auto-flow: row !important; grid-auto-columns: auto !important; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)) !important; max-height: 620px; overflow-y: auto; overflow-x: hidden; gap: 14px; padding: 2px 3px 16px; }
+:is(#lessonManagePanel, #devotionalManagePanel) :is(#lessonAdminList, #devotionalAdminList) .admin-lesson-card { width: 100%; margin: 0; min-width: 0; max-width: none; padding: 12px; border: 1px solid #dce4ec; border-radius: 8px; background: #fff; box-shadow: none; align-content: start; }
+:is(#lessonManagePanel, #devotionalManagePanel) :is(#lessonAdminList, #devotionalAdminList) .admin-lesson-card::before { display: none; }
+:is(#lessonManagePanel, #devotionalManagePanel) :is(#lessonAdminList, #devotionalAdminList) .admin-lesson-card.active { border-color: #168bea; }
+:is(#lessonManagePanel, #devotionalManagePanel) :is(#lessonAdminList, #devotionalAdminList) .lesson-cover { aspect-ratio: 16 / 9; height: auto; border-radius: 6px; }
+:is(#lessonManagePanel, #devotionalManagePanel) :is(#lessonAdminList, #devotionalAdminList) .custom-cover .lesson-cover-ref { display: none; }
+:is(#lessonManagePanel, #devotionalManagePanel) :is(#lessonAdminList, #devotionalAdminList) strong { font-size: 15px; line-height: 1.35; white-space: normal; }
+:is(#lessonManagePanel, #devotionalManagePanel) :is(#lessonAdminList, #devotionalAdminList) .lesson-card-age, :is(#lessonManagePanel, #devotionalManagePanel) :is(#lessonAdminList, #devotionalAdminList) .lesson-card-verse { background: transparent; border-radius: 0; padding: 0; font-size: 12px; color: #586c80; }
+:is(#lessonManagePanel, #devotionalManagePanel) :is(#lessonAdminList, #devotionalAdminList) .pill { background: #f2f6fa; color: #586c80; font-size: 11px; }
+:is(#lessonManagePanel, #devotionalManagePanel) :is(#lessonForm, #devotionalForm) { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 0; min-width: 0; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-step-tabs { display: flex; gap: 4px; margin-bottom: 22px; padding: 4px; background: #f1f5f9; border-radius: 6px; width: fit-content; max-width: 100%; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-step-tabs button { flex: 1; padding: 10px 18px; min-height: 44px; border: 0; border-radius: 4px; background: transparent; color: #52667b; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-step-tabs button[aria-selected="true"] { background: #fff; color: #17689d; box-shadow: 0 1px 4px #21304716; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-editor-step { min-width: 0; }
 #lessonInfoStep .form-grid > label:first-child, #lessonInfoStep .form-grid > label:nth-child(4) { grid-column: 1 / -1; }
-#lessonManagePanel label > span { font-size: 14px; color: #40546b; }
-#lessonManagePanel input:not([type="checkbox"]), #lessonManagePanel select { min-height: 46px; background: #fff; border: 1px solid #cbd7e2; border-radius: 6px; font-size: 16px; }
-#lessonManagePanel .lesson-image-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
-#lessonManagePanel .lesson-image-grid > div { min-width: 0; }
-#lessonManagePanel input[type="file"] { padding: 10px; max-width: 100%; }
-#lessonManagePanel input[type="file"]::file-selector-button { border: 0; border-radius: 4px; padding: 8px 10px; background: #eaf3fb; color: #19547b; margin-right: 10px; cursor: pointer; }
-#lessonManagePanel .activity-image-preview img { max-height: 280px; object-fit: contain; }
-#lessonManagePanel .section-fields { margin-top: 0; gap: 0; }
-#lessonManagePanel .lesson-editor-section { margin: 0; border: 0; border-bottom: 1px solid #dce4ec; border-radius: 0; box-shadow: none; background: transparent; }
-#lessonManagePanel .lesson-editor-section summary { min-height: 54px; padding: 12px 2px; flex-direction: row; gap: 12px; }
-#lessonManagePanel .lesson-editor-section summary span { flex: 1; font-size: 15px; }
-#lessonManagePanel .lesson-editor-section summary small { font-size: 12px; font-weight: 500; }
-#lessonManagePanel .lesson-editor-section summary::after { content: "+"; padding: 0; background: transparent; color: #66788a; font-size: 20px; }
-#lessonManagePanel .lesson-editor-section[open] summary::after { content: "-"; }
-#lessonManagePanel .lesson-editor-section > label { margin: 0 0 18px; }
-#lessonManagePanel .editor-actions-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 24px; border: 0; border-top: 1px solid #dce4ec; padding: 14px 0 0; border-radius: 0; box-shadow: none; background: #fff; }
-#lessonManagePanel .editor-actions-bar > .primary { margin-right: auto; width: auto; min-height: 46px; background: #168bea; }
-#lessonManagePanel .editor-actions-bar > button:not(.primary), #lessonManagePanel .lesson-action-menu > summary { width: 44px; height: 44px; min-height: 44px; padding: 10px; }
-#lessonManagePanel .lesson-action-menu { position: relative; }
-#lessonManagePanel .lesson-action-menu > summary { font-size: 25px; list-style: none; cursor: pointer; }
-#lessonManagePanel .lesson-action-menu > summary::-webkit-details-marker { display: none; }
-#lessonManagePanel .lesson-action-menu > div { display: grid; gap: 4px; position: absolute; bottom: calc(100% + 8px); right: 0; width: 190px; background: #fff; padding: 8px; border: 1px solid #dce4ec; border-radius: 6px; box-shadow: 0 8px 22px #21304720; z-index: 25; }
-#lessonManagePanel .lesson-action-menu button { justify-content: flex-start; width: 100%; min-height: 42px; border: 0; box-shadow: none; }
-#lessonManagePanel .lesson-export-controls { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; gap: 16px; align-items: end; margin-top: 22px; }
-#lessonManagePanel .lesson-export-controls button { min-height: 46px; background: #168bea; }
-#lessonManagePanel .lesson-export-summary { padding: 14px 0 24px; margin: 0; color: #52667b; font-size: 14px; overflow-wrap: anywhere; }
-#lessonManagePanel .lesson-data-tools { border-top: 1px solid #dce4ec; padding-top: 24px; margin-top: 18px; }
-#lessonManagePanel .lesson-data-tools h3 { font-size: 16px; }
-#lessonManagePanel .lesson-data-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
-#lessonManagePanel .lesson-data-actions > * { min-height: 44px; background: #fff; color: #40546b; border: 1px solid #cbd7e2; border-radius: 6px; box-shadow: none; }
+#devotionalInfoStep .form-grid > label:first-child, #devotionalInfoStep .form-grid > .inline-check { grid-column: 1 / -1; }
+#devotionalInfoStep label:has(input[name="principle"]), #devotionalInfoStep label:has(input[name="bibleText"]) { grid-column: 1 / -1; }
+#devotionalManagePanel .inline-check { display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 1.5; border: 0; padding: 8px 0; background: transparent; min-height: 44px; }
+#devotionalManagePanel #devotionalAdminList .devotional-card { width: 100%; min-width: 0; margin: 0; padding: 12px; border-radius: 8px; box-shadow: none; background: #fff; align-content: start; gap: 8px; }
+#devotionalManagePanel #devotionalAdminList .devotional-card-category, #devotionalManagePanel #devotionalAdminList .devotional-card-verse { font-size: 12px; color: #586c80; line-height: 1.4; }
+:is(#lessonManagePanel, #devotionalManagePanel) label > span { font-size: 14px; color: #40546b; }
+:is(#lessonManagePanel, #devotionalManagePanel) input:not([type="checkbox"]), :is(#lessonManagePanel, #devotionalManagePanel) select { min-height: 46px; background: #fff; border: 1px solid #cbd7e2; border-radius: 6px; font-size: 16px; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-image-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-image-grid > div { min-width: 0; }
+:is(#lessonManagePanel, #devotionalManagePanel) input[type="file"] { padding: 10px; max-width: 100%; }
+:is(#lessonManagePanel, #devotionalManagePanel) input[type="file"]::file-selector-button { border: 0; border-radius: 4px; padding: 8px 10px; background: #eaf3fb; color: #19547b; margin-right: 10px; cursor: pointer; }
+:is(#lessonManagePanel, #devotionalManagePanel) .activity-image-preview img { max-height: 280px; object-fit: contain; }
+:is(#lessonManagePanel, #devotionalManagePanel) .section-fields { margin-top: 0; gap: 0; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-editor-section { margin: 0; border: 0; border-bottom: 1px solid #dce4ec; border-radius: 0; box-shadow: none; background: transparent; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-editor-section summary { min-height: 54px; padding: 12px 2px; flex-direction: row; gap: 12px; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-editor-section summary span { flex: 1; font-size: 15px; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-editor-section summary small { font-size: 12px; font-weight: 500; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-editor-section summary::after { content: "+"; padding: 0; background: transparent; color: #66788a; font-size: 20px; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-editor-section[open] summary::after { content: "-"; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-editor-section > label { margin: 0 0 18px; }
+:is(#lessonManagePanel, #devotionalManagePanel) .editor-actions-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 24px; border: 0; border-top: 1px solid #dce4ec; padding: 14px 0 0; border-radius: 0; box-shadow: none; background: #fff; }
+:is(#lessonManagePanel, #devotionalManagePanel) .editor-actions-bar > .primary { margin-right: auto; width: auto; min-height: 46px; background: #168bea; }
+:is(#lessonManagePanel, #devotionalManagePanel) .editor-actions-bar > button:not(.primary), :is(#lessonManagePanel, #devotionalManagePanel) .lesson-action-menu > summary { width: 44px; height: 44px; min-height: 44px; padding: 10px; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-action-menu { position: relative; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-action-menu > summary { font-size: 25px; list-style: none; cursor: pointer; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-action-menu > summary::-webkit-details-marker { display: none; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-action-menu > div { display: grid; gap: 4px; position: absolute; bottom: calc(100% + 8px); right: 0; width: 190px; background: #fff; padding: 8px; border: 1px solid #dce4ec; border-radius: 6px; box-shadow: 0 8px 22px #21304720; z-index: 25; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-action-menu button { justify-content: flex-start; width: 100%; min-height: 42px; border: 0; box-shadow: none; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-export-controls { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; gap: 16px; align-items: end; margin-top: 22px; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-export-controls button { min-height: 46px; background: #168bea; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-export-summary { padding: 14px 0 24px; margin: 0; color: #52667b; font-size: 14px; overflow-wrap: anywhere; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-data-tools { border-top: 1px solid #dce4ec; padding-top: 24px; margin-top: 18px; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-data-tools h3 { font-size: 16px; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-data-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+:is(#lessonManagePanel, #devotionalManagePanel) .lesson-data-actions > * { min-height: 44px; background: #fff; color: #40546b; border: 1px solid #cbd7e2; border-radius: 6px; box-shadow: none; }
 @media (max-width: 760px) {
-  #lessonManagePanel { padding: 18px 14px; }
-  #lessonManagePanel .lesson-workspace-heading h2 { font-size: 23px; }
-  #lessonManagePanel .lesson-workspace-heading .icon-button { min-height: 44px; padding: 10px 12px; }
-  #lessonManagePanel .lesson-workspace-tabs { gap: 18px; }
-  #lessonManagePanel .lesson-workspace-tabs button { font-size: 14px; }
-  #lessonManagePanel .lesson-step-tabs { width: 100%; }
-  #lessonManagePanel .lesson-step-tabs button { padding: 10px 6px; font-size: 13px; }
-  #lessonManagePanel .lesson-image-grid, #lessonManagePanel .lesson-export-controls { grid-template-columns: minmax(0, 1fr); }
-  #lessonManagePanel .lesson-data-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
-  #lessonManagePanel .lesson-data-actions > * { justify-content: center; }
-  #lessonManagePanel #lessonAdminList { grid-template-columns: minmax(0, 1fr) !important; max-height: none; }
-  #lessonManagePanel #lessonAdminList .admin-lesson-card { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 6px 12px; }
-  #lessonManagePanel #lessonAdminList .lesson-cover { grid-row: 1 / span 4; grid-column: 1; align-self: start; }
-  #lessonManagePanel #lessonAdminList .admin-lesson-card > :not(.lesson-cover) { grid-column: 2; min-width: 0; }
-  #lessonManagePanel .lesson-editor-heading { align-items: flex-start; flex-direction: column; gap: 10px; }
-  #lessonManagePanel .lesson-editor-heading h3 { font-size: 18px; }
+  :is(#lessonManagePanel, #devotionalManagePanel) { padding: 18px 14px; }
+  :is(#lessonManagePanel, #devotionalManagePanel) .lesson-workspace-heading h2 { font-size: 23px; }
+  :is(#lessonManagePanel, #devotionalManagePanel) .lesson-workspace-heading .icon-button { min-height: 44px; padding: 10px 12px; }
+  :is(#lessonManagePanel, #devotionalManagePanel) .lesson-workspace-tabs { gap: 18px; }
+  :is(#lessonManagePanel, #devotionalManagePanel) .lesson-workspace-tabs button { font-size: 14px; }
+  :is(#lessonManagePanel, #devotionalManagePanel) .lesson-step-tabs { width: 100%; }
+  :is(#lessonManagePanel, #devotionalManagePanel) .lesson-step-tabs button { padding: 10px 6px; font-size: 13px; }
+  :is(#lessonManagePanel, #devotionalManagePanel) .lesson-image-grid, :is(#lessonManagePanel, #devotionalManagePanel) .lesson-export-controls { grid-template-columns: minmax(0, 1fr); }
+  :is(#lessonManagePanel, #devotionalManagePanel) .lesson-data-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  :is(#lessonManagePanel, #devotionalManagePanel) .lesson-data-actions > * { justify-content: center; }
+  :is(#lessonManagePanel, #devotionalManagePanel) :is(#lessonAdminList, #devotionalAdminList) { grid-template-columns: minmax(0, 1fr) !important; max-height: none; }
+  :is(#lessonManagePanel, #devotionalManagePanel) :is(#lessonAdminList, #devotionalAdminList) .admin-lesson-card { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 6px 12px; }
+  #devotionalManagePanel #devotionalAdminList .devotional-card { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 6px 12px; }
+  #devotionalManagePanel #devotionalAdminList .devotional-card > :not(.lesson-cover) { grid-column: 2; min-width: 0; }
+  :is(#lessonManagePanel, #devotionalManagePanel) :is(#lessonAdminList, #devotionalAdminList) .lesson-cover { grid-row: 1 / span 4; grid-column: 1; align-self: start; }
+  :is(#lessonManagePanel, #devotionalManagePanel) :is(#lessonAdminList, #devotionalAdminList) .admin-lesson-card > :not(.lesson-cover) { grid-column: 2; min-width: 0; }
+  :is(#lessonManagePanel, #devotionalManagePanel) .lesson-editor-heading { align-items: flex-start; flex-direction: column; gap: 10px; }
+  :is(#lessonManagePanel, #devotionalManagePanel) .lesson-editor-heading h3 { font-size: 18px; }
 }
 .family-follow-up strong, .family-follow-up p { flex-basis: 100%; margin: 0; line-height: 1.5; }
 .family-follow-up p { margin-top: 8px; }

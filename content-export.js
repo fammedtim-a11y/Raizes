@@ -153,7 +153,7 @@ async function makePdf(model) {
     defaultStyle: { font: "Roboto", fontSize: 12, lineHeight: 1 },
     styles: { cover: { fontSize: 26, bold: true, alignment: "center" }, title: { fontSize: 19, bold: true, color: "#19547b", margin: [0, 0, 0, 8] }, heading: { fontSize: 13, bold: true, color: "#19547b", margin: [0, 10, 0, 4] } },
     header: (page) => page === 1 ? null : { columns: [model.logo ? { image: dataImage(model.logo), fit: [36, 30], width: 44 } : { text: "", width: 44 }, { text: "Raízes Kids · Ministério com Crianças", fontSize: 9, margin: [0, 10, 0, 0] }], margin: [22.68, 12, 22.68, 0] },
-    footer: (page, total) => page === 1 ? null : { text: `Raízes Kids · Uso autorizado\n${footerText(model.info)}\n${page} / ${total}`, fontSize: 8, alignment: "center", margin: [22.68, 6, 22.68, 0] },
+    footer: (page, total) => page === 1 ? null : { text: `Raízes Kids · Direitos autorais protegidos pela CF art. 5º, XXVII e pela Lei nº 9.610/1998 (LDA)\n${footerText(model.info)}\n${page} / ${total}`, fontSize: 8, alignment: "center", margin: [22.68, 6, 22.68, 0] },
     pageBreakBefore: (node, following) => node.headlineLevel === 1 && following.length === 0,
     info: { title: model.items.length === 1 ? model.items[0].title : "Raízes Kids", author: "Raízes Kids" }, images, content
   });

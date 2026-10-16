@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20261015-lesson-workspace2" />
+    <link rel="stylesheet" href="styles.css?v=20261015-family-workspace2" />
     <link rel="stylesheet" href="print.css?v=20260915-plan-links" media="print" />
   </head>
   <body data-page="admin">
@@ -302,20 +302,41 @@
           </div>
 
           <section id="devotionalManagePanel" class="video-manager manage-panel">
-            <div class="manager-heading">
+            <div class="manager-heading lesson-workspace-heading">
               <div>
-                <h2>Cultos em Família cadastrados</h2>
-                <p>Alimente o culto em família com princípio, versículo, oração, atividade e vídeos.</p>
+                <span class="workspace-eyebrow">Conteúdos</span>
+                <h2>Cultos em Família</h2>
               </div>
+              <button id="newDevotionalBtn" class="icon-button primary" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Novo culto</button>
             </div>
-            <div id="devotionalAdminList" class="admin-item-list admin-card-rail lesson-admin-rail"></div>
+            <nav class="lesson-workspace-tabs" role="tablist" aria-label="Área de cultos em família">
+              <button id="devotionalLibraryTab" type="button" role="tab" data-devotional-workspace="library" aria-controls="devotionalLibraryWorkspace" aria-selected="true">Acervo</button>
+              <button id="devotionalEditorTab" type="button" role="tab" data-devotional-workspace="editor" aria-controls="devotionalEditorWorkspace" aria-selected="false" tabindex="-1">Editar culto</button>
+              <button id="devotionalExportTab" type="button" role="tab" data-devotional-workspace="export" aria-controls="devotionalExportWorkspace" aria-selected="false" tabindex="-1">Exportação</button>
+            </nav>
+            <section id="devotionalLibraryWorkspace" class="lesson-workspace-pane" role="tabpanel" aria-labelledby="devotionalLibraryTab">
+              <div class="lesson-library-heading"><h3>Acervo de cultos</h3><span id="devotionalLibraryCount"></span></div>
+              <div id="devotionalAdminList" class="admin-item-list admin-card-rail lesson-admin-rail"></div>
+            </section>
+            <section id="devotionalExportWorkspace" class="lesson-workspace-pane" role="tabpanel" aria-labelledby="devotionalExportTab" hidden>
+              <h3>Exportar materiais</h3>
+              <div class="lesson-export-controls">
+                <label><span>Conteúdo</span><select id="devotionalExportScope"><option value="current">Culto aberto no editor</option><option value="all">Todos os cultos em família</option></select></label>
+                <label><span>Formato</span><select id="devotionalExportFormat"><option value="pdf">PDF · pronto para imprimir</option><option value="docx">DOCX · documento editável</option></select></label>
+                <button id="downloadDevotionalSelection" class="icon-button primary" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /></svg>Baixar arquivo</button>
+              </div>
+              <p id="devotionalExportSummary" class="lesson-export-summary" role="status"></p>
+            </section>
+            <section id="devotionalEditorWorkspace" class="lesson-workspace-pane" role="tabpanel" aria-labelledby="devotionalEditorTab" hidden>
+            <div class="lesson-editor-heading"><h3 id="devotionalEditorHeading">Novo culto</h3><button class="icon-button" type="button" data-open-devotional-export title="Exportar este culto">📥 Exportar</button></div>
             <form id="devotionalForm" class="editor content-editor" data-content-type="devotional">
               <input type="hidden" name="id" />
-              <details class="editor-section" open>
-                <summary>
-                  <span>1. Informações principais</span>
-                  <small>Identificação do culto e texto bíblico.</small>
-                </summary>
+              <nav class="lesson-step-tabs" role="tablist" aria-label="Campos do culto">
+                <button id="devotionalInfoTab" type="button" role="tab" data-devotional-step="info" aria-controls="devotionalInfoStep" aria-selected="true">Informações</button>
+                <button id="devotionalImagesTab" type="button" role="tab" data-devotional-step="images" aria-controls="devotionalImagesStep" aria-selected="false" tabindex="-1">Imagens</button>
+                <button id="devotionalContentTab" type="button" role="tab" data-devotional-step="content" aria-controls="devotionalContentStep" aria-selected="false" tabindex="-1">Conteúdo</button>
+              </nav>
+              <section id="devotionalInfoStep" class="lesson-editor-step" role="tabpanel" data-devotional-editor-step="info" aria-labelledby="devotionalInfoTab">
                 <div class="form-grid">
                   <label><span>Título</span><input name="title" required placeholder="Ex.: Culto em Família - Semana 16" /></label>
                   <label><span>Categoria</span><input name="category" placeholder="Ex.: Família" /></label>
@@ -325,40 +346,39 @@
                   <label><span>Princípio</span><input name="principle" placeholder="Ex.: Vou valorizar tudo o que Deus me der." /></label>
                   <label><span>Texto bíblico</span><input name="bibleText" placeholder="Ex.: Gn 25.29-34" /></label>
                 </div>
-                <label><span>Versículo</span><textarea name="verse" rows="3"></textarea></label>
-              </details>
-              <details class="editor-section">
-                <summary>
-                  <span>2. Imagens e atividades</span>
-                  <small>Capa e desenho para uso em família.</small>
-                </summary>
+              </section>
+              <section id="devotionalImagesStep" class="lesson-editor-step" role="tabpanel" data-devotional-editor-step="images" aria-labelledby="devotionalImagesTab" hidden>
+                <div class="lesson-image-grid"><div>
                 <label class="image-field"><span>Imagem do card</span><input name="cardImageFile" type="file" accept="image/png,image/jpeg,image/webp" /></label>
                 <label class="inline-check"><input name="removeCardImage" type="checkbox" /> Remover imagem do card ao salvar</label>
+                <div class="activity-image-preview" data-devotional-preview="cardImage"></div>
+                </div><div>
                 <label class="image-field"><span>Desenho/atividade</span><input name="activityImageFile" type="file" accept="image/png,image/jpeg,image/webp" /></label>
                 <label class="inline-check"><input name="removeActivityImage" type="checkbox" /> Remover desenho/atividade ao salvar</label>
-              </details>
-              <details class="editor-section">
-                <summary>
-                  <span>3. Conteúdo do culto</span>
-                  <small>Devocional, oração e brincadeira.</small>
-                </summary>
-                <label><span>Culto em Família</span><textarea name="devotional" rows="8"></textarea></label>
-                <label><span>Oração</span><textarea name="prayer" rows="4"></textarea></label>
-                <label><span>Vamos brincar?</span><textarea name="activity" rows="5"></textarea></label>
-                <label><span>Conversem (opcional)</span><textarea name="conversation" rows="3"></textarea></label>
-                <label><span>Vivam durante a semana (opcional)</span><textarea name="weeklyPractice" rows="3"></textarea></label>
-                <label><span>Orientações aos pais (opcional)</span><textarea name="parentNotes" rows="3"></textarea></label>
-              </details>
+                <div class="activity-image-preview" data-devotional-preview="activityImage"></div>
+                </div></div>
+              </section>
+              <section id="devotionalContentStep" class="lesson-editor-step" role="tabpanel" data-devotional-editor-step="content" aria-labelledby="devotionalContentTab" hidden>
+                <div class="section-fields">
+                  <details class="editor-section lesson-editor-section"><summary><span>Versículo</span><small data-section-status>Vazio</small></summary><label><textarea name="verse" aria-label="Versículo" rows="3"></textarea></label></details>
+                  <details class="editor-section lesson-editor-section"><summary><span>Culto em Família</span><small data-section-status>Vazio</small></summary><label><textarea name="devotional" aria-label="Culto em Família" rows="8"></textarea></label></details>
+                  <details class="editor-section lesson-editor-section"><summary><span>Oração</span><small data-section-status>Vazio</small></summary><label><textarea name="prayer" aria-label="Oração" rows="4"></textarea></label></details>
+                  <details class="editor-section lesson-editor-section"><summary><span>Vamos brincar?</span><small data-section-status>Vazio</small></summary><label><textarea name="activity" aria-label="Vamos brincar?" rows="5"></textarea></label></details>
+                  <details class="editor-section lesson-editor-section"><summary><span>Conversem (opcional)</span><small data-section-status>Vazio</small></summary><label><textarea name="conversation" aria-label="Conversem (opcional)" rows="3"></textarea></label></details>
+                  <details class="editor-section lesson-editor-section"><summary><span>Vivam durante a semana (opcional)</span><small data-section-status>Vazio</small></summary><label><textarea name="weeklyPractice" aria-label="Vivam durante a semana (opcional)" rows="3"></textarea></label></details>
+                  <details class="editor-section lesson-editor-section"><summary><span>Orientações aos pais (opcional)</span><small data-section-status>Vazio</small></summary><label><textarea name="parentNotes" aria-label="Orientações aos pais (opcional)" rows="3"></textarea></label></details>
+                </div>
+              </section>
               <div class="form-actions editor-actions-bar">
                 <button class="icon-button primary" type="submit">Salvar culto</button>
-                <button class="icon-button accent" type="button" data-content-export-pdf>📄 Baixar PDF</button>
-                <button class="icon-button" type="button" data-download-content="devotional" data-format="docx" data-scope="current">Baixar DOCX</button>
+                <details class="lesson-action-menu"><summary class="icon-button" aria-label="Mais ações do culto" title="Mais ações">⋯</summary><div>
                 <button class="icon-button" type="button" data-content-clear>Limpar</button>
                 <button class="icon-button danger" type="button" data-content-delete>Excluir</button>
+                </div></details>
               </div>
-              <details class="export-center"><summary>📤 Exportar todos os Cultos em Família</summary><div class="export-center-actions"><button class="icon-button" type="button" data-download-content="devotional" data-format="pdf" data-scope="all">Baixar PDF de todos os cultos</button><button class="icon-button" type="button" data-download-content="devotional" data-format="docx" data-scope="all">Baixar DOCX de todos os cultos</button></div></details>
               <p class="action-message" role="status"></p>
             </form>
+            </section>
           </section>
 
           <section id="trailManagePanel" class="video-manager manage-panel">
@@ -829,7 +849,7 @@
     </div>
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
     <script src="lessons-data.js?v=20260915-plan-links"></script>
-    <script src="app.js?v=20261015-lesson-workspace2"></script>
+    <script src="app.js?v=20261015-family-workspace2"></script>
     <script src="auth.js?v=20261015-welcome-pix"></script>
   </body>
 </html>

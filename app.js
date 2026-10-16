@@ -134,6 +134,8 @@ const state = {
   manageTab: "lessons",
   lessonWorkspace: "library",
   lessonEditorStep: "info",
+  devotionalWorkspace: "library",
+  devotionalEditorStep: "info",
   trailsRendered: false,
   authUser: null,
   cardImageReadToken: "",
@@ -596,6 +598,27 @@ function loadLastTrailVideoId() {
 function bindEvents() {
   bindLessonTabs("[data-lesson-workspace]", "lessonWorkspace", setLessonWorkspace);
   bindLessonTabs("[data-lesson-step]", "lessonStep", setLessonEditorStep);
+  bindLessonTabs("[data-devotional-workspace]", "devotionalWorkspace", setDevotionalWorkspace);
+  bindLessonTabs("[data-devotional-step]", "devotionalStep", setDevotionalEditorStep);
+  $("#newDevotionalBtn")?.addEventListener("click", () => {
+    const form = $("#devotionalForm");
+    clearContentForm(form);
+    setDevotionalWorkspace("editor");
+    setDevotionalEditorStep("info");
+    form.elements.title.focus();
+  });
+  $("#downloadDevotionalSelection")?.addEventListener("click", () => downloadSelectedContent("devotional", $("#devotionalExportFormat").value, $("#devotionalExportScope").value, $("#downloadDevotionalSelection")));
+  $("#devotionalExportScope")?.addEventListener("change", updateDevotionalEditorMeta);
+  $("[data-open-devotional-export]")?.addEventListener("click", () => {
+    $("#devotionalExportScope").value = "current";
+    setDevotionalWorkspace("export");
+  });
+  $("#devotionalForm")?.addEventListener("input", updateDevotionalEditorMeta);
+  $("#devotionalForm")?.addEventListener("invalid", (event) => {
+    setDevotionalWorkspace("editor");
+    setDevotionalEditorStep(event.target.closest("[data-devotional-editor-step]")?.dataset.devotionalEditorStep || "info");
+  }, true);
+  $("#devotionalForm")?.querySelectorAll('input[type="file"], input[name^="remove"]').forEach((field) => field.addEventListener("change", refreshDevotionalPreviews));
   $("#downloadLessonSelection")?.addEventListener("click", () => downloadSelectedContent("lesson", $("#lessonExportFormat").value, $("#lessonExportScope").value, $("#downloadLessonSelection")));
   $("#lessonExportScope")?.addEventListener("change", updateLessonExportSummary);
   $("#lessonExportFormat")?.addEventListener("change", updateLessonExportSummary);
@@ -1141,6 +1164,7 @@ function setManageTab(tabName) {
   document.querySelectorAll("#manageView > .manage-panel").forEach((panel) => { panel.hidden = !panel.classList.contains("active"); });
   els.filterToolbar?.classList.toggle("hidden", !["lessons", "trails"].includes(tabName));
   if (tabName === "lessons") setLessonWorkspace(state.lessonWorkspace);
+  if (tabName === "devotionals") setDevotionalWorkspace(state.devotionalWorkspace);
   if (tabName === "dashboard") renderAdminDashboard();
   if (tabName === "users") window.loadAdminAccessLogs?.();
   if (tabName === "analytics") window.loadAdminAnalytics?.();
@@ -1185,6 +1209,66 @@ function setLessonEditorStep(value) {
     tab.tabIndex = active ? 0 : -1;
   });
   document.querySelectorAll("[data-lesson-editor-step]").forEach((panel) => { panel.hidden = panel.dataset.lessonEditorStep !== state.lessonEditorStep; });
+}
+
+function setDevotionalWorkspace(value) {
+  state.devotionalWorkspace = ["library", "editor", "export"].includes(value) ? value : "library";
+  document.querySelectorAll("[data-devotional-workspace]").forEach((tab) => {
+    const active = tab.dataset.devotionalWorkspace === state.devotionalWorkspace;
+    tab.setAttribute("aria-selected", String(active));
+    tab.tabIndex = active ? 0 : -1;
+    const panel = document.getElementById(tab.getAttribute("aria-controls"));
+    if (panel) panel.hidden = !active;
+  });
+  updateDevotionalEditorMeta();
+}
+
+function setDevotionalEditorStep(value) {
+  state.devotionalEditorStep = ["info", "images", "content"].includes(value) ? value : "info";
+  document.querySelectorAll("[data-devotional-step]").forEach((tab) => {
+    const active = tab.dataset.devotionalStep === state.devotionalEditorStep;
+    tab.setAttribute("aria-selected", String(active));
+    tab.tabIndex = active ? 0 : -1;
+  });
+  document.querySelectorAll("[data-devotional-editor-step]").forEach((panel) => { panel.hidden = panel.dataset.devotionalEditorStep !== state.devotionalEditorStep; });
+}
+
+function updateDevotionalEditorMeta() {
+  const form = $("#devotionalForm");
+  if (!form) return;
+  const title = form.elements.title.value.trim();
+  $("#devotionalEditorHeading").textContent = form.elements.id.value ? title || "Editar culto" : "Novo culto";
+  form.querySelectorAll("textarea").forEach((field) => {
+    const status = field.closest("details")?.querySelector("[data-section-status]");
+    if (status) status.textContent = stripHtmlToText(field.value).trim() ? "Preenchido" : "Vazio";
+  });
+  const count = state.devotionals.length;
+  $("#devotionalLibraryCount").textContent = `${count} cultos`;
+  const all = $("#devotionalExportScope").value === "all";
+  $("#devotionalExportSummary").textContent = all ? `${count} cultos selecionados` : title || "Nenhum culto aberto no editor";
+  $("#downloadDevotionalSelection").disabled = all ? !count : !title;
+}
+
+function refreshDevotionalPreviews() {
+  const form = $("#devotionalForm");
+  if (!form) return;
+  const item = findContentItem("devotional", form.elements.id.value);
+  for (const key of ["cardImage", "activityImage"]) {
+    const holder = form.querySelector(`[data-devotional-preview="${key}"]`);
+    if (holder.dataset.objectUrl) URL.revokeObjectURL(holder.dataset.objectUrl);
+    delete holder.dataset.objectUrl;
+    const file = form.elements[`${key}File`].files[0];
+    const removed = form.elements[key === "cardImage" ? "removeCardImage" : "removeActivityImage"].checked;
+    const url = removed ? "" : file && file.type.startsWith("image/") ? URL.createObjectURL(file) : item?.[key] || "";
+    if (url.startsWith("blob:")) holder.dataset.objectUrl = url;
+    holder.replaceChildren();
+    if (url) {
+      const image = document.createElement("img");
+      image.src = url;
+      image.alt = key === "cardImage" ? "Imagem do card do culto" : "Imagem da atividade";
+      holder.append(image);
+    }
+  }
 }
 
 function updateLessonEditorMeta() {
@@ -3044,7 +3128,7 @@ function renderTrails() {
 }
 
 function renderContentAdminLists() {
-  renderContentAdminList("devotional", state.devotionals, "#devotionalAdminList");
+  renderContentAdminList("devotional", newestFamilyFirst(state.devotionals), "#devotionalAdminList");
   renderContentAdminList("training", state.trainings, "#trainingAdminList");
   renderContentAdminList("ebf", state.ebfs, "#ebfAdminList");
 }
@@ -3064,6 +3148,7 @@ function contentTypeFromLabel(label) {
 function renderContentAdminList(type, items, selector) {
   const list = document.querySelector(selector);
   if (!list) return;
+  if (type === "devotional") updateDevotionalEditorMeta();
   if (!items.length) {
     list.innerHTML = `<p class="muted-line">Nenhum ${contentTypeConfig(type).emptyName} cadastrado ainda.</p>`;
     return;
@@ -3072,7 +3157,9 @@ function renderContentAdminList(type, items, selector) {
   list.querySelectorAll(`[data-admin-${type}-id]`).forEach((card) => {
     card.addEventListener("click", () => {
       const item = items.find((entry) => entry.id === card.getAttribute(`data-admin-${type}-id`));
-      if (item) loadContentIntoForm(type, item);
+      if (item) {
+        loadContentIntoForm(type, item);
+      }
     });
   });
 }
@@ -3249,6 +3336,11 @@ function loadContentIntoForm(type, item) {
     renderCurrentAttachments(form, item.attachments || []);
   }
   refreshRichTextEditors(form);
+  if (type === "devotional") {
+    updateDevotionalEditorMeta();
+    refreshDevotionalPreviews();
+    setDevotionalWorkspace("editor");
+  }
   form.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -3257,6 +3349,10 @@ function clearContentForm(form) {
   form.elements.id.value = "";
   renderCurrentAttachments(form, []);
   refreshRichTextEditors(form);
+  if (form.dataset.contentType === "devotional") {
+    updateDevotionalEditorMeta();
+    refreshDevotionalPreviews();
+  }
 }
 
 function renderCurrentAttachments(form, attachments) {
