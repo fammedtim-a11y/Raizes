@@ -4051,6 +4051,8 @@ function buildPrintCopySection(label, emoji, text) {
 }
 
 function buildPrintImageSection(label, emoji, src) {
+  const paymentSource = document.querySelector('#paymentQrPreview img, #salesPaymentQr img')?.getAttribute("src") || "";
+  if (window.raizesExportPolicy.isPaymentImageSource(src, paymentSource)) return "";
   return `
     <section class="print-section print-image-section">
       <h3>${emoji} ${escapeHtml(label)}</h3>

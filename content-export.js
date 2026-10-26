@@ -4,6 +4,7 @@ const { parseDocument } = require("htmlparser2");
 const sharp = require("sharp");
 const PdfPrinter = require("pdfmake");
 const vfs = require("pdfmake/build/vfs_fonts");
+const { isPaymentImageSource } = require("./export-policy");
 const { Document, Packer, Paragraph, TextRun, ImageRun, Header, Footer, AlignmentType, PageNumber, HeadingLevel, LevelFormat } = require("docx");
 
 const FIELDS = {
@@ -94,8 +95,11 @@ async function readImage(source, { root, uploadDir }) {
 async function prepareExport(type, items, options) {
   if (!FIELDS[type] || !items.length || items.length > 150) throw new Error("Escolha entre 1 e 150 conteúdos para exportar.");
   const cache = new Map();
+  const paymentSource = options.info?.paymentQrImage || "";
+  const paymentImage = paymentSource ? await readImage(paymentSource, options).catch(() => null) : null;
   const image = (src) => {
-    if (!cache.has(src)) cache.set(src, readImage(src, options));
+    if (isPaymentImageSource(src, paymentSource)) return null;
+    if (!cache.has(src)) cache.set(src, readImage(src, options).then((result) => result && paymentImage?.data.equals(result.data) ? null : result));
     return cache.get(src);
   };
   const prepared = [];

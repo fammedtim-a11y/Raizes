@@ -3,6 +3,16 @@
   margin: 8mm;
 }
 
+/* Print the prepared document only, never application or payment overlays. */
+body.print-v2 > :not(#ebookPrintArea),
+#paymentQrPreview,
+#salesPaymentQr,
+.payment-qr-preview,
+.sales-payment-qr,
+.upgrade-payment-dialog {
+  display: none !important;
+}
+
 body.print-v2,
 body.print-v2 * {
   box-sizing: border-box !important;
