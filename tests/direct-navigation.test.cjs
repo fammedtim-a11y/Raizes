@@ -32,3 +32,9 @@ test('Premium desktop shortcuts retain the existing access check',()=>{
  assert.match(css,/@media \(min-width: 721px\)\s*\{\s*\.topbar:has\(\.nav-direct\)/);
  assert.match(css,/\.topbar \.desktop-account-link \{ display: none !important;/);
 });
+
+test('desktop Premium labels sit below aligned menu names without a badge background',()=>{
+ const css=fs.readFileSync(path.join(root,'styles.css'),'utf8');
+ assert.match(css,/\.nav-direct > \.tab, \.nav-direct > \.nav-menu > summary \{[^}]*flex-direction: column;[^}]*justify-content: flex-start;/);
+ assert.match(css,/\.nav-direct small \{[^}]*display: block;[^}]*background: transparent;[^}]*padding: 0;/);
+});

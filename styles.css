@@ -751,8 +751,8 @@ h1 {
 @media (min-width: 721px) {
   .topbar:has(.nav-direct) { grid-template-columns: minmax(220px, .8fr) minmax(0, 2fr); }
   .topbar .nav-direct { display: flex; flex-wrap: wrap; justify-content: flex-end; width: 100%; gap: 4px; }
-  .nav-direct > .tab, .nav-direct > .nav-menu > summary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 10px; min-height: 44px; font-size: 14px; white-space: nowrap; text-decoration: none; }
-  .nav-direct small { font-size: 10px; font-weight: 700; color: #725611; background: #fff1bb; border-radius: 4px; padding: 2px 4px; }
+  .nav-direct > .tab, .nav-direct > .nav-menu > summary { display: inline-flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 0; padding: 8px 10px; min-height: 48px; font-size: 14px; line-height: 20px; white-space: nowrap; text-decoration: none; }
+  .nav-direct small { display: block; font-size: 10px; line-height: 12px; font-weight: 700; color: #725611; background: transparent; padding: 0; }
 }
 @media (max-width: 720px) {
   .topbar .desktop-account-link { display: none !important; }
