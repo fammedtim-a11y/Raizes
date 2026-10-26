@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Gerenciamento</title>
-    <link rel="stylesheet" href="styles.css?v=20261015-family-workspace2" />
+    <link rel="stylesheet" href="styles.css?v=20261026-direct-nav" />
     <link rel="stylesheet" href="print.css?v=20261026-export-isolation" media="print" />
   </head>
   <body data-page="admin">
@@ -19,30 +19,14 @@
           </div>
         </a>
         <div class="topbar-actions">
-          <nav class="tabs nav-main" aria-label="Navegação administrativa">
-            <details class="nav-menu">
-              <summary class="tab">Famílias</summary>
-              <div class="nav-submenu">
-                <a class="tab" href="index.html#devocional">Culto em Família</a>
-                <a class="tab" href="index.html#trilhas">Trilhas</a>
-              </div>
-            </details>
-            <details class="nav-menu">
-              <summary class="tab">Líderes</summary>
-              <div class="nav-submenu">
-                <a class="tab" href="index.html#licoes">Lições Bíblicas</a>
-                <a class="tab" href="index.html#trilhas">Trilhas</a>
-              </div>
-            </details>
-            <details class="nav-menu">
-              <summary class="tab">Coordenadores</summary>
-              <div class="nav-submenu">
-                <a class="tab" href="index.html#ebf">EBF Completa</a>
-                <a class="tab" href="index.html#treinamentos">Treinamentos</a>
-                <a class="tab" href="index.html#trilhas">Trilhas</a>
-              </div>
-            </details>
-            <details class="nav-menu">
+          <nav class="tabs nav-main nav-direct" aria-label="Navegação administrativa">
+            <a class="tab" href="index.html#devocional">Culto em Família</a>
+            <a class="tab" href="index.html#licoes">Lições Bíblicas</a>
+            <a class="tab" href="index.html#trilhas">Trilhas</a>
+            <a class="tab" href="index.html#ebf">EBF <small>Premium</small></a>
+            <a class="tab" href="index.html#treinamentos">Treinamentos <small>Premium</small></a>
+            <a class="tab" href="index.html#contato">Contato</a>
+            <details class="nav-menu admin-only">
               <summary class="tab active">Administração</summary>
               <div class="nav-submenu">
                 <a class="tab" href="perfil.html">Perfil</a>
@@ -850,8 +834,8 @@
     <section id="ebookPrintArea" class="ebook-print-area" aria-hidden="true"></section>
     <script src="lessons-data.js?v=20260915-plan-links"></script>
     <script src="export-policy.js?v=20261026-export-isolation"></script>
-    <script src="app.js?v=20261026-export-isolation"></script>
-    <script src="auth.js?v=20261015-welcome-pix"></script>
+    <script src="app.js?v=20261026-direct-nav"></script>
+    <script src="auth.js?v=20261026-direct-nav"></script>
   </body>
 </html>
 

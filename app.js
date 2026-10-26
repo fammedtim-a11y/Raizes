@@ -1089,6 +1089,7 @@ function setTab(tabName) {
   document.body.dataset.activeTab = tabName;
   if (previousTab !== tabName) resetFilters();
   els.tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.tab === tabName));
+  document.querySelectorAll(".nav-direct [data-jump-tab]").forEach((tab) => tab.classList.toggle("active", tab.dataset.jumpTab === tabName));
   els.homeView?.classList.toggle("active", tabName === "home");
   els.devotionalView?.classList.toggle("active", tabName === "devotional");
   els.trainingView?.classList.toggle("active", tabName === "training");

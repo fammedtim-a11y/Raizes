@@ -146,7 +146,8 @@ function renderAuthSlots() {
         <button class="tab auth-logout" type="button">Sair</button>
       `;
     } else {
-      slot.innerHTML = '<a class="tab" href="index.html#contato">Contato</a><a class="tab auth-login" href="login.html">Entrar / Cadastrar</a>';
+      const contactLink = document.querySelector('.nav-direct > a[href$="#contato"]') ? "" : '<a class="tab" href="index.html#contato">Contato</a>';
+      slot.innerHTML = `${contactLink}<a class="tab auth-login" href="login.html">Entrar / Cadastrar</a>`;
     }
   });
 }

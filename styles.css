@@ -748,6 +748,16 @@ h1 {
   align-items: center;
 }
 
+@media (min-width: 721px) {
+  .topbar:has(.nav-direct) { grid-template-columns: minmax(220px, .8fr) minmax(0, 2fr); }
+  .topbar .nav-direct { display: flex; flex-wrap: wrap; justify-content: flex-end; width: 100%; gap: 4px; }
+  .nav-direct > .tab, .nav-direct > .nav-menu > summary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 10px; min-height: 44px; font-size: 14px; white-space: nowrap; text-decoration: none; }
+  .nav-direct small { font-size: 10px; font-weight: 700; color: #725611; background: #fff1bb; border-radius: 4px; padding: 2px 4px; }
+}
+@media (max-width: 720px) {
+  .topbar .desktop-account-link { display: none !important; }
+}
+
 .tab {
   --tab-accent: var(--blue-deep);
   min-height: 38px;

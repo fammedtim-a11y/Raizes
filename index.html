@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Raízes | Catálogo de Lições Bíblicas</title>
-    <link rel="stylesheet" href="styles.css?v=20261015-family-workspace2" />
+    <link rel="stylesheet" href="styles.css?v=20261026-direct-nav" />
     <link rel="stylesheet" href="print.css?v=20261026-export-isolation" media="print" />
   </head>
   <body data-active-tab="home">
@@ -19,29 +19,14 @@
           </div>
         </button>
         <div class="topbar-actions">
-          <nav class="tabs nav-main" aria-label="Modos do catálogo">
-            <details class="nav-menu">
-              <summary class="tab">Famílias</summary>
-              <div class="nav-submenu">
-                <button class="tab" data-tab="devotional" data-min-access="family" type="button">Culto em Família</button>
-              </div>
-            </details>
-            <details class="nav-menu">
-              <summary class="tab">Líderes</summary>
-              <div class="nav-submenu">
-                <button class="tab" data-tab="study" data-min-access="leader" type="button">Lições Bíblicas</button>
-                <button class="tab" data-tab="trails" data-min-access="leader" type="button">Trilhas</button>
-              </div>
-            </details>
-            <details class="nav-menu">
-              <summary class="tab">Coordenadores</summary>
-              <div class="nav-submenu">
-                <button class="tab" data-tab="ebf" data-min-access="prime" type="button">EBF Completa</button>
-                <button class="tab" data-tab="training" data-min-access="prime" type="button">Treinamentos</button>
-                <button class="tab" data-tab="trails" data-min-access="leader" type="button">Trilhas</button>
-              </div>
-            </details>
-            <details class="nav-menu">
+          <nav class="tabs nav-main nav-direct" aria-label="Navegação principal">
+            <button class="tab" data-tab="devotional" type="button">Culto em Família</button>
+            <button class="tab" data-tab="study" type="button">Lições Bíblicas</button>
+            <button class="tab" data-tab="trails" type="button">Trilhas</button>
+            <button class="tab" data-jump-tab="ebf" type="button">EBF <small>Premium</small></button>
+            <button class="tab" data-jump-tab="training" type="button">Treinamentos <small>Premium</small></button>
+            <a class="tab" href="#contato">Contato</a>
+            <details class="nav-menu admin-only">
               <summary class="tab">Administração</summary>
               <div class="nav-submenu">
                 <a class="tab member-only" href="perfil.html">Perfil</a>
@@ -51,6 +36,7 @@
               </div>
             </details>
           </nav>
+          <a class="tab member-only desktop-account-link" href="perfil.html">Minha conta</a>
           <button id="newsBellBtn" class="notification-bell" type="button" aria-label="Abrir novidades">
             <span>🔔</span>
             <strong id="newsBellCount">0</strong>
@@ -330,6 +316,7 @@
             <span class="home-kicker">Sobre</span>
             <h2>Sobre o Raízes Kids</h2>
             <p data-site-info="about">Raízes Kids é uma plataforma criada para facilitar a vida de líderes e discipuladores de crianças, reunindo lições, trilhas, cultos em família e materiais de apoio em um só lugar.</p>
+            <button class="tab" data-tab="team" type="button">Quem Somos</button>
           </article>
           <article id="contato">
             <span class="home-kicker">Contato</span>
@@ -368,8 +355,8 @@
 
     <script src="lessons-data.js?v=20260915-plan-links"></script>
     <script src="export-policy.js?v=20261026-export-isolation"></script>
-    <script src="app.js?v=20261026-export-isolation"></script>
-    <script src="auth.js?v=20261015-welcome-pix"></script>
+    <script src="app.js?v=20261026-direct-nav"></script>
+    <script src="auth.js?v=20261026-direct-nav"></script>
   </body>
 </html>
 
